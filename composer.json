@@ -1,0 +1,26 @@
+{
+    "name": "silverengine/framework",
+    "type": "project",
+    "license": "MIT",
+    "authors": [
+        {
+            "name": "SilverEngine",
+            "email": "support@silverengine.net"
+        }
+    ],
+    "minimum-stability": "dev",
+    "require": {
+    },
+    "autoload" : {
+        "psr-4" : {
+            "App\\" : "App/",
+            "Silver\\": "System/",
+            "Database\\": "Database/"
+        }
+    },
+
+    "autoload-dev": {
+        "psr-4": {
+        }
+    }
+}
