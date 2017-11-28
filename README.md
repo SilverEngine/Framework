@@ -19,7 +19,7 @@ The [Documentation](https://silverengine.net/docs) of the framework is still wor
 
 ## Composer install
 
-composer create-project silverengine/framework fmdev dev-master
+composer create-project silverengine/framework contributor dev-master
 
 ## Contributing
 
