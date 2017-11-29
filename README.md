@@ -15,7 +15,7 @@ SilverEngine is a powerful PHP Dynamical MVC framework built for developers who 
 
 ## Documentation
 
-The [Documentation](https://silverengine.net/docs) of the framework is still work in progress (WIP).
+The [Documentation](https://silverengine.net/docs.html) of the framework is still work in progress (WIP).
 
 ## Composer install
 
