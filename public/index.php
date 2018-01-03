@@ -16,6 +16,9 @@
  */
 require_once '../System/Core/init.php';
 
+if(! is_dir('../vendor'))
+    exit('Warning: Vendor folder is missing! Please add vendor folder or use CLI command: Composer update');
+
 /**
  * psr-4 autoloading
  */
