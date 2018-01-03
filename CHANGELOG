@@ -1,1 +1,3 @@
-soon
+[1.0.1]
+- hot-fix public/index problem solved with white screen when vendor/ folder is missing
+- fixed problem wih redirect::to()
