@@ -19,9 +19,16 @@ use Silver\Exception;
  */
 class Redirect
 {
-	public static function to($url)
+	public static function to($url, $permanent = false)
     {
-        return Response::instance()->redirect($url);
+        //return Siilver\Core\Bootstrap\Facades\Response::instance()->redirect($url);
+        // FIXME: please fix the problem with redirects fix works for now.
+        if (headers_sent() === false)
+        {
+            header('Location: ' . $url, true, ($permanent === true) ? 301 : 302);
+        }
+
+        exit();
 	}
 
 	public static function back($fallback = null)
