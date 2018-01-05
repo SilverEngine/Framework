@@ -9,14 +9,22 @@ SilverEngine is a powerful PHP Dynamical MVC framework built for developers who 
 
 ![Licence](https://img.shields.io/badge/Licence-MIT-green.svg)
 ![PHP5.6](https://img.shields.io/badge/php-5.6-blue.svg)
-![version Alpha](https://img.shields.io/badge/Alpha-V1.0.0-yellow.svg)
+![version Alpha](https://img.shields.io/badge/Alpha-V1.0.1-yellow.svg)
 
 
 
 ## Documentation
 
-The [Documentation](https://silverengine.net/docs) of the framework is still work in progress (WIP).
+The [Documentation](https://silverengine.net/docs.html) of the framework is still work in progress (WIP).
+The WIKI [WIKI Documentation](https://github.com/SilverEngine/Framework/wiki) of the framework is still work in progress (WIP).
 
+## install
+
+Clone project or use composer
+
+ ```php
+composer create-project silverengine/framework contributor dev-master
+```
 
 ## Contributing
 
