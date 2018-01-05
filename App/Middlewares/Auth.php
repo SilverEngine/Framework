@@ -20,13 +20,15 @@ use Silver\Http\Request;
 use Silver\Http\Response;
 use Closure;
 use Silver\Http\Session;
+use Silver\Http\Redirect;
 
 class Auth implements MiddlewareInterface
 {
     // put the name to make it public
     private $unguard = [
         'unguard',
-        'home',
+        'guest',
+        'public',
     ];
 
     public function execute(Request $req, Response $res, Closure $next)
@@ -34,21 +36,14 @@ class Auth implements MiddlewareInterface
         if($req->route() == null)
             return $next();
 
-        if (array_search($req->route()->name(), $this->unguard) !== false) {
+        if (! array_search($req->route()->middleware(), $this->unguard) !== false) {
+            //Change here if you want to check if someone is loggin in owherwise use Error 404;
 
-            return $next();
+            //Redirect::to('/');
+            return \Silver\Http\View::error('404');
         }
-        else{
-           //put your secure code here!
-            return $next();
-        }
-    }
 
-    private function getHeaders()
-    {
-        return $this->headers;
+        return $next();
     }
 
 }
-
-

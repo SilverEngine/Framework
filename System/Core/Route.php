@@ -21,6 +21,7 @@ class Route
     private $_action;
     private $_jails;
     private $_name;
+    private $_middleware;
     private $_type;
     private $_variables = [];
 
@@ -43,13 +44,14 @@ class Route
      * @param null $name
      * @param null $type
      */
-    public function __construct($method, $route, $action, $name = null, $type = null)
+    public function __construct($method, $route, $action, $name = null, $middleware = 'public', $type = null)
     {
         $this->_method = strtolower($method);
         $this->_route = $route;
         $this->_action = $action;
         $this->_jails = self::$jails;
         $this->_name = $name;
+        $this->_middleware   = $middleware;
         $this->_type = $type;
     }
 
@@ -75,6 +77,14 @@ class Route
     public function name()
     {
         return $this->_name;
+    }
+
+    /**
+     * @return null
+     */
+    public function middleware()
+    {
+        return $this->_middleware;
     }
 
     /**
@@ -223,6 +233,7 @@ class Route
 
 
         // Check jails
+        //TODO: deprecated!
         foreach ($this->_jails as $jail) {
             $jail = explode('@', $jail);
 
@@ -246,6 +257,7 @@ class Route
     public static function group($args, $fn)
     {
         // Prepare
+        //TODO: deprecated use MW
         if (isset($args['jail'])) {
             self::$jails[] = $args['jail'];
         }
@@ -262,6 +274,7 @@ class Route
         // Restore
         self::$_prefix = $old_prefix;
 
+        // TODO: deprecated use MW
         if (isset($args['jail'])) {
             array_pop(self::$jails);
         }
@@ -289,11 +302,11 @@ class Route
      * @param null $name
      * @param string $type
      */
-    public static function register($method, $route, $action, $name = null, $type = '')
+    public static function register($method, $route, $action, $name = null, $middleware = 'public', $type = '')
     {
         $route = self::$_prefix . $route;
         foreach (explode("|", $method) as $m) {
-            $r = new Route($m, $route, $action, $name, $type);
+            $r = new Route($m, $route, $action, $name, $middleware,  $type);
             self::$_routes[] = $r;
             self::$_route_index[ $name ] = $r;
         }
@@ -304,9 +317,9 @@ class Route
      * @param $action
      * @param null $name
      */
-    public static function get($route, $action, $name = null)
+    public static function get($route, $action, $name = null, $middleware ='public')
     {
-        return self::register("get", $route, $action, $name, 'get');
+        return self::register("get", $route, $action, $name, $middleware, 'get');
     }
 
     /**
@@ -314,9 +327,9 @@ class Route
      * @param $action
      * @param null $name
      */
-    public static function post($route, $action, $name = null)
+    public static function post($route, $action, $name = null, $middleware ='public')
     {
-        return self::register("post", $route, $action, $name, 'post');
+        return self::register("post", $route, $action, $name,$middleware, 'post');
     }
 
 
@@ -327,9 +340,9 @@ class Route
      * @param null $name
      * @param string $req
      */
-    public static function put($route, $action, $name = null, $req = 'put')
+    public static function put($route, $action, $name = null, $middleware ='public', $req = 'put')
     {
-        return self::register("put", $route, $action, $name, $req);
+        return self::register("put", $route, $action, $name,$middleware,  $req);
     }
 
     // need to work on POST too
@@ -339,9 +352,9 @@ class Route
      * @param null $name
      * @param string $req
      */
-    public static function delete($route, $action, $name = null, $req = 'delete')
+    public static function delete($route, $action, $name = null, $middleware ='public',  $req = 'delete')
     {
-        return self::register("delete", $route, $action, $name, $req);
+        return self::register("delete", $route, $action, $name, $middleware, $req);
     }
 
 
@@ -350,7 +363,7 @@ class Route
      * @param $action
      * @param null $name
      */
-    public static function resource($route, $action, $name = null)
+    public static function resource($route, $action, $name = null, $middleware ='public')
     {
         // Remove possible method name
         if (($pos = strpos($action, '@')) !== false) {
@@ -391,9 +404,9 @@ class Route
      * @param $action
      * @param null $name
      */
-    public static function any($route, $action, $name = null)
+    public static function any($route, $action, $name = null, $middleware ='public')
     {
-        return self::register("any", $route, $action, $name, 'any');
+        return self::register("any", $route, $action, $name, $middleware, 'any');
     }
 
     /**

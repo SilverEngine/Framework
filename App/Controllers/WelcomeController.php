@@ -17,7 +17,7 @@ use Silver\Http\View;
 
 class WelcomeController extends Controller
 {
-	private $model_name = false;
+	  private $model_name = false;
     private $table = false;
 
     public function welcome()
@@ -27,6 +27,6 @@ class WelcomeController extends Controller
 
     public function demo()
     {
-        return View::make('welcome');
+        return View::make('welcome')->withComponent($data);;
     }
 }
