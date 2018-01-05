@@ -7,11 +7,18 @@
     <meta name="description" content="">
     <meta name="author" content="">
     <title>SilverEngine</title>
+
+    {{ css('style') }}
+
 </head>
 
 <body>
 
 #block(content)
+
+<a href="{{ route('home') }}">welcome</a>
+
+{{ js('app') }}
 
 </body>
 </html>
