@@ -32,6 +32,11 @@ class View implements RenderInterface
         return new static($template, $data);
     }
 
+    public static function error($template, $data = [])
+    {
+        return new static('errors'.DS.$template, $data);
+    }
+
     public static function demo()
     {
         $branch = Git::test();
@@ -52,6 +57,18 @@ class View implements RenderInterface
         return $this;
     }
 
+    public function withComponent($value = true, $key = false)
+    {
+
+        if($key)
+          $key = 'component_'.$key;
+        else
+          $key = 'component_payload';
+
+        $this->data[ $key ] = $value;
+        return $this;
+    }
+
     public function data() {
         return $this->data;
     }
@@ -64,6 +81,9 @@ class View implements RenderInterface
             $name = str_replace('.', '/', $self->template);
 
             if ($target = App::instance()->find('Views/' . $name . '.ghost.php')) {
+                $template = new Template($target, $self->data);
+                return $template->render();
+            } else if ($target = App::instance()->find('Views/' . $name . '.ghost.tpl')) {
                 $template = new Template($target, $self->data);
                 return $template->render();
             } else if ($target = App::instance()->find('Views/' . $name . '.php')) {
