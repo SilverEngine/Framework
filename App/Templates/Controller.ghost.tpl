@@ -3,6 +3,7 @@
 namespace App\Controllers;
 
 use Silver\Core\Controller;
+use Silver\Http\View;
 
 /**
 * {{{$name}}} controller
@@ -11,7 +12,8 @@ class {{{ucfirst($name)}}}Controller extends Controller
 {
     public function get()
     {
-        return "Welcome in {{$name}} controller. This file is on App/Controllers/";
+        echo "Welcome in {{$name}} controller. This file is on App/Controllers/";
+        //return View::make('');
     }
 
     public function post()
