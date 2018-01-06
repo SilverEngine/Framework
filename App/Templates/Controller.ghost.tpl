@@ -18,16 +18,16 @@ class {{{ucfirst($name)}}}Controller extends Controller
 
     public function post()
     {
-        echo 'Methode: post';
+        echo 'Method: post';
     }
 
     public function put()
     {
-        echo 'Methode: put';
+        echo 'Method: put';
     }
 
     public function delete()
     {
-        echo 'Methode: delete';
+        echo 'Method: delete';
     }
 }
