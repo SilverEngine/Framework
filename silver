@@ -24,7 +24,22 @@ $CWD = str_replace('/System/Engine/CLI', '', $CWD);
 //ltrim($CWD);
 define('ROOT', $CWD . '/');
 
-//die(ROOT);
+
+/**
+ * @param $data
+ * @param bool $param
+ */
+if (!function_exists('dd')) {
+    function dd($data, $param = false)
+    {
+        if ($param)
+            var_dump('<pre>', $data, '<pre>');
+        else
+            var_dump($data);
+
+        exit();
+    }
+}
 
 /**
  * Defining php extension.

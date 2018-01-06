@@ -14,7 +14,6 @@ namespace Silver\Engine;
 
 use Silver\Engine\Ghost\Template;
 
-
 class CLI
 {
     private $cmd = [];
@@ -96,8 +95,10 @@ class CLI
             case 'view':
                 $name = strtolower($name);
                 $name = str_replace('.', '/', $name);
+                  // exit(ROOT);
                 $template = ROOT . 'App/Templates/View.ghost.tpl';
-                $destination = ROOT . 'World/' . $name . '.ghost.tpl';
+                $destination = ROOT . 'App/Views/' . $name . '.ghost.tpl';
+                // exit($destination);
                 break;
             case 'event':
                 $this->createDirIfNorExists('Events', ROOT . 'App/');
@@ -130,34 +131,56 @@ class CLI
                     'controller',
                     'model',
                     'view',
+                    'helper',
+                    'facade',
                 ]);
                 break;
         }
 
-        if (!file_exists($template)) {
+        if (!file_exists($template))
             $this->error('Template is missing');
-        }
+
+        if($type == 'view' || $type == 'v')
+            return $this->generateView('y', $template, $destination, $type, $name);
 
         if (file_exists($destination) and $force === false)
-            $this->error('File exists!');
+            return $this->error('File exists!');
         else
-            $this->generateFile('y', $template, $destination, $type, $name);
-
+            return $this->generateFile('y', $template, $destination, $type, $name);
     }
 
     private function generateFile($yes, $template, $destination, $type, $name)
     {
-
         // RenderInterface template
-
         $ghost = new Template($template);
         $ghost->set('type', $type);
         $ghost->set('name', $name);
+
         file_put_contents($destination, $ghost->render());
 
         if ($type == 'controller') {
             $this->fix_routes($name);
         }
+
+        $this->success("{$type} {$name} successfully created. ({$destination})");
+    }
+
+    private function generateView($yes, $template, $destination, $type, $name)
+    {
+        // RenderInterface template
+        $ghost = new Template($template);
+        $ghost->set('type', $type);
+        $ghost->set('name', $name);
+
+        // var_dump($template,$destination);
+        // die();
+        $temp = "{{ extends('layouts.master') }}
+
+#set[content]
+    Welcome to {{ $name }} page
+#end";
+
+        file_put_contents($destination, $temp);
 
         $this->success("{$type} {$name} successfully created. ({$destination})");
     }
