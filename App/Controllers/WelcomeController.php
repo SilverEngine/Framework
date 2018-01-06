@@ -27,6 +27,6 @@ class WelcomeController extends Controller
 
     public function demo()
     {
-        return View::make('welcome')->withComponent($data);;
+        return View::make('welcome')->withComponent($data);
     }
 }

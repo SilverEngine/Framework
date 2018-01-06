@@ -1,7 +1,5 @@
+{{ extends('layouts.master') }}
 
-
-
-
-
-
-	Welcome in {{{$name}}}.
+#set[content]
+    Welcome in {{{$name}}}.
+#end
