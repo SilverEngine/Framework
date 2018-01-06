@@ -182,7 +182,7 @@ class CLI
             if ($add === true) {
                 fwrite($fh, "\n");
                 fwrite($fh, "// Route for {$name} controller.\n");
-                fwrite($fh, "Route::get('/{$name}', '{$name}@get', 'unguard');\n");
+                fwrite($fh, "Route::resource('/{$name}', '{$name}@get', 'unguard');\n");
                 fclose($fh);
                 $this->success('Route created!');
             }
@@ -216,5 +216,3 @@ class CLI
     }
 
 }
-
-

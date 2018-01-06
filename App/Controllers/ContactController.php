@@ -1,18 +1,17 @@
-<?php echo '<?php'; ?>
-
+<?php
 namespace App\Controllers;
 
 use Silver\Core\Controller;
 use Silver\Http\View;
 
 /**
-* {{{$name}}} controller
+* contact controller
 */
-class {{{ucfirst($name)}}}Controller extends Controller
+class ContactController extends Controller
 {
     public function get()
     {
-        return "Welcome in {{$name}} controller. This file is on App/Controllers/";
+        return "Welcome in contact controller. This file is on App/Controllers/";
     }
 
     public function post()

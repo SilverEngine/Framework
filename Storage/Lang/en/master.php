@@ -6,5 +6,5 @@
  *  @return data
  */
 return [
-    'welcome'  => 'helloooo',
+    'title'  => 'Stylish Portfolio - Start Bootstrap Template',
 ];

@@ -25,8 +25,30 @@ class WelcomeController extends Controller
         return View::demo();
     }
 
-    public function demo()
+    public function index()
     {
-        return View::make('welcome')->withComponent($data);;
+				$portfolio = [
+					[
+						'id' => '1',
+						'title' => 'Stationary',
+						'description' => 'A yellow pencil with envelopes on a clean, blue backdrop!',
+					],
+					[
+						'id' => '2',
+						'title' => 'Ice Cream',
+						'description' => 'A dark blue background with a colored pencil, a clip, and a tiny ice cream cone',
+					],
+					[
+						'id' => '3',
+						'title' => 'Strawberries',
+						'description' => 'Strawberries are such a tasty snack, especially with a little sugar on top!',
+					],
+					[
+						'id' => '4',
+						'title' => 'Workspace',
+						'description' => 'A yellow workspace with some scissors, pencils, and other objects.',
+					],
+				];
+        return View::make('welcome')->withComponent($portfolio);
     }
 }

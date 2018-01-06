@@ -1,18 +1,17 @@
-<?php echo '<?php'; ?>
-
+<?php
 namespace App\Controllers;
 
 use Silver\Core\Controller;
 use Silver\Http\View;
 
 /**
-* {{{$name}}} controller
+* blog controller
 */
-class {{{ucfirst($name)}}}Controller extends Controller
+class BlogController extends Controller
 {
     public function get()
     {
-        return "Welcome in {{$name}} controller. This file is on App/Controllers/";
+        return View::make('blog.app');
     }
 
     public function post()

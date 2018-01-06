@@ -130,6 +130,7 @@ if (!function_exists('js')) {
 if (!function_exists('route')) {
     function route($name, $args = [])
     {
+      // dd(Route::getRoute($name)->url($args));
       //TODO: catch error if route not exists,
       return Route::getRoute($name)->url($args);
     }

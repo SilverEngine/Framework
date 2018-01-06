@@ -14,4 +14,10 @@ namespace App;
 
 use Silver\Core\Route;
 
-Route::get('/', 'Welcome@welcome', 'home', 'public');
+Route::get('/', 'Welcome@index', 'home', 'public');
+
+// Route for Blog controller.
+Route::resource('/blog', 'Blog@get', 'blog');
+
+// Route for Contact controller.
+Route::resource('/contact', 'Contact@get', 'contact');
