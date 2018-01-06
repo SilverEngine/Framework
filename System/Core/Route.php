@@ -375,8 +375,9 @@ class Route
         self::register(
             'get',
             $route,
-            $action . '@index',
+            $action . '@get',
             $name,
+            $middleware,
             'resources'
         );
 
@@ -385,6 +386,7 @@ class Route
             $route,
             $action . '@post',
             $name,
+            $middleware,
             'resources'
         );
 
@@ -394,6 +396,7 @@ class Route
                 $route . '/{id}',
                 $action . '@' . $method,
                 $name,
+                $middleware,
                 'resources'
             );
         }
@@ -416,6 +419,7 @@ class Route
      */
     public static function getRoute($name)
     {
+      // ndd($name);
         if (isset(self::$_route_index[ $name ]))
             return self::$_route_index[ $name ];
         throw new \Exception("Route $name not found.");
