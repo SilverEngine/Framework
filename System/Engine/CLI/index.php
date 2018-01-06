@@ -43,7 +43,7 @@ class CLI
                 break;
 
             case "migrate":
-                return $this->make();
+                return $this->migrate();
                 break;
 
 
@@ -51,6 +51,30 @@ class CLI
                 echo 'Comand not exits';
                 break;
         }
+    }
+
+    private function migrate(){
+        //todo:  need to redone this is not oK!
+        if (empty($this->args[2])) {
+            $path    = ROOT. 'Database/Migrations/';;
+            $files = array_diff(scandir($path), array('.', '..'));
+            foreach ($files as $key) {
+                $key = preg_replace('/.php/', '', $key);
+                // exit($path.$key.'.php');
+                include_once($path.$key.'.php');
+                $namespace = "\\Database\\Migrations\\".$key;
+                // exit($namespace);
+                $namespace::up();
+                return 'test1';
+            }
+        }
+        else{
+
+        }
+    }
+
+    private function seed(){
+
     }
 
     private function make()
