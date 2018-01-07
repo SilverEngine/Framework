@@ -17,41 +17,26 @@ use Silver\Database\Query as Seed;
 class DefaultSeed
 {
 
-    private static $table;
+    public static $table;
 
     /**
      * Run the database seeds.
      *
      * @return void
      */
-    public static function run($model, $table = false)
+    public static function run()
     {
-        if ($model) {
-            if ($table)
-                self::$table = $table;
-            else
-                self::$table = $model;
-
-            self::{$model}();
-        } else
-            return false;
+        self::Users();
     }
 
-    /**
-     * Run the database Users seed.
-     *
-     * @return void
-     */
-    protected static function users()
+    public static function Users($table = 'users')
     {
-        Seed::insert(static::$table, [
+        Seed::insert('users', [
             'username' => 'admin',
             'password' => md5('admin'),
             'salt'     => 'ht4h4',
-            'email'    => 'admin@badget.com',
+            'email'    => 'admin@admin.local',
             'active'   => 1,
         ])->execute();
-
     }
-
 }
