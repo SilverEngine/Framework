@@ -15,3 +15,4 @@ namespace App;
 use Silver\Core\Route;
 
 Route::get('/', 'Welcome@welcome', 'home', 'public');
+Route::get('/demo', 'Welcome@demo', 'home', 'public');

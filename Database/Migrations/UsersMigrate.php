@@ -18,7 +18,7 @@ use Silver\Database\Parts\Raw;
 class UsersMigrate
 {
 
-    private static $table = 'users';
+    protected static $table = 'users';
 
     public static function up()
     {

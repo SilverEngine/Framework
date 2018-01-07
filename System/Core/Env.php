@@ -29,7 +29,7 @@ class Env
         $envfile = ROOT . $envtype . '.env' . EXT;
 
         if (!is_file($envfile))
-            exit("Env '$type' not found!");
+            exit("Env {$envtype} not found!");
 
         $config = self::readConfiguration();
         $env = include($envfile);

@@ -239,7 +239,12 @@ class Template implements RenderInterface
             $block_content .= $line . "\n";
         }
 
+
         $fullpath = ROOT."App/Views/{$master}.ghost".EXT;
+
+        if(! is_file($fullpath))
+          $fullpath = ROOT."App/Views/{$master}.ghost.tpl";
+
         $ghost = new \Silver\Engine\Ghost\Template($fullpath);
 
         if($blocks){
@@ -528,6 +533,10 @@ class Template implements RenderInterface
         $alias = str_replace('.', '/', $alias);
 
         $loadPath = ROOT."App/Views/{$alias}.ghost".EXT;
+
+        if(! is_file($loadPath))
+          $loadPath = ROOT."App/Views/{$alias}.ghost.tpl";
+
         if (file_exists($loadPath)) {
             $ghost = new self($loadPath);
             return $ghost->render($alias);
@@ -541,6 +550,10 @@ class Template implements RenderInterface
         $alias = str_replace('.', '/', $alias);
 
         $loadPath = ROOT."App/Views/components/{$alias}.ghost".EXT;
+
+        if(! is_file($loadPath))
+          $loadPath = ROOT."App/Views/components/{$alias}.ghost.tpl";
+
         if (file_exists($loadPath)) {
             $ghost = new self($loadPath);
 

@@ -1,5 +1,5 @@
 {{ extends('layouts.master') }}
 
 #set[content]
-    Welcome in {{{$name}}}.
+    Welcome to {{ test2 }} page
 #end

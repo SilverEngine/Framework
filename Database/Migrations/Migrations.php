@@ -17,7 +17,6 @@ use Silver\Database\Query;
 
 class Migrations
 {
-
     private static $table = 'migrations';
 
     public static function up()
@@ -29,12 +28,10 @@ class Migrations
             $q->varchar('model_name', 100);
             $q->datetime("create_at", 255)->default(new Raw('CURRENT_TIMESTAMP'));
         })->execute();
-
     }
 
     public static function down()
     {
         Query::drop(static::$table)->ifExists()->execute();
     }
-
 }
