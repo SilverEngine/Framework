@@ -266,7 +266,7 @@ class Route
             $args['prefix'] = '';
 
         $old_prefix = self::$_prefix;
-        self::$_prefix = self::$_prefix . $args['prefix'];
+        self::$_prefix = self::$_prefix . '/'.$args['prefix'];
 
         // Execute
         $fn();
