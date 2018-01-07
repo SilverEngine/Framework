@@ -13,12 +13,9 @@
 </head>
 
 <body>
-
+<a href="{{ route('home') }}">welcome</a>
 #block(content)
 
-<a href="{{ route('home') }}">welcome</a>
-
 {{ js('app') }}
-
 </body>
 </html>
