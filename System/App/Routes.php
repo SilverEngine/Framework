@@ -15,13 +15,11 @@ namespace App;
 use Silver\Core\Route;
 use Silver\Core\Env;
 
-
 if (Env::name() == 'local') {
-
-    Route::get('/terminal', 'Terminal@index', 'terminal');
-    Route::get('/terminal/manifest', 'Terminal@manifest', 'terminal.manifest');
-    Route::get('/terminal/resource', 'Terminal@resource', 'terminal.resource');
-    Route::post('/terminal/execute/{program}/{command}', 'Terminal@execute', 'terminal.execute');
-    Route::post('/terminal/service/{program}/{service}', 'Terminal@service', 'terminal.service');
-    Route::post('/terminal/logout', 'Terminal@logout', 'terminal.logout');
+   //create migration
+   Route::get('/migrate/{modelName?}', 'Migrations@up', 'migrate');
+   //drop migrations
+   Route::get('/migrate-down/{modelName?}', 'Migrations@down', 'migrate');
+   //run migrations and seeds
+   Route::get('/migrate-seed', 'Migrations@all', 'migrate');
 }

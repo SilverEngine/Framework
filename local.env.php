@@ -22,9 +22,9 @@ return [
             'service'       => true,
             'driver'        => 'mysql',
             'hostname'      => 'localhost',
-            'username'      => 'silver',
-            'password'      => 'secret',
-            'basename'      => 'youtdatabase',
+            'username'      => 'root',
+            'password'      => '',
+            'basename'      => 'test1',
             'limit_request' => 25,
         ]
     ],

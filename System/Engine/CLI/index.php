@@ -58,6 +58,7 @@ class CLI
         if (empty($this->args[2])) {
             $path    = ROOT. 'Database/Migrations/';;
             $files = array_diff(scandir($path), array('.', '..'));
+
             foreach ($files as $key) {
                 $key = preg_replace('/.php/', '', $key);
                 // exit($path.$key.'.php');
