@@ -21,3 +21,13 @@ Route::resource('/blog', 'Blog@get', 'blog');
 
 // Route for Contact controller.
 Route::resource('/contact', 'Contact@get', 'contact');
+
+Route::group(['prefix' => 'admin'], function(){
+  Route::resource('/', 'Contact@get', 'contact');
+});
+
+
+// Route::group(['prefix' => 'admin'] function(){
+//
+//     Route::resource('/contact', 'Contact@get', 'contact');
+// });
