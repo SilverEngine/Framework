@@ -38,7 +38,7 @@ class Model extends Controller
 
     /**
      * @param $table
-     * @param null $filter
+     * @param null  $filter
      * @return array
      */
     protected function select($table, $filter = null)
@@ -49,10 +49,11 @@ class Model extends Controller
         exit;*/
 
         $filter = implode(", ", $this->filterable);
-        if (!empty($filter))
+        if (!empty($filter)) {
             $sql = "SELECT $filter FROM $table";
-        else
+        } else {
             $sql = "SELECT * FROM $table";
+        }
 
 
         $statement = $this->db->prepare($sql);

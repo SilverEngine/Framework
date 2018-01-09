@@ -12,6 +12,7 @@
 
 namespace Silver\Core\Blueprints;
 
-interface InstanceInterface {
+interface InstanceInterface
+{
     public static function instance();
 }

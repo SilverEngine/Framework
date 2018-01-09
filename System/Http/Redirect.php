@@ -19,20 +19,19 @@ use Silver\Exception;
  */
 class Redirect
 {
-	public static function to($url, $permanent = false)
+    public static function to($url, $permanent = false)
     {
         //return Siilver\Core\Bootstrap\Facades\Response::instance()->redirect($url);
         // FIXME: please fix the problem with redirects fix works for now.
-        if (headers_sent() === false)
-        {
+        if (headers_sent() === false) {
             header('Location: ' . $url, true, ($permanent === true) ? 301 : 302);
         }
 
         exit();
-	}
+    }
 
-	public static function back($fallback = null)
-	{
+    public static function back($fallback = null)
+    {
         if(isset($_SERVER['HTTP_REFERER'])) {
             return self::to($_SERVER['HTTP_REFERER']);
         } else {
@@ -42,5 +41,5 @@ class Redirect
                 throw new Exception("Unknow referer.");
             }
         }
-	}
+    }
 }

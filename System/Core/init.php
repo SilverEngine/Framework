@@ -35,8 +35,8 @@ define('CURRENT_URL', $HOST . $_SERVER['REQUEST_URI']); // URL
 // ROOT DIR
 define('ROOT', dirname(dirname(__DIR__)).DS);
 // System DIR
-define('SYS' , ROOT . 'System' .DS);
-define('CORE' , SYS . 'Core' .DS);
+define('SYS', ROOT . 'System' .DS);
+define('CORE', SYS . 'Core' .DS);
 
 
 

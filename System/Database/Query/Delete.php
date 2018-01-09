@@ -11,14 +11,17 @@ use Silver\Database\Traits\QueryGroupBy;
 use Silver\Database\Traits\QueryOrder;
 use Silver\Database\Traits\QueryLimit;
 
-class Delete extends Query {
+class Delete extends Query
+{
     use QueryColumns, QueryFrom, QueryJoin, QueryWH, QueryGroupBy, QueryOrder, QueryLimit;
     
-    public function __construct($columns = []) {
+    public function __construct($columns = []) 
+    {
         $this->setColumns($columns);
     }
 
-    protected static function compile($q) {
+    protected static function compile($q) 
+    {
         return 'DELETE'
             . static::compileColumns($q)
             . static::compileFrom($q)

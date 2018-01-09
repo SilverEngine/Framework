@@ -21,8 +21,14 @@ abstract class Db
     abstract public function toSql();
 
     // Optional virtual methods, used by ->first()
-    public function getLimit() { throw new \Exception('Unable to get limit on ' . static::class); }
-    public function limit($count) { throw new \Exception('Unable to set limit for ' . static::class); }
+    public function getLimit() 
+    {
+        throw new \Exception('Unable to get limit on ' . static::class); 
+    }
+    public function limit($count) 
+    {
+        throw new \Exception('Unable to set limit for ' . static::class); 
+    }
 
     /**
      * @param      $name
@@ -32,11 +38,13 @@ abstract class Db
      */
     public static function connect($name, $dsn, $username = null, $password = null)
     {
-        self::$dbs[$name] = function() use ($name, $dsn, $username, $password) {
-            return new PDO($dsn, $username, $password, [
+        self::$dbs[$name] = function () use ($name, $dsn, $username, $password) {
+            return new PDO(
+                $dsn, $username, $password, [
                 PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
                 PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'utf8'",
-            ]);
+                ]
+            );
         };
     }
 
@@ -117,7 +125,7 @@ abstract class Db
             $name = self::$default;
         }
 
-//        dd($name);
+        //        dd($name);
 
         if ($name === null) {
             throw new \Exception("Not default connection found.");
@@ -145,13 +153,13 @@ abstract class Db
     public static function quote($value)
     {
         switch ($type = gettype($value)) {
-            case 'string':
-                return self::connection()->quote($value);
-            case 'integer':
-            case 'double':
-                return $value;
-            default:
-                throw new \Exception("Unable to quote value with type: $type");
+        case 'string':
+            return self::connection()->quote($value);
+        case 'integer':
+        case 'double':
+            return $value;
+        default:
+            throw new \Exception("Unable to quote value with type: $type");
         }
     }
 
@@ -229,7 +237,8 @@ abstract class Db
         return $this->query->rowCount();
     }
 
-    public function setFetchStyle($style) {
+    public function setFetchStyle($style) 
+    {
         $this->fetch_style = $style;
         return $this;
     }
@@ -281,9 +290,11 @@ abstract class Db
 
     public function singleAll()
     {
-        return $this->all(PDO::FETCH_NUM, function($row) {
-            return $row[0];
-        });
+        return $this->all(
+            PDO::FETCH_NUM, function ($row) {
+                return $row[0];
+            }
+        );
     }
 
     public function first($style = null)
@@ -299,7 +310,8 @@ abstract class Db
         return $result;
     }
 
-    private function prepareSelect($style) {
+    private function prepareSelect($style) 
+    {
         if (is_object($style)) {
             $this->selectForModel(get_class($style));
         } else if (is_string($style) && class_exists($style)) {

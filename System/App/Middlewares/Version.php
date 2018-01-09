@@ -18,8 +18,10 @@ use Silver\Http\Response;
 use Silver\Core\View;
 use Closure;
 
-class Version implements MiddlewareInterface {
-    public function execute(Request $req, Response $res, Closure $next) {
+class Version implements MiddlewareInterface
+{
+    public function execute(Request $req, Response $res, Closure $next) 
+    {
         $r = $next();
 
         if ($r instanceof View) {

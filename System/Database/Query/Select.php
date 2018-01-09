@@ -14,14 +14,17 @@ use Silver\Database\Traits\QueryOrder;
 use Silver\Database\Traits\QueryUnion;
 use Silver\Database\Parts\Literal;
 
-class Select extends Query {
+class Select extends Query
+{
     use QueryColumns, QueryFrom, QueryJoin, QueryWH, QueryGroupBy, QueryOrder, QueryLimit, QueryUnion;
     
-    public function __construct($columns = []) {
+    public function __construct($columns = []) 
+    {
         $this->setColumns($columns ? $columns : [Literal::wild()]);
     }
 
-    protected static function compile($q) {
+    protected static function compile($q) 
+    {
         return 'SELECT'
             . static::compileColumns($q)
             . static::compileFrom($q)
