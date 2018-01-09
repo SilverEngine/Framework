@@ -2,12 +2,14 @@
 
 namespace Silver\Database\Parts;
 
-class JoinCondition extends Part {
+class JoinCondition extends Part
+{
 
     private $column;
     private $condition;
 
-    public function __construct($col1, $operator = null, $col2 = null) {
+    public function __construct($col1, $operator = null, $col2 = null) 
+    {
         // Default = operator
         if($col2 === null && $operator !== null) {
             $col2 = $operator;
@@ -18,15 +20,18 @@ class JoinCondition extends Part {
             $this->column = Name::ensure($col1);
         } else {
             // FIXME: use Filter
-            $this->condition = Parts::ensure([
+            $this->condition = Parts::ensure(
+                [
                 Column::ensure($col1),
                 Raw::ensure($operator),
                 Column::ensure($col2)
-            ]);
+                ]
+            );
         }
     }
 
-    protected static function compile($q) {
+    protected static function compile($q) 
+    {
         if($q->condition !== null) {
             return 'ON ' . $q->condition;
         } else {

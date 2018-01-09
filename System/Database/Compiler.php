@@ -4,17 +4,20 @@ namespace Silver\Database;
 
 use Silver\Database\Query;
 
-trait Compiler {
+trait Compiler
+{
     // Current queries stack
     private static $qstack = [];
 
     // Should be abstract, but php says: (E_STRICT)
     // Static function Silver\Database\Compiler::compile() should not be abstract
-    protected static function compile($q) {
+    protected static function compile($q) 
+    {
         throw new \Exception("This should be abstract method. Do not call it directly.");
     }
 
-    public static function current() {
+    public static function current() 
+    {
         if(self::$qstack) {
             return self::$qstack[0];
         } else {
@@ -22,14 +25,16 @@ trait Compiler {
         }
     }
 
-    private static function parentQuery() {
+    private static function parentQuery() 
+    {
         if(count(self::$qstack) >= 2) {
             return self::$qstack[1];
         }
         return null;
     }
 
-    public function toSql() {
+    public function toSql() 
+    {
         try {
             array_unshift(self::$qstack, $this);
             $class = get_called_class();
@@ -40,8 +45,9 @@ trait Compiler {
 
             // Remove current bindings
             // (Query can be reused)
-            if($this instanceof Query)
+            if($this instanceof Query) {
                 $this->clearBindings();
+            }
 
             $sql = class_exists($new)
                  ? $new::compile($this)
@@ -62,7 +68,8 @@ trait Compiler {
         }
     }
 
-    public function __toString() {
+    public function __toString() 
+    {
         try {
             return $this->toSql();
         } catch (\Exception $e) {

@@ -34,8 +34,9 @@ class Controller
         if ($model) {
             $this->resourceName = $model;
             $modelName = $model;
-        } else
+        } else {
             $modelName = $this->resourceName;
+        }
 
 
         $path = ROOT . "App/Models/" . ucfirst($modelName) . "Model" . EXT;
@@ -43,7 +44,7 @@ class Controller
         if ($modelName AND file_exists($path)) {
             $model = "\App\Models\\" . ucfirst($modelName) . 'Model';
 
-//            $this->model = new $model();
+            //            $this->model = new $model();
 
             return (object) new $model();
 

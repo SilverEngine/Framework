@@ -24,23 +24,22 @@ class Curl
     {
         $defaults = array(
             CURLOPT_URL => $url,
-//            CURLOPT_URL => $url. (strpos($url, '?') === FALSE ? '?' : ''). http_build_query($get),
+        //            CURLOPT_URL => $url. (strpos($url, '?') === FALSE ? '?' : ''). http_build_query($get),
             CURLOPT_HEADER => 0,
-            CURLOPT_RETURNTRANSFER => TRUE,
+            CURLOPT_RETURNTRANSFER => true,
             CURLOPT_TIMEOUT => 4
         );
 
         $ch = curl_init();
         curl_setopt_array($ch, ($options + $defaults));
-        if( ! $result = curl_exec($ch))
-        {
+        if(! $result = curl_exec($ch)) {
             trigger_error(curl_error($ch));
         }
         curl_close($ch);
         return json_decode($result);
     }
 
-    public static function post($url, array $post = NULL, array $options = array())
+    public static function post($url, array $post = null, array $options = array())
     {
         $defaults = array(
             CURLOPT_POST => 1,
@@ -55,8 +54,7 @@ class Curl
 
         $ch = curl_init();
         curl_setopt_array($ch, ($options + $defaults));
-        if( ! $result = curl_exec($ch))
-        {
+        if(! $result = curl_exec($ch)) {
             trigger_error(curl_error($ch));
         }
         curl_close($ch);

@@ -2,8 +2,10 @@
 
 namespace Silver\Database\Parts;
 
-class SingleQuote extends Quote {
-    public function __construct($value) {
+class SingleQuote extends Quote
+{
+    public function __construct($value) 
+    {
         parent::__construct($value, "'");
     }
 }

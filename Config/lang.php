@@ -11,10 +11,10 @@
  */
 
 $lang = array([
-	'default' => 'en',
-	"en" => [
-		"key"  => "en",
-		"name" => "English",
-		"path" => "Storage/Lang/",
-	],
+    'default' => 'en',
+    "en" => [
+        "key"  => "en",
+        "name" => "English",
+        "path" => "Storage/Lang/",
+    ],
 ]);

@@ -81,7 +81,7 @@ class RequestTest extends TestCase
 
     public function testSegmentIsNull()
     {
-        $this->assertEquals($this->request->segment(''), NULL);
+        $this->assertEquals($this->request->segment(''), null);
     }
 
 }

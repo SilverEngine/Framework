@@ -4,10 +4,12 @@ namespace Silver\Database\Traits;
 
 use Silver\Database\Parts\Name;
 
-trait QueryOrder {
+trait QueryOrder
+{
     private $order = [];
 
-    public function orderBy($column, $dir = 'asc') {
+    public function orderBy($column, $dir = 'asc') 
+    {
         $column = Name::ensure($column);
 
         $dir = strtoupper($dir);
@@ -19,11 +21,14 @@ trait QueryOrder {
         return $this;
     }
 
-    protected static function compileOrder($q) {
+    protected static function compileOrder($q) 
+    {
         if(count($q->order)) {
-            $parts = array_map(function($p) {
-                return $p[0] . ' ' . $p[1];
-            }, $q->order);
+            $parts = array_map(
+                function ($p) {
+                    return $p[0] . ' ' . $p[1];
+                }, $q->order
+            );
             return ' ORDER BY ' . implode(', ', $parts);
         }
         return '';

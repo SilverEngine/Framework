@@ -28,11 +28,12 @@ class Env
         self::$name = $envtype = file_get_contents(ROOT . '.env');
         $envfile = ROOT . $envtype . '.env' . EXT;
 
-        if (!is_file($envfile))
+        if (!is_file($envfile)) {
             exit("Env {$envtype} not found!");
+        }
 
         $config = self::readConfiguration();
-        $env = include($envfile);
+        $env = include $envfile;
 
         foreach ($env as $name => $value) {
             if (key_exists($name, $config)) {
@@ -89,11 +90,12 @@ class Env
         $file_list = scandir(ROOT . 'Config/');
 
         foreach ($file_list as $file) {
-            if ($file == '.' or $file == '..')
+            if ($file == '.' or $file == '..') {
                 continue;
+            }
 
             $name = strtolower(substr($file, 0, -4));
-            $config[ $name ] = include(ROOT . 'Config/' . $file);
+            $config[ $name ] = include ROOT . 'Config/' . $file;
         }
 
         return $config;

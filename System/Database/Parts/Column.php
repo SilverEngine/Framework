@@ -2,14 +2,16 @@
 
 namespace Silver\Database\Parts;
 
-class Column extends Part {
+class Column extends Part
+{
 
     protected $column;
     protected $table;
     protected $alias;
     protected $distinct = false;
 
-    public function __construct($column_or_table, $column = null, $alias = null) {
+    public function __construct($column_or_table, $column = null, $alias = null) 
+    {
         // Set correct order
         if($column === null) {
             $column = $column_or_table;
@@ -42,19 +44,23 @@ class Column extends Part {
         $this->alias = $alias ? Name::ensure($alias) : $alias;
     }
 
-    public function getName() {
+    public function getName() 
+    {
         return $this->column;
     }
 
-    public function getTable() {
+    public function getTable() 
+    {
         return $this->table;
     }
 
-    public function getAlias() {
+    public function getAlias() 
+    {
         return $this->alias;
     }
 
-    protected static function compile($q) {
+    protected static function compile($q) 
+    {
         $column = $q->column;
         $table = $q->table;
         $alias = $q->alias;
