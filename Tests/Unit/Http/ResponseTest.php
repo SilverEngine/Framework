@@ -21,15 +21,18 @@ class ResponseTest extends TestCase
 {
     private $response;
 
-    public function setUp(){
+    public function setUp()
+    {
         $this->response = new Response();
     }
 
-    public function testSetHeader(){
+    public function testSetHeader()
+    {
         $this->assertInternalType('null', $this->response->setHeader('test_unit', 'header_in'));
     }
 
-    public function testGetHeader(){
+    public function testGetHeader()
+    {
         $this->assertInternalType('null', $this->response->getHeader('test_unit'));
     }
 }

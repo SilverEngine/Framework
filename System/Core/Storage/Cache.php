@@ -23,40 +23,53 @@ class Cache
 
     public function __construct($config = null)
     {
-        if(!$config)
+        if(!$config) {
             $config = (array) Env::get('caches');
+        }
         
-        if(isset($config['ext']))
+        if(isset($config['ext'])) {
             $this->ext = $config['ext'];
+        }
 
-        if(isset($config['path']))
+        if(isset($config['path'])) {
             $this->path = $config['path'];
+        }
 
-        if(isset($config['expire_time']))
+        if(isset($config['expire_time'])) {
             $this->expire_time = $config['expire_time'];
+        }
 
-        if(isset($config['enabled']))
+        if(isset($config['enabled'])) {
             $this->enabled = $config['enabled'];
+        }
     }
 
-    public function set($key, $data, $time = null) {
+    public function set($key, $data, $time = null) 
+    {
         $path = $this->path . 'Session/' . md5($key) . $this->ext;
         
-        if($time === null)
+        if($time === null) {
             $time = $this->expire_time;
+        }
         
-        file_put_contents($path, serialize([
-            'expire' => $time ? time() + $time : $time,
-            'data' => $data,
-        ]));
+        file_put_contents(
+            $path, serialize(
+                [
+                'expire' => $time ? time() + $time : $time,
+                'data' => $data,
+                ]
+            )
+        );
     }
 
-    public function file($key, $content) {
+    public function file($key, $content) 
+    {
         $path = $this->path . 'Views/' . md5($key) . $this->ext;
         file_put_contents($path, $content);
     }
 
-    public function get($key) {
+    public function get($key) 
+    {
         if($this->enabled) {
             $path = $this->path . 'Session/' . md5($key) . $this->ext;
 
@@ -78,7 +91,8 @@ class Cache
         return null;
     }
 
-    public function getFile($key, $time = null) {
+    public function getFile($key, $time = null) 
+    {
         if($this->enabled) {
             $path = $this->path . 'Views/' . md5($key) . $this->ext;
         
@@ -97,22 +111,26 @@ class Cache
         return null;
     }
 
-    public function cacheFile($key, $fn, $time = null) {
+    public function cacheFile($key, $fn, $time = null) 
+    {
         $data = $this->getFile($key, $time);
 
-        if($data)
+        if($data) {
             return $data;
+        }
 
         $data = $fn();
         $this->file($key, $data);
         return $data;
     }
 
-    public function cache($key, $fn, $time) {
+    public function cache($key, $fn, $time) 
+    {
         $data = $this->get($key);
 
-        if($data)
+        if($data) {
             return $data;
+        }
 
         $data = $fn();
         $this->set($key, $data, $time_or_predictor);

@@ -16,6 +16,7 @@ use Silver\Http\Request;
 use Silver\Http\Response;
 use Closure;
 
-interface MiddlewareInterface {
+interface MiddlewareInterface
+{
     public function execute(Request $req, Response $res, Closure $next);
 }

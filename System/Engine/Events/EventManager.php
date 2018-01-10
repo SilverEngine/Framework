@@ -15,7 +15,8 @@ namespace System\Engine\Events;
 use App\Service\EventServiceProvider;
 use Silver\Support\Log;
 
-class EventManager {
+class EventManager
+{
 
     private $handlers = array();
 
@@ -32,24 +33,22 @@ class EventManager {
     public function set($name, $payload = null)
     {
 
-         if($name)
-         {
-             if(method_exists(EventServiceProvider::class, $name))
-             {
-                 $EventProvider = new EventServiceProvider();
-                 return $EventProvider->{$name}($payload);
-//
-             }
-//             $event = "$EventProvider->".$name;
-//            return $event();
-        } else return false;
+        if($name) {
+            if(method_exists(EventServiceProvider::class, $name)) {
+                $EventProvider = new EventServiceProvider();
+                return $EventProvider->{$name}($payload);
+                //
+            }
+            //             $event = "$EventProvider->".$name;
+            //            return $event();
+        } else { return false;
+        }
 
     }
 
     public function detach($name)
     {
-        if (array_search($this->handlers, $name))
-        {
+        if (array_search($this->handlers, $name)) {
             array_unshift($this->handlers, $name);
         }
     }
@@ -61,7 +60,7 @@ class EventManager {
 
     public function expired($name, $datetime)
     {
-        if(array_search($this->handlers, $name)){
+        if(array_search($this->handlers, $name)) {
             $this->handlers[$name]['expired'] = $this->setTime($datetime);
         }
     }
@@ -69,7 +68,7 @@ class EventManager {
     private function setTime($datetime)
     {
         $selectedTime = $_REQUEST['time'];
-       return  $expired_time = strtotime($datetime,strtotime($selectedTime));
+        return  $expired_time = strtotime($datetime, strtotime($selectedTime));
     }
 
     protected $listeners = [
@@ -78,17 +77,18 @@ class EventManager {
         ],
     ];
 
-    public function fire(){
+    public function fire()
+    {
         foreach ($this->handlers as $handler)
         {
-            if(method_exists(EventServiceProvider::class, $handler)){
+            if(method_exists(EventServiceProvider::class, $handler)) {
                 $EventProvider = new EventServiceProvider();
                 return $EventProvider->{$handler}();
             }
         }
     }
 
-/*    public function fire(Event $event) {
+    /*    public function fire(Event $event) {
         Log::info('FIRE');
         var_dump($event);
         foreach ($this->listeners[get_class($event)] as $e){

@@ -12,7 +12,8 @@
 
 namespace Silver\Core\Bootstrap;
 
-interface ServiceProvider {
+interface ServiceProvider
+{
     public function before($kernel);
     public function register($app);
     public function after();

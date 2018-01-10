@@ -5,10 +5,12 @@ namespace Silver\Database\Source;
 use Silver\Database\Source;
 use Silver\Database\Parts\Name;
 
-class Table extends Source {
+class Table extends Source
+{
     private $table;
     
-    protected function __construct($table, $name = null) {
+    protected function __construct($table, $name = null) 
+    {
         // Get alias from name
         if ($name === null && is_string($table)) {
             $index = strpos($table, ' ');
@@ -22,15 +24,18 @@ class Table extends Source {
         $this->table = $table;
     }
 
-    public function primary() {
+    public function primary() 
+    {
         return 'id';
     }
 
-    public function table() {
+    public function table() 
+    {
         return $this->table;
     }
 
-    public function sourcePart() {
+    public function sourcePart() 
+    {
         return Name::ensure($this->table());
     }
 }

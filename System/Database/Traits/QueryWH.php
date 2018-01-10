@@ -8,20 +8,24 @@ use Silver\Database\Parts\Raw;
 use Silver\Database\Parts\Value;
 use Silver\Database\Parts\Literal;
 
-trait QueryWH {
+trait QueryWH
+{
 
     private $where = [];
     private $having = [];
 
-    public function where($column, $operator=null, $value=null, $how='and', $not=false) {
+    public function where($column, $operator=null, $value=null, $how='and', $not=false) 
+    {
         return $this->cond('where', $column, $operator, $value, $how, $not);
     }
 
-    public function having($column, $operator=null, $value=null, $how='and', $not=false) {
+    public function having($column, $operator=null, $value=null, $how='and', $not=false) 
+    {
         return $this->cond('having', $column, $operator, $value, $how, $not);
     }
 
-    private function cond($cond, $column, $operator, $value, $how, $not) {
+    private function cond($cond, $column, $operator, $value, $how, $not) 
+    {
         $how = strtoupper($how);
         if(!($how == 'AND' || $how == 'OR')) {
             throw new \Exception("Unknown boolean operator '$how'");
@@ -41,15 +45,18 @@ trait QueryWH {
         if($operator == 'BETWEEN') {
             // Value must be [1, 2] array
             list($from, $to) = $value;
-            $filter = new Filter($column,
-                                 $operator,
-                                 new Parts(Value::ensure($from), 'AND', Value::ensure($to)),
-                                 $not);
+            $filter = new Filter(
+                $column,
+                $operator,
+                new Parts(Value::ensure($from), 'AND', Value::ensure($to)),
+                $not
+            );
         } else {
             $filter = new Filter($column, $operator, $value, $not);
         }
 
-        /** XXX 
+        /**
+ * XXX 
          * Postgresql support doesn't support referencing to
          * agregate columns in having.
          */
@@ -70,7 +77,8 @@ trait QueryWH {
         return $this;
     }
 
-    private function prepareOperatorValue($operator, $value) {
+    private function prepareOperatorValue($operator, $value) 
+    {
         if($value === null) {
             if($operator instanceof \Query || is_array($operator)) {
                 return ['IN', $operator];
@@ -87,15 +95,18 @@ trait QueryWH {
         }
     }
 
-    private function havingParen($cb, $how = 'and', $not = false) {
+    private function havingParen($cb, $how = 'and', $not = false) 
+    {
         return $this->parent('having', $cb, $how, $not);
     }
 
-    private function whereParen($cb, $how = 'and', $not = false) {
+    private function whereParen($cb, $how = 'and', $not = false) 
+    {
         return $this->parent('where', $cb, $how, $not);
     }
 
-    private function paren($cond, $cb, $how, $not) {
+    private function paren($cond, $cb, $how, $not) 
+    {
         $cond = $this->$cond;
         $this->$cond = null;
 
@@ -117,7 +128,8 @@ trait QueryWH {
         return $this;
     }
 
-    public function __call($str, $args) {
+    public function __call($str, $args) 
+    {
         $orig = $str;
 
         $cond = null;
@@ -150,7 +162,8 @@ trait QueryWH {
         }
 
         if($cond) {
-            if(!$column) $column = array_shift($args);
+            if(!$column) { $column = array_shift($args);
+            }
             $operator = array_shift($args);
             $value = array_shift($args);
 
@@ -160,21 +173,24 @@ trait QueryWH {
         }
     }
 
-    public static function compileWhere($q) {
+    public static function compileWhere($q) 
+    {
         if($q->where) {
             return ' WHERE ' . $q->where;
         }
         return '';
     }
 
-    public static function compileHaving($q) {
+    public static function compileHaving($q) 
+    {
         if($q->having) {
             return ' HAVING ' . $q->having;
         }
         return '';
     }
 
-    private static function snake_case($str) {
+    private static function snake_case($str) 
+    {
         $out = '';
         $str = lcfirst($str);
         for($i=0; $i < strlen($str); $i++) {

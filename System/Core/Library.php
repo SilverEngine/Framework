@@ -23,10 +23,11 @@ use Silver\Http\View;
 if (!function_exists('dd')) {
     function dd($data, $param = false)
     {
-        if ($param)
+        if ($param) {
             var_dump('<pre>', $data, '<pre>');
-        else
+        } else {
             var_dump($data);
+        }
 
         exit();
     }
@@ -40,10 +41,11 @@ if (!function_exists('dd')) {
 if (!function_exists('ndd')) {
     function ndd($data, $param = false)
     {
-        if ($param)
+        if ($param) {
             var_dump('<pre>', $data, '<pre>');
-        else
+        } else {
             var_dump($data);
+        }
     }
 }
 
@@ -54,10 +56,11 @@ if (!function_exists('ndd')) {
 if (!function_exists('debug')) {
     function debug($data, $param = false)
     {
-        if ($param)
+        if ($param) {
             var_dump($data);
-        else
+        } else {
             var_dump('<pre>', $data, '<pre>');
+        }
     }
 }
 
@@ -98,9 +101,13 @@ if (!function_exists('asset')) {
 if (!function_exists('alink')) {
     function alink($text, $url, $attrs = [])
     {
-        $el = new El('a', array_merge([
-            'href' => $url,
-        ], $attrs));
+        $el = new El(
+            'a', array_merge(
+                [
+                'href' => $url,
+                ], $attrs
+            )
+        );
 
         return $el->appendChild($text ?: $url);
     }
@@ -109,20 +116,28 @@ if (!function_exists('alink')) {
 if (!function_exists('css')) {
     function css($url, $attrs = [])
     {
-        return new El('link', array_merge([
-            'type' => 'text/css',
-            'href' => $url,
-        ], $attrs));
+        return new El(
+            'link', array_merge(
+                [
+                'type' => 'text/css',
+                'href' => $url,
+                ], $attrs
+            )
+        );
     }
 }
 
 if (!function_exists('js')) {
     function js($url, $attrs = [])
     {
-        return new El('script', array_merge([
-            'type' => 'text/javascript',
-            'src'  => (string)$url,
-        ], $attrs));
+        return new El(
+            'script', array_merge(
+                [
+                'type' => 'text/javascript',
+                'src'  => (string)$url,
+                ], $attrs
+            )
+        );
     }
 }
 
@@ -130,13 +145,12 @@ if (!function_exists('js')) {
 if (!function_exists('route')) {
     function route($name, $args = [])
     {
-      //TODO: catch error if route not exists,
-      return Route::getRoute($name)->url($args);
+        //TODO: catch error if route not exists,
+        return Route::getRoute($name)->url($args);
     }
 }
 
-if(!function_exists('mapArrayKeys'))
-{
+if(!function_exists('mapArrayKeys')) {
     function mapArrayKeys($array,callable $callback)
     {
         $arr = array();

@@ -93,12 +93,12 @@ class ErrorHandler
 
         if (Request::segment(1) == 'api' || Request::segment(1) == 'public' && Request::segment(2) == 'api') {
             try {
-//                dd(1111);
+                //                dd(1111);
 
                 if ($e instanceof NotFoundException) {
-//                    dd(1111);
+                    //                    dd(1111);
 
-//                    dd(2222);
+                    //                    dd(2222);
                     $payload = [
                         'data' => [
                             'message' => $e->getMessage(),
@@ -113,7 +113,7 @@ class ErrorHandler
                     echo json_encode($payload);
                     exit();
                 } else if($e instanceof Exception) {
-//                    dd(1111);
+                    //                    dd(1111);
 
                     header('Content-type: Application/json');
 
@@ -124,17 +124,17 @@ class ErrorHandler
                             'file' => $e->getFile(),
                             'on line' => $e->getLine(),
                             'trace' => $e->getTrace(),
-//                            'trace2' => $e->getTraceAsString(),
+                    //                            'trace2' => $e->getTraceAsString(),
                         ],
                     ];
 
-//                    dd($payload);
+                    //                    dd($payload);
 
                     echo json_encode($payload);
                     exit();
                 }
             } catch (Exception $e) {
-//                dd(66666);
+                //                dd(66666);
                 self::finalize("Fatal error: " . $e->getMessage());
             }
         } else {
@@ -164,30 +164,30 @@ class ErrorHandler
             }
         }
 
-//        try {
-//            // FIXMEE: API - isDebug() -> hide details
-//            if ($e instanceof NotFoundException) {
-//                $view = View::make('errors.404')
-//                    ->with('message', $e->getMessage())
-//                    ->with('debug', self::isDebug());
-//            } else {
-//                $view = View::make('errors.500')
-//                    ->with('message', $e->getMessage())
-//                    ->with('file', $e->getFile())
-//                    ->with('line', $e->getLine())
-//                    ->with('code_around', self::code_around($e))
-//                    ->with('back_trace', $e->getTrace())
-//                    ->with('debug', self::isDebug());
-//            }
-//
-//            if ($finalize) {
-//                self::finalize($view);
-//            } else {
-//                return $view;
-//            }
-//        } catch (Exception $e) {
-//            self::finalize("Fatal error: " . $e->getMessage());
-//        }
+        //        try {
+        //            // FIXMEE: API - isDebug() -> hide details
+        //            if ($e instanceof NotFoundException) {
+        //                $view = View::make('errors.404')
+        //                    ->with('message', $e->getMessage())
+        //                    ->with('debug', self::isDebug());
+        //            } else {
+        //                $view = View::make('errors.500')
+        //                    ->with('message', $e->getMessage())
+        //                    ->with('file', $e->getFile())
+        //                    ->with('line', $e->getLine())
+        //                    ->with('code_around', self::code_around($e))
+        //                    ->with('back_trace', $e->getTrace())
+        //                    ->with('debug', self::isDebug());
+        //            }
+        //
+        //            if ($finalize) {
+        //                self::finalize($view);
+        //            } else {
+        //                return $view;
+        //            }
+        //        } catch (Exception $e) {
+        //            self::finalize("Fatal error: " . $e->getMessage());
+        //        }
     }
 
     private static function finalize($content)

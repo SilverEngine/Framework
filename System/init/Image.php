@@ -51,7 +51,9 @@ class Image
         $zip = new \ZipArchive();
         $zip->open('System/init/backup/'.$date.'-image.zip', \ZipArchive::CREATE | \ZipArchive::OVERWRITE);
 
-        /** @var SplFileInfo[] $files */
+        /**
+ * @var SplFileInfo[] $files 
+*/
         $files = new \RecursiveIteratorIterator(
             new \RecursiveDirectoryIterator($rootPath),
             \RecursiveIteratorIterator::LEAVES_ONLY
@@ -67,7 +69,7 @@ class Image
             }
         }
 
-// Zip archive will be created only after closing object
+        // Zip archive will be created only after closing object
         $zip->close();
     }
 

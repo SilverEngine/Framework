@@ -5,8 +5,10 @@ namespace Silver\Database\Parts\Pgsql;
 use Silver\Database\Parts\ColumnDef as P;
 use Silver\Database\Parts\Column;
 
-class ColumnDef extends P {
-    protected static function compile($q) {
+class ColumnDef extends P
+{
+    protected static function compile($q) 
+    {
         $name = Column::ensure($q->name);
 
         if($q->getAutoincrement()) {
@@ -31,7 +33,8 @@ class ColumnDef extends P {
         return $sql;
     }
 
-    protected static function compileType($q) {
+    protected static function compileType($q) 
+    {
         if($q->getAutoincrement()) {
             return ' SERIAL';
         } else {
@@ -39,7 +42,8 @@ class ColumnDef extends P {
         }
     }
 
-    protected static function mapType($type, $args) {
+    protected static function mapType($type, $args) 
+    {
         switch($type) {
         case 'mediumint':
             return ['integer', []];
