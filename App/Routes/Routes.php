@@ -10,11 +10,9 @@
  * @link      https://github.com/SilverEngine/Framework
  */
 
-return [
-    //this is core system route do not change or delete!
-    'System/App/Routes',
+namespace App\Routes;
 
-    //Edit here your routes belown
-    'App/Routes/Routes',
-    'App/Routes/Api',
-];
+use Silver\Core\Route;
+
+Route::get('/', 'Welcome@welcome', 'home', 'public');
+Route::get('/demo', 'Welcome@demo', 'home', 'public');
