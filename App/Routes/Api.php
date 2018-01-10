@@ -10,12 +10,13 @@
  * @link      https://github.com/SilverEngine/Framework
  */
 
-namespace App;
+namespace App\Routes;
 
 use Silver\Core\Route;
 
-Route::get('/', 'Welcome@welcome', 'home', 'public');
-Route::get('/demo', 'Welcome@demo', 'home', 'public');
-
-// Route for Test1 controller.
-Route::get('/test1', 'Test1@get', 'test1', 'public');
+Route::group(['prefix' => 'api'], function(){
+  Route::get('/show', function(){
+    dd('we are in admin/show');
+  });
+  Route::post('/update', 'settings@update', 'route_name');
+});
