@@ -15,8 +15,7 @@ namespace App\Routes;
 use Silver\Core\Route;
 
 Route::group(['prefix' => 'api'], function(){
-  Route::get('/show', function(){
-    dd('we are in admin/show');
+  Route::get('/', function(){
+    return 'Welcome to the api';
   });
-  Route::post('/update', 'settings@update', 'route_name');
 });
