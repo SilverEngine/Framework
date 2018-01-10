@@ -2,27 +2,33 @@
 
 namespace Silver\Database\Traits;
 
-trait QueryLimit {
+trait QueryLimit
+{
     private $limit = null;
     private $offset = null;
 
-    public function limit($count) {
+    public function limit($count) 
+    {
         $this->limit = (int) $count;
         return $this;
     }
 
-    public function getLimit() {
+    public function getLimit() 
+    {
         return $this->limit;
     }
 
-    public function offset($offset) {
-        if($this->limit === null)
+    public function offset($offset) 
+    {
+        if($this->limit === null) {
             $this->limit = 1;
+        }
         $this->offset = (int) $offset;
         return $this;
     }
 
-    public function page($page, $per_page = null) {
+    public function page($page, $per_page = null) 
+    {
         if($per_page !== null) {
             $this->limit = $per_page;
         }
@@ -40,7 +46,8 @@ trait QueryLimit {
         return $this;
     }
 
-    protected static function compileLimit($q) {
+    protected static function compileLimit($q) 
+    {
         if($q->limit) {
             $r = ' LIMIT ' . $q->limit;
             if($q->offset) {

@@ -12,21 +12,26 @@
 
 namespace Silver\Exception;
 
-class Exception extends \Exception {
-    public function __construct($message = null, $code = 0, Exception $previous = null) {
+class Exception extends \Exception
+{
+    public function __construct($message = null, $code = 0, Exception $previous = null) 
+    {
         parent::__construct($message, $code, $previous);
     }
 
 
-    public function setFile($file) {
+    public function setFile($file) 
+    {
         $this->file = $file;
     }
 
-    public function setLine($line) {
+    public function setLine($line) 
+    {
         $this->line = $line;
     }
 
-    public function setTrace($trace) {
+    public function setTrace($trace) 
+    {
         $this->trace = $trace;
     }
 }

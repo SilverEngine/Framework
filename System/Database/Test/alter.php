@@ -10,10 +10,12 @@ Test::define(
     'drop table test'
 );
 Test::define(
-    Query::create('test', function($q) {
-        $q->integer('id')->primary()->autoincrement();
-        $q->varchar('data', 10);
-    }),
+    Query::create(
+        'test', function ($q) {
+            $q->integer('id')->primary()->autoincrement();
+            $q->varchar('data', 10);
+        }
+    ),
     null,
     'create table test'
 );
@@ -25,9 +27,11 @@ Test::define(
 );
 
 Test::define(
-    Query::alter('test', function($q) {
-        $q->addColumn('num', 'integer')->nullable();
-    }),
+    Query::alter(
+        'test', function ($q) {
+            $q->addColumn('num', 'integer')->nullable();
+        }
+    ),
     null,
     'alter - add new column'
 );
@@ -39,24 +43,28 @@ Test::define(
     'alter - check table'
 );
 
-Test::on(['pgsql', 'mysqlite'], function() {
-    Test::define(
-        Query::alter('test', function($q) {
-            $q->modifyColumn('data', 'text');
-        }),
-        null,
-        'varchar -> text'
-    );
+Test::on(
+    ['pgsql', 'mysqlite'], function () {
+        Test::define(
+            Query::alter(
+                'test', function ($q) {
+                    $q->modifyColumn('data', 'text');
+                }
+            ),
+            null,
+            'varchar -> text'
+        );
 
-    Test::define(
-        Query::update('test')->set('data', 'aaaaaaaaaabbbbbbbbbb'),
-        null,
-        'update data'
-    );
+        Test::define(
+            Query::update('test')->set('data', 'aaaaaaaaaabbbbbbbbbb'),
+            null,
+            'update data'
+        );
 
-    Test::define(
-        Query::select()->from('test'),
-        ['id' => 1, 'data' => 'aaaaaaaaaabbbbbbbbbb', 'num' => null],
-        'data-check'
-    );
-});
+        Test::define(
+            Query::select()->from('test'),
+            ['id' => 1, 'data' => 'aaaaaaaaaabbbbbbbbbb', 'num' => null],
+            'data-check'
+        );
+    }
+);

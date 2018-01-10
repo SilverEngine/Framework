@@ -12,7 +12,8 @@
 
 namespace Silver\Core\Blueprints;
 
-interface RenderInterface {
+interface RenderInterface
+{
     public function render();
     public function data();
 }

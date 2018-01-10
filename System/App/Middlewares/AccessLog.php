@@ -17,8 +17,10 @@ use Silver\Http\Request;
 use Silver\Http\Response;
 use Closure;
 
-class AccessLog implements MiddlewareInterface {
-    public function execute(Request $req, Response $res, Closure $next) {
+class AccessLog implements MiddlewareInterface
+{
+    public function execute(Request $req, Response $res, Closure $next) 
+    {
         $path = ROOT . "Storage/Logs/" . date("Y-m-d") . "-access.log";
         $fp = fopen($path, 'a+');
         $line = sprintf("%20s [%s] %s: %s\n", $req->ip(), Date("Y-m-d H:i:s"), $req->method(), $req->getUri());

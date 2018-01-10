@@ -29,7 +29,8 @@ class Instances
         }
     }
 
-    public function registerNamed($key, $value, $force = false) {
+    public function registerNamed($key, $value, $force = false) 
+    {
         if (!isset($this->container[$key]) || $force) {
             $this->container[$key] = $value;
         } else {

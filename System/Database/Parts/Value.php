@@ -4,15 +4,18 @@ namespace Silver\Database\Parts;
 
 use Silver\Database\Query;
 
-class Value extends Part {
+class Value extends Part
+{
 
     private $value;
 
-    public function __construct($value) {
+    public function __construct($value) 
+    {
         $this->value = $value;
     }
 
-    public static function ensure($args, $mustbe = false) {
+    public static function ensure($args, $mustbe = false) 
+    {
         if($args instanceof Part) {
             // Return type must be static::class
             if($mustbe && !($args instanceof static)) {
@@ -32,7 +35,8 @@ class Value extends Part {
         return new self($args);
     }
 
-    protected static function compile($q) {
+    protected static function compile($q) 
+    {
         $value = $q->value;
 
         if(is_array($value)) {

@@ -23,7 +23,7 @@ class DBCreator
 
     /**
      * @param $name
-     * @param int $lenght
+     * @param int  $lenght
      */
     public function increments($name, $lenght = 11)
     {
@@ -31,7 +31,7 @@ class DBCreator
 
     /**
      * @param $name
-     * @param int $lenght
+     * @param int  $lenght
      */
     public function intiger($name, $lenght = 11)
     {
@@ -39,7 +39,7 @@ class DBCreator
 
     /**
      * @param $name
-     * @param int $lenght
+     * @param int  $lenght
      */
     public function tinyintiger($name, $lenght = 10)
     {
@@ -47,7 +47,7 @@ class DBCreator
 
     /**
      * @param $name
-     * @param int $lenght
+     * @param int  $lenght
      */
     public function bigintiger($name, $lenght = 20)
     {
@@ -55,7 +55,7 @@ class DBCreator
 
     /**
      * @param $name
-     * @param int $lenght
+     * @param int  $lenght
      */
     public function varchar($name, $lenght = 11)
     {

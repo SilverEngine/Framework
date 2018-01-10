@@ -2,7 +2,8 @@
 
 namespace Silver\Database\Parts;
 
-class ColumnDef extends Part {
+class ColumnDef extends Part
+{
 
     protected $name;
     protected $type;
@@ -19,17 +20,20 @@ class ColumnDef extends Part {
     protected $onDelete = null;
     protected $onUpdate = null;
 
-    public function __construct($name, $type, ...$args) {
+    public function __construct($name, $type, ...$args) 
+    {
         $this->name = $name;
         $this->type = $type;
         $this->args = $args;
     }
 
-    public function getName() {
+    public function getName() 
+    {
         return $this->name;
     }
 
-    protected static function compile($q) {
+    protected static function compile($q) 
+    {
         $name = Name::ensure($q->name);
 
         $sql = $name
@@ -48,52 +52,63 @@ class ColumnDef extends Part {
         return $sql;
     }
 
-    protected static function mapType($type, $args) {
+    protected static function mapType($type, $args) 
+    {
         return [$type, $args];
     }
 
-    protected static function compileType($q) {
+    protected static function compileType($q) 
+    {
         $type = $q->type;
         $args = $q->args;
         list ($type, $args) = static::mapType($type, $args);
         $r = ' ' . $type;
         if(count($args) > 0) {
-            $args = array_map(function($arg) {
-                return Literal::ensure($arg);
-            }, $args);
+            $args = array_map(
+                function ($arg) {
+                    return Literal::ensure($arg);
+                }, $args
+            );
             $r .= '(' . implode(', ', $args) . ')';
         }
         return $r;
     }
 
-    protected static function compileUnsigned($q) {
+    protected static function compileUnsigned($q) 
+    {
         return $q->unsigned ? ' UNSIGNED' : '';
     }
 
-    protected static function compileNullable($q) {
+    protected static function compileNullable($q) 
+    {
         return $q->nullable == false ? ' NOT NULL' : '';
     }
 
-    protected static function compilePrimary($q) {
+    protected static function compilePrimary($q) 
+    {
         return $q->primary ? ' PRIMARY KEY' : '';
     }
 
-    protected static function compileAutoInc($q) {
+    protected static function compileAutoInc($q) 
+    {
         return $q->autoincrement ? ' AUTO_INCREMENT' : '';
     }
 
-    protected static function compileUnique($q) {
+    protected static function compileUnique($q) 
+    {
         return $q->unique ? ' UNIQUE' : '';
     }
 
-    protected static function compileDefault($q) {
+    protected static function compileDefault($q) 
+    {
         if($q->default !== null) {
             return ' DEFAULT ' . Literal::ensure($q->default);
         }
         return '';
     }
 
-    protected static function compileReference($q, $name) {
+    protected static function compileReference($q, $name) 
+    {
         if($q->references !== null) {
             $references = Column::ensure($q->references, true);
             if(!($references instanceof Column)) {
@@ -105,18 +120,24 @@ class ColumnDef extends Part {
             if($q->onUpdate !== null) {
                 $sql .= ' ON UPDATE';
                 switch($q->onUpdate) {
-                case 'cascade': $sql .= 'CASCADE'; break;
-                case 'null': $sql .= 'SET NULL'; break;
-                default: throw new \Exception("On update mode '{$q->onUpdate}' not in (cascade, null).");
+                case 'cascade': $sql .= 'CASCADE'; 
+                    break;
+                case 'null': $sql .= 'SET NULL'; 
+                    break;
+                default: 
+                    throw new \Exception("On update mode '{$q->onUpdate}' not in (cascade, null).");
                 }
             }
 
             if($q->onDelete !== null) {
                 $sql .= ' ON DELETE ';
                 switch($q->onDelete) {
-                case 'cascade': $sql .= 'CASCADE'; break;
-                case 'null': $sql .= 'SET NULL'; break;
-                default: throw new \Exception("On delete mode '{$q->onDelete}' not in (cascade, null).");
+                case 'cascade': $sql .= 'CASCADE'; 
+                    break;
+                case 'null': $sql .= 'SET NULL'; 
+                    break;
+                default: 
+                    throw new \Exception("On delete mode '{$q->onDelete}' not in (cascade, null).");
                 }
             }
 

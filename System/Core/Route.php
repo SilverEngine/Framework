@@ -38,11 +38,12 @@ class Route
 
     /**
      * Route constructor.
+     *
      * @param $method
      * @param $route
      * @param $action
-     * @param null $name
-     * @param null $type
+     * @param null   $name
+     * @param null   $type
      */
     public function __construct($method, $route, $action, $name = null, $middleware = 'public', $type = null)
     {
@@ -109,20 +110,23 @@ class Route
 
         $i_variable = 0;
         foreach ($parts as $part) {
-            if (empty($part))
+            if (empty($part)) {
                 continue;
+            }
 
             if ($part[0] == '{') { // is variable?
                 $key = trim($part, '{}');
 
                 if (isset($vars[0])) {
-                    if (!isset($vars[ $i_variable ]))
+                    if (!isset($vars[ $i_variable ])) {
                         throw new \Exception("Route {$this->_route} has no variable $key.");
+                    }
 
                     $value = $vars[ $i_variable++ ];
                 } else {
-                    if (!isset($vars[ $key ]))
+                    if (!isset($vars[ $key ])) {
                         throw new \Exception("Route {$this->_route} has no variable $key.");
+                    }
 
                     $value = $vars[ $key ];
                 }
@@ -154,8 +158,9 @@ class Route
 
         if ($seg[0] == '{') {
             $seg = substr($seg, 1, -1);
-            if ($seg[ strlen($seg) - 1 ] == '?')
+            if ($seg[ strlen($seg) - 1 ] == '?') {
                 $seg = substr($seg, 0, -1);
+            }
 
             return $this->_variables[ $seg ];
         } else {
@@ -200,8 +205,9 @@ class Route
                     }
 
                     if ($rule[0] == '/') {
-                        if (!preg_match($rule, $url[0]))
+                        if (!preg_match($rule, $url[0])) {
                             throw new \Exception("Invalid variable type.");
+                        }
                     } elseif (function_exists($rule)) {
                         $url[0] = $rule($url[0]);
                     } else {
@@ -212,24 +218,28 @@ class Route
                 if ($url) {
                     $this->_variables[ $varname ] = $url[0];
                 } else {
-                    if ($required)
+                    if ($required) {
                         return false;
-                    else
+                    } else {
                         $this->_variables[ $varname ] = null;
+                    }
                 }
             } else {
-                if (!$url)
+                if (!$url) {
                     return false;
-                if ($route[0] != $url[0])
+                }
+                if ($route[0] != $url[0]) {
                     return false;
+                }
             }
 
             array_shift($route);
             array_shift($url);
         }
 
-        if ($url)
+        if ($url) {
             return false;
+        }
 
 
         // Check jails
@@ -243,8 +253,9 @@ class Route
                 $class = '\\App\\Jail\\' . $class;
             }
 
-            if (!$class::$method())
+            if (!$class::$method()) {
                 return false;
+            }
         }
 
         return true;
@@ -262,8 +273,9 @@ class Route
             self::$jails[] = $args['jail'];
         }
 
-        if (!isset($args['prefix']))
+        if (!isset($args['prefix'])) {
             $args['prefix'] = '';
+        }
 
         $old_prefix = self::$_prefix;
         self::$_prefix = self::$_prefix . '/'.$args['prefix'];
@@ -288,8 +300,9 @@ class Route
     public static function find($requestUrl, $requestMethod)
     {
         foreach (self::$_routes as $route) {
-            if ($route->check($requestMethod, $requestUrl))
+            if ($route->check($requestMethod, $requestUrl)) {
                 return $route;
+            }
         }
 
         return null;
@@ -299,7 +312,7 @@ class Route
      * @param $method
      * @param $route
      * @param $action
-     * @param null $name
+     * @param null   $name
      * @param string $type
      */
     public static function register($method, $route, $action, $name = null, $middleware = 'public', $type = '')
@@ -315,7 +328,7 @@ class Route
     /**
      * @param $route
      * @param $action
-     * @param null $name
+     * @param null   $name
      */
     public static function get($route, $action, $name = null, $middleware ='public')
     {
@@ -325,11 +338,11 @@ class Route
     /**
      * @param $route
      * @param $action
-     * @param null $name
+     * @param null   $name
      */
     public static function post($route, $action, $name = null, $middleware ='public')
     {
-        return self::register("post", $route, $action, $name,$middleware, 'post');
+        return self::register("post", $route, $action, $name, $middleware, 'post');
     }
 
 
@@ -337,19 +350,19 @@ class Route
     /**
      * @param $route
      * @param $action
-     * @param null $name
+     * @param null   $name
      * @param string $req
      */
     public static function put($route, $action, $name = null, $middleware ='public', $req = 'put')
     {
-        return self::register("put", $route, $action, $name,$middleware,  $req);
+        return self::register("put", $route, $action, $name, $middleware,  $req);
     }
 
     // need to work on POST too
     /**
      * @param $route
      * @param $action
-     * @param null $name
+     * @param null   $name
      * @param string $req
      */
     public static function delete($route, $action, $name = null, $middleware ='public',  $req = 'delete')
@@ -361,7 +374,7 @@ class Route
     /**
      * @param $route
      * @param $action
-     * @param null $name
+     * @param null   $name
      */
     public static function resource($route, $action, $name = null, $middleware ='public')
     {
@@ -405,7 +418,7 @@ class Route
     /**
      * @param $route
      * @param $action
-     * @param null $name
+     * @param null   $name
      */
     public static function any($route, $action, $name = null, $middleware ='public')
     {
@@ -419,9 +432,10 @@ class Route
      */
     public static function getRoute($name)
     {
-      // ndd($name);
-        if (isset(self::$_route_index[ $name ]))
+        // ndd($name);
+        if (isset(self::$_route_index[ $name ])) {
             return self::$_route_index[ $name ];
+        }
         throw new \Exception("Route $name not found.");
     }
 }

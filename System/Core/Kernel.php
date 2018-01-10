@@ -18,6 +18,7 @@ use Silver\Exception\NotFoundException;
 
 /**
  * Class Kernel
+ *
  * @package Silver\Core
  */
 class Kernel
@@ -36,11 +37,12 @@ class Kernel
         foreach (Env::get('middlewares', []) as $mw) {
             $this->middlewares[] = new $mw;
         }
+
     }
 
 
     /**
-     * @param Request $req
+     * @param Request  $req
      * @param Response $res
      */
     public function loadServices(Request $req, Response $res)
@@ -57,7 +59,7 @@ class Kernel
     }
 
     /**
-     * @param Request $req
+     * @param Request  $req
      * @param Response $res
      */
     public function finalizeServices(Request $req, Response $res)
@@ -73,12 +75,12 @@ class Kernel
     public function loadRoutes()
     {
         foreach (Env::get('routes', []) as $route) {
-            require_once(ROOT . $route . EXT);
+            include_once ROOT . $route . EXT;
         }
     }
 
     /**
-     * @param Request $request
+     * @param Request  $request
      * @param Response $response
      * @return mixed
      * @throws NotFoundException
@@ -88,10 +90,12 @@ class Kernel
         if ($route = $request->route()) {
             $callable = $this->findCallable($route);
 
-            return DI::call($callable, array_merge(
-                $this->app->instances()->getAll(),
-                $route->variables()
-            ));
+            return DI::call(
+                $callable, array_merge(
+                    $this->app->instances()->getAll(),
+                    $route->variables()
+                )
+            );
         } else {
             throw new NotFoundException('Route for ' . $request->getUri() . ' not found.');
         }
@@ -99,7 +103,7 @@ class Kernel
 
     /**
      * @param $mws
-     * @param Request $req
+     * @param Request  $req
      * @param Response $res
      * @return mixed
      */
@@ -109,9 +113,11 @@ class Kernel
         if (count($mws) > 0) {
             $mw = array_shift($mws);
 
-            return $mw->execute($req, $res, function () use ($self, $mws, $req, $res) {
-                return $self->executeMiddlewares($mws, $req, $res);
-            });
+            return $mw->execute(
+                $req, $res, function () use ($self, $mws, $req, $res) {
+                    return $self->executeMiddlewares($mws, $req, $res);
+                }
+            );
         } else {
             return $this->handle($req, $res);
         }
@@ -142,7 +148,7 @@ class Kernel
                 $full_path = $full . 'Controller' . EXT;
 
                 if (file_exists($full_path)) {
-                    require_once($full_path);
+                    include_once $full_path;
 
                     // Prepare controller
                     $c = new $full_class;
@@ -185,7 +191,7 @@ class Kernel
 
     /**
      * @param $function
-     * @param array $args
+     * @param array    $args
      * @return mixed
      * @throws \Exception
      */
