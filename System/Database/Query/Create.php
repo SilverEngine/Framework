@@ -6,7 +6,8 @@ use Silver\Database\Query;
 use Silver\Database\Parts\Table;
 use Silver\Database\Parts\ColumnDef;
 
-class Create extends Query {
+class Create extends Query
+{
 
     private $table = null;
     private $schema = null;
@@ -20,27 +21,32 @@ class Create extends Query {
     // Table options
     private $options = [];
 
-    public function __construct($table_name, $schema) {
+    public function __construct($table_name, $schema) 
+    {
         $this->table = $table_name;
         $this->schema = $schema;
     }
 
-    public function column($name, $type, ...$args) {
+    public function column($name, $type, ...$args) 
+    {
         $this->columns[] = $c = ColumnDef::ensure(array_merge([$name, $type], $args));
         return $c;
     }
 
-    public function temporary($isit = true) {
+    public function temporary($isit = true) 
+    {
         $this->temporary = $isit;
         return $this;
     }
 
-    public function ifNotExists($yes = true) {
+    public function ifNotExists($yes = true) 
+    {
         $this->if_not_exists = $yes;
         return $this;
     }
 
-    public function option($key, $value) {
+    public function option($key, $value) 
+    {
         $key = strtoupper($key);
         if($value === null) {
             unset($this->options[$key]);
@@ -50,95 +56,116 @@ class Create extends Query {
         return $this;
     }
     
-    public function engine($engine) {
+    public function engine($engine) 
+    {
         return $this->option('engine', $engine);
     }
 
-    public function charset($charset) {
+    public function charset($charset) 
+    {
         $this->option('default character set', null);
         return $this->option('character set', $charset);
     }
 
-    public function defaultCharset($charset) {
+    public function defaultCharset($charset) 
+    {
         $this->option('character set', null);
         return $this->option('default character set', $charset);
     }
 
     // XXX: mysql only
-    public function autoincrement($first) {
+    public function autoincrement($first) 
+    {
         return $this->option('auto_increment', $first);
     }
 
-    public function comment($comment) {
+    public function comment($comment) 
+    {
         return $this->option('comment', \Query::quote($comment));
     }
 
     /* Columns */
-    public function boolean($name) {
+    public function boolean($name) 
+    {
         return $this->column($name, 'boolean');
     }
 
-    public function enum($name, ...$enum) {
+    public function enum($name, ...$enum) 
+    {
         return $this->column($name, 'enum', ...$enum);
     }
 
-    public function set($name, ...$set) {
+    public function set($name, ...$set) 
+    {
         return $this->column($name, 'set', ...$set);
     }
 
     // Numeric
-    public function smallInt($name) {
+    public function smallInt($name) 
+    {
         return $this->column($name, 'smallint');
     }
 
-    public function mediumInt($name) {
+    public function mediumInt($name) 
+    {
         return $this->column($name, 'mediumint');
     }
 
-    public function integer($name) {
+    public function integer($name) 
+    {
         return $this->column($name, 'integer');
     }
 
-    public function bigInt($name) {
+    public function bigInt($name) 
+    {
         return $this->column($name, 'bigint');
     }
 
-    public function decimal($name, $precision, $scale) {
+    public function decimal($name, $precision, $scale) 
+    {
         return $this->column($name, 'decimal', $precision, $scale);
     }
 
     // Text
-    public function varchar($name, $size) {
+    public function varchar($name, $size) 
+    {
         return $this->column($name, 'varchar', $size);
     }
 
-    public function text($name) {
+    public function text($name) 
+    {
         return $this->column($name, 'text');
     }
 
     // Time
-    public function timestamp($name) {
+    public function timestamp($name) 
+    {
         return $this->column($name, 'timestamp');
     }
 
-    public function time($name) {
+    public function time($name) 
+    {
         return $this->column($name, 'time');
     }
 
-    public function date($name) {
+    public function date($name) 
+    {
         return $this->column($name, 'date');
     }
 
-    public function datetime($name) {
+    public function datetime($name) 
+    {
         return $this->column($name, 'datetime');
     }
 
-    public function year($name) {
+    public function year($name) 
+    {
         return $this->column($name, 'year');
     }
     /* --- */
 
-    protected static function compile($q) {
+    protected static function compile($q) 
+    {
         $table = Table::ensure($q->table);
 
         $sql = 'CREATE';

@@ -10,14 +10,9 @@
  * @link      https://github.com/SilverEngine/Framework
  */
 
-namespace App\Jail;
+namespace App\Routes;
 
-class Master
-{
+use Silver\Core\Route;
 
-    public static function protect()
-    {
-
-    }
-
-}
+Route::get('/', 'Welcome@welcome', 'home', 'public');
+Route::get('/demo', 'Welcome@demo', 'home', 'public');

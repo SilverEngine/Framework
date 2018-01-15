@@ -16,13 +16,14 @@ class Facade
 {
     private static $objects = [];
 
-    public static function __callStatic($fname, $args) {
+    public static function __callStatic($fname, $args)
+    {
         $child = get_called_class();
-//        var_dump($child);
+        //        var_dump($child);
         $class = $child::getClass();
         $object = null;
 
-        if(isset(self::$objects[$class])) {
+        if (isset(self::$objects[$class])) {
             $object = self::$objects[$class];
         } else {
             $object = self::$objects[$class] = new $class;

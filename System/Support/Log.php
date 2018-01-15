@@ -39,9 +39,11 @@ class Log
      * @param $args
      * @throws \Exception
      */
-    public function __call($method, $args) {
-        if(array_search($method, self::$types) === false)
-            throw new \Exception("Undefined method Log::$method try allowed types [ ". implode(', ',self::$types)." ]");
+    public function __call($method, $args) 
+    {
+        if(array_search($method, self::$types) === false) {
+            throw new \Exception("Undefined method Log::$method try allowed types [ ". implode(', ', self::$types)." ]");
+        }
             $this->create($args[0], $method);
     }
 
@@ -52,18 +54,18 @@ class Log
      */
     private function create($message, $type)
     {
-//        dd($type);
+        //        dd($type);
         $ip   = $_SERVER["REMOTE_ADDR"];
 
         $path = ROOT . "Storage/Logs/" . date("Y-m-d") . ".log";
-        $fp = fopen($path,"a+");
+        $fp = fopen($path, "a+");
 
         $line = "[".date("Y-m-d H:i:s")."][ ".$type ." ]\t$ip\t$message\r\n";
-//        $line = "{$message}\r\n";
+        //        $line = "{$message}\r\n";
 
-//        dd($line);
+        //        dd($line);
 
-        if($fp){
+        if($fp) {
             fwrite($fp, $line);
             fclose($fp);
             return false;

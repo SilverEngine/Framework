@@ -6,33 +6,40 @@ use Silver\Database\Source;
 use Silver\Database\Parts\Name;
 use Silver\Database\Query;
 
-class Model extends Source {
+class Model extends Source
+{
     private $model;
 
-    protected function __construct($model, $name = null) {
+    protected function __construct($model, $name = null) 
+    {
         parent::__construct($name ?: $this->shortClassName($model));
         $this->model = $model;
     }
 
-    public function model() {
+    public function model() 
+    {
         return $this->model;
     }
 
-    public function primary() {
+    public function primary() 
+    {
         $m =  $this->model;
         return $m::primary();
     }
 
-    public function table() {
+    public function table() 
+    {
         $m = $this->model;
         return $m::tableName();
     }
 
-    public function sourcePart() {
+    public function sourcePart() 
+    {
         return Name::ensure($this->table());
     }
 
-    public function reference($ref, Query $q, $alias = null, $args = []) {
+    public function reference($ref, Query $q, $alias = null, $args = []) 
+    {
         $method = 'ref' . ucfirst($ref);
         $m = $this->model;
 
@@ -47,7 +54,8 @@ class Model extends Source {
         }
     }
 
-    public function relation($name, $alias = null) {
+    public function relation($name, $alias = null) 
+    {
         $method = 'rel' . ucfirst($name);
         $m = $this->model;
 
@@ -59,7 +67,8 @@ class Model extends Source {
         }
     }
 
-    private function shortClassName($name) {
+    private function shortClassName($name) 
+    {
         $i = strrpos($name, '\\');
         if ($i !== false) {
             $name = substr($name, $i + 1);

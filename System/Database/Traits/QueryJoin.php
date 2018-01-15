@@ -7,22 +7,27 @@ use Silver\Database\Parts\JoinCondition;
 use Silver\Database\Source;
 use Silver\Database\Parts\Column;
 
-trait QueryJoin {
+trait QueryJoin
+{
     private $joins = [];
 
-    public function join($table, $condition = []) {
+    public function join($table, $condition = []) 
+    {
         return $this->doJoin($table, $condition, 'inner');
     }
 
-    public function leftJoin($table, $condition = []) {
+    public function leftJoin($table, $condition = []) 
+    {
         return $this->doJoin($table, $condition, 'left');
     }
 
-    public function rightJoin($table, $condition = []) {
+    public function rightJoin($table, $condition = []) 
+    {
         return $this->doJoin($table, $condition, 'right');
     }
 
-    public function ref($ref, ...$args) {
+    public function ref($ref, ...$args) 
+    {
         $column = Column::ensure($ref);
 
         $source = $this->getSource($column->getTable()->string());
@@ -44,7 +49,8 @@ trait QueryJoin {
         }
     }
 
-    private function doJoin($table, $condition, $type) {
+    private function doJoin($table, $condition, $type) 
+    {
         if (is_string($table) && strpos($table, '.') != false) {
             // XXX: ignored condition
             $column = Column::ensure($table);
@@ -73,13 +79,16 @@ trait QueryJoin {
         return $this;
     }
 
-    protected static function compileJoin($q) {
+    protected static function compileJoin($q) 
+    {
         if($q->joins) {
-            $ret = array_map(function($join) {
-                list ($table, $cond, $type) = $join;
-                $type = strtoupper($type);
-                return " $type JOIN $table $cond";
-            }, $q->joins);
+            $ret = array_map(
+                function ($join) {
+                    list ($table, $cond, $type) = $join;
+                    $type = strtoupper($type);
+                    return " $type JOIN $table $cond";
+                }, $q->joins
+            );
             return implode(' ', $ret);
         }
         return '';

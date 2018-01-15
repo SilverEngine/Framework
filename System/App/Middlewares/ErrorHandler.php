@@ -19,8 +19,10 @@ use Silver\Exception\NotFoundException;
 use Silver\Core\ErrorHandler as Handler;
 use Closure;
 
-class ErrorHandler implements MiddlewareInterface {
-    public function execute(Request $req, Response $res, Closure $next) {
+class ErrorHandler implements MiddlewareInterface
+{
+    public function execute(Request $req, Response $res, Closure $next) 
+    {
         try {
             return $next();
         } catch(NotFoundException $e) {

@@ -13,21 +13,24 @@
 namespace Silver\Http;
 
 /**
-* Session
-*/
+ * Session
+ */
 class Session
 {
 
     public static function construct()
     {
-        if(!isset($_SESSION['data']))
+        if(!isset($_SESSION['data'])) {
             $_SESSION['data'] = [];
+        }
 
-        if(!isset($_SESSION['old-flash']))
+        if(!isset($_SESSION['old-flash'])) {
             $_SESSION['old-flash'] = [];
+        }
 
-        if(!isset($_SESSION['flash']))
+        if(!isset($_SESSION['flash'])) {
             $_SESSION['flash'] = [];
+        }
 
         // flash -> old-flash
         $_SESSION['old-flash'] = $_SESSION['flash'];
@@ -42,11 +45,11 @@ class Session
         return array_merge($_SESSION['data'], $_SESSION['old-flash'], $_SESSION['flash']);
     }
 
-	public static function set($key, $value)
-	{
+    public static function set($key, $value)
+    {
         self::delete($key);
-		return $_SESSION['data'][$key] = $value;
-	}
+        return $_SESSION['data'][$key] = $value;
+    }
 
     public static function flash($key, $value)
     {
@@ -54,39 +57,41 @@ class Session
         return $_SESSION['flash'][$key] = $value;
     }
     
-	public static function exists($name) 
-	{
+    public static function exists($name) 
+    {
 
-		return isset(self::all()[$name]);
-	}
+        return isset(self::all()[$name]);
+    }
 
-	public static function get($name, $default = null)
-	{
+    public static function get($name, $default = null)
+    {
 
-        if(self::exists($name))
+        if(self::exists($name)) {
             return self::all()[$name];
+        }
         return $default;
-	}
+    }
 
-	public static function delete($key) 
-	{
-        if(isset($_SESSION['data'][$key]))
+    public static function delete($key) 
+    {
+        if(isset($_SESSION['data'][$key])) {
             unset($_SESSION['data'][$key]);
-        elseif(isset($_SESSION['old-flash'][$key]))
+        } elseif(isset($_SESSION['old-flash'][$key])) {
             unset($_SESSION['old-flash'][$key]);
-        elseif(isset($_SESSION['flash'][$key]))
+        } elseif(isset($_SESSION['flash'][$key])) {
             unset($_SESSION['flash'][$key]);
-	}
+        }
+    }
 
-	public static function flush() 
-	{
+    public static function flush() 
+    {
         $_SESSION = [];
-	}
+    }
 
-	public static function kill() 
-	{
-		return session_destroy();
-	}
+    public static function kill() 
+    {
+        return session_destroy();
+    }
 }
 
 Session::construct();

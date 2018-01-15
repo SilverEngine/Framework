@@ -73,12 +73,16 @@ class HTMLElement
 
         if ($this->children) {
             $html .= '>';
-            $html .= implode('', array_map(function($c) {
-                if (is_string($c)) {
-                    return htmlspecialchars($c);
-                }
-                return $c;
-            }, $this->children));
+            $html .= implode(
+                '', array_map(
+                    function ($c) {
+                        if (is_string($c)) {
+                            return htmlspecialchars($c);
+                        }
+                        return $c;
+                    }, $this->children
+                )
+            );
             $html .= '</' . $this->tagname . '>';
         } else {
             if (strtolower($this->tagname) == 'script') {

@@ -10,7 +10,8 @@ $weird = Test::data('weird');
 $data = Test::data('data');
 $sdata = Test::data('sdata');
 
-function only($arr, ...$keys) {
+function only($arr, ...$keys) 
+{
     $r = [];
     foreach ($keys as $key) {
         $r[$key] = $arr[$key];
@@ -56,16 +57,20 @@ Test::define(
 Test::define(
     Query::select(
         // TODO: simplify this
-        Column::ensure([
+        Column::ensure(
+            [
             null,
             Fn::groupConcat('s.secondary_id'),
             'ids'
-        ]),
-        Column::ensure([
+            ]
+        ),
+        Column::ensure(
+            [
             null,
             Fn::groupConcat('s.data', '-'),
             'dt'
-        ])
+            ]
+        )
     )
     ->from('secondary s')
     ->groupBy('id_main')
@@ -77,10 +82,12 @@ Test::define(
 );
 Test::define(
     Query::count()
-    ->from(Query::select('id_main id', 'text text')
+    ->from(
+        Query::select('id_main id', 'text text')
            ->from('main')
            ->union(Query::select('secondary_id id', 'data text')->from('secondary')),
-           'name'),
+        'name'
+    ),
     ['count' => 5],
     'union'
 );

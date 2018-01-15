@@ -31,12 +31,14 @@ class DefaultSeed
 
     public static function Users($table = 'users')
     {
-        Seed::insert('users', [
+        Seed::insert(
+            'users', [
             'username' => 'admin',
             'password' => md5('admin'),
             'salt'     => 'ht4h4',
             'email'    => 'admin@admin.local',
             'active'   => 1,
-        ])->execute();
+            ]
+        )->execute();
     }
 }

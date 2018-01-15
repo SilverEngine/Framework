@@ -3,7 +3,8 @@
 namespace Silver\Database;
 
 
-class Relation {
+class Relation
+{
     private $local_model;
     private $alias;
     private $local_id;
@@ -12,54 +13,64 @@ class Relation {
     private $through;
     private $wheres = [];
 
-    public function __construct($local) {
+    public function __construct($local) 
+    {
         $this->localModel($local);
     }
 
-    public function hasOne($model, $local_id, $remote_id = null) {
+    public function hasOne($model, $local_id, $remote_id = null) 
+    {
         return $this->remoteModel($model)
             ->local($local_id)
             ->remote($remote_id);
     }
 
-    public function hasMany($model, $remote_id, $local_id = null) {
+    public function hasMany($model, $remote_id, $local_id = null) 
+    {
         return $this->remoteModel($model)
             ->remote($remote_id)
             ->local($local_id);
     }
 
-    public function through($local_id, $through_table, $remote_id) {
+    public function through($local_id, $through_table, $remote_id) 
+    {
         $this->through = [$local_id, $through_table, $remote_id];
         return $this;
     }
 
-    public function local($id) {
+    public function local($id) 
+    {
         $this->local_id = $id;
         return $this;
     }
 
-    public function remote($id) {
+    public function remote($id) 
+    {
         $this->remote_id = $id;
         return $this;
     }
 
-    public function localModel($model) {
+    public function localModel($model) 
+    {
         $this->local_model = $model;
         return $this;
     }
 
-    public function remoteModel($model) {
+    public function remoteModel($model) 
+    {
         $this->remote_model = $model;
         return $this;
     }
 
-    public function alias($alias) {
+    public function alias($alias) 
+    {
         $this->alias = $alias;
         return $this;
     }
 
     // XXX: unused
-    public function getReferences() {
+    public function getReferences() 
+    {
         // Incomplete reference exception
         if ($this->through) {
             // return 2 references
@@ -70,13 +81,15 @@ class Relation {
 
     // Output:
     
-    public function getTable() {
+    public function getTable() 
+    {
         $rm = $this->remote_model;
         $alias = Parts\Name::ensure($this->alias);
         return new Parts\Table($rm::tableName(), $alias);
     }
 
-    public function getJoinCondition() {
+    public function getJoinCondition() 
+    {
         $lm = $this->local_model;
         $rm = $this->remote_model;
 
@@ -88,7 +101,8 @@ class Relation {
         return new Parts\JoinCondition([$lt, $lid], '=', [$alias, $rid]);
     }
 
-    public function makeXXXJoin($alias) {
+    public function makeXXXJoin($alias) 
+    {
 
 
         $rt =    Parts\Name::ensure($rm::tableName());

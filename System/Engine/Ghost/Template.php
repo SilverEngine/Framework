@@ -23,9 +23,9 @@ use Silver\Http\Session;
 class Template implements RenderInterface
 {
     private $_file;
-    private $_data = array();
+    private $_data   = array();
     private $_master = null;
-    private $_debug = false;
+    private $_debug  = false;
 
     function __construct($file, $data = [])
     {
@@ -33,19 +33,22 @@ class Template implements RenderInterface
         $this->_data = $data;
     }
 
-    public function set($key, $value) {
+    public function set($key, $value)
+    {
         $this->_data[$key] = $value;
         return $this;
     }
 
-    public function data() {
+    public function data()
+    {
         return $this->_data;
     }
 
     public function render()
     {
-        if (!file_exists($this->_file))
+        if (!file_exists($this->_file)) {
             throw new \Exception("File not found {$this->_file}");
+        }
 
         $render = file_get_contents($this->_file);
 
@@ -77,13 +80,13 @@ class Template implements RenderInterface
         // $render = $this->parseRoute($render);
 
 
-
-
-        if($this->_master)
+        if ($this->_master) {
             $render = $this->parseMaster($render);
+        }
 
-        foreach ($this->_data as $key => $value)
+        foreach ($this->_data as $key => $value) {
             $$key = $value;
+        }
 
         if ($this->_debug) {
             echo $render;
@@ -102,35 +105,44 @@ class Template implements RenderInterface
         return $render;
     }
 
-    private function parseDebug($body) {
+    private function parseDebug($body)
+    {
         $self = $this;
-        $body = preg_replace_callback("/#debug[\s*]*/", function ($match) use ($self) {
-            $self->_debug = true;
-            return '';
-        }, $body);
+        $body = preg_replace_callback(
+            "/#debug[\s*]*/", function ($match) use ($self) {
+                $self->_debug = true;
+                return '';
+            }, $body
+        );
         return $body;
     }
 
     private function parse_vars($body)
     {
 
-        $body = preg_replace_callback("/{{{([^}]*)}}}/", function ($match) {
-            $var = trim($match[1]);
-            return "<?php echo @$var;?>";
-        }, $body);
+        $body = preg_replace_callback(
+            "/{{{([^}]*)}}}/", function ($match) {
+                $var = trim($match[1]);
+                return "<?php echo @$var;?>";
+            }, $body
+        );
 
         //For vue/laravel skipping
-        $body = preg_replace_callback("/@{{([^}]*)}}/", function ($match) {
-            $var = trim($match[1]);
-            ndd($var);
-            /*            return "<?php echo @htmlentities($var); ?>";*/
-            return '{@{@' . htmlentities($var) . '@}@}';
-        }, $body);
+        $body = preg_replace_callback(
+            "/@{{([^}]*)}}/", function ($match) {
+                $var = trim($match[1]);
+                ndd($var);
+                /*            return "<?php echo @htmlentities($var); ?>";*/
+                return '{@{@' . htmlentities($var) . '@}@}';
+            }, $body
+        );
 
-        $body = preg_replace_callback("/{{([^}]*)}}/", function ($match) {
-            $var = trim($match[1]);
-            return "<?php echo @htmlentities($var); ?>";
-        }, $body);
+        $body = preg_replace_callback(
+            "/{{([^}]*)}}/", function ($match) {
+                $var = trim($match[1]);
+                return "<?php echo @htmlentities($var); ?>";
+            }, $body
+        );
 
         return $body;
     }
@@ -138,98 +150,122 @@ class Template implements RenderInterface
     private function parse_vars_skip($body)
     {
         //For vue/laravel skipping
-        $body = preg_replace_callback("/{@{@([^}]*)@}@}/", function ($match) {
-            $var = trim($match[1]);
+        $body = preg_replace_callback(
+            "/{@{@([^}]*)@}@}/", function ($match) {
+                $var = trim($match[1]);
 
-            return '{{ ' . htmlentities($var) . ' }}';
+                return '{{ ' . htmlentities($var) . ' }}';
 
-        }, $body);
+            }, $body
+        );
 
         return $body;
     }
 
     private function parse_blocks($body)
     {
-        $body = preg_replace_callback("/#block\\((.*)\\)/", function ($match) {
-            $blockname = trim($match[1]);
-            return "{{{ \$_block_{$blockname} }}}";
-        }, $body);
+        $body = preg_replace_callback(
+            "/#block\\((.*)\\)/", function ($match) {
+                $blockname = trim($match[1]);
+                return "{{{ \$_block_{$blockname} }}}";
+            }, $body
+        );
 
         return $body;
     }
 
     private function filter_if($body)
     {
-        $body = preg_replace_callback("/#if.*/", function ($match) {
-            $if = substr(trim($match[0]), 1);
-            return "<?php $if { ?>";
-        }, $body);
+        $body = preg_replace_callback(
+            "/#if.*/", function ($match) {
+                $if = substr(trim($match[0]), 1);
+                return "<?php $if { ?>";
+            }, $body
+        );
 
-        $body = preg_replace_callback("/#elseif.*/", function ($match) {
-            $if = substr(trim($match[0]), 1);
-            return "<?php } $if { ?>";
-        }, $body);
+        $body = preg_replace_callback(
+            "/#elseif.*/", function ($match) {
+                $if = substr(trim($match[0]), 1);
+                return "<?php } $if { ?>";
+            }, $body
+        );
 
-        $body = preg_replace_callback("/#else/", function ($match) {
-            return "<?php } else { ?>";
-        }, $body);
+        $body = preg_replace_callback(
+            "/#else/", function ($match) {
+                return "<?php } else { ?>";
+            }, $body
+        );
 
-        $body = preg_replace_callback("/#endif/", function ($match) {
-            return "<?php } ?>";
-        }, $body);
+        $body = preg_replace_callback(
+            "/#endif/", function ($match) {
+                return "<?php } ?>";
+            }, $body
+        );
 
         return $body;
     }
 
     private function filter_foreach($body)
     {
-        $body = preg_replace_callback("/#foreach.*/", function ($match) {
-            $if = substr(trim($match[0]), 1);
-            return "<?php $if { ?>";
-        }, $body);
+        $body = preg_replace_callback(
+            "/#foreach.*/", function ($match) {
+                $if = substr(trim($match[0]), 1);
+                return "<?php $if { ?>";
+            }, $body
+        );
 
-        $body = preg_replace_callback("/#endforeach/", function ($match) {
-            return "<?php } ?>";
-        }, $body);
+        $body = preg_replace_callback(
+            "/#endforeach/", function ($match) {
+                return "<?php } ?>";
+            }, $body
+        );
 
         return $body;
     }
 
     private function filter_for($body)
     {
-        $body = preg_replace_callback("/#for.*/", function ($match) {
-            $if = substr(trim($match[0]), 1);
-            return "<?php $if { ?>";
-        }, $body);
+        $body = preg_replace_callback(
+            "/#for.*/", function ($match) {
+                $if = substr(trim($match[0]), 1);
+                return "<?php $if { ?>";
+            }, $body
+        );
 
-        $body = preg_replace_callback("/#endfor/", function ($match) {
-            return "<?php } ?>";
-        }, $body);
+        $body = preg_replace_callback(
+            "/#endfor/", function ($match) {
+                return "<?php } ?>";
+            }, $body
+        );
 
         return $body;
     }
 
-    protected function parseComments($body) {
-        $body = preg_replace_callback('/<!--(.*)-->/', function($match) {
-            return '';
-        }, $body);
+    protected function parseComments($body)
+    {
+        $body = preg_replace_callback(
+            '/<!--(.*)-->/', function ($match) {
+                return '';
+            }, $body
+        );
         return $body;
     }
 
-    protected function parseMaster($body) {
+    protected function parseMaster($body)
+    {
         $master = str_replace('.', '/', $this->_master);
 
         $blocks = [];
         $current_block = null;
         $block_content = '';
 
-        foreach(explode("\n", $body) as $line) {
-            if(preg_match('/#set\[(.*)\]/s', $line, $matches)) {
+        foreach (explode("\n", $body) as $line) {
+            if (preg_match('/#set\[(.*)\]/s', $line, $matches)) {
                 $current_block = $matches[1];
                 continue;
             }
 
-            if(preg_match('/#end/', $line)) {
+            if (preg_match('/#end/', $line)) {
                 $blocks[$current_block] = $block_content;
                 $block_content = '';
                 $current_block = null;
@@ -240,19 +276,21 @@ class Template implements RenderInterface
         }
 
 
-        $fullpath = ROOT."App/Views/{$master}.ghost".EXT;
+        $fullpath = ROOT . "App/Views/{$master}.ghost" . EXT;
 
-        if(! is_file($fullpath))
-          $fullpath = ROOT."App/Views/{$master}.ghost.tpl";
+        if (!is_file($fullpath)) {
+            $fullpath = ROOT . "App/Views/{$master}.ghost.tpl";
+        }
 
         $ghost = new \Silver\Engine\Ghost\Template($fullpath);
 
-        if($blocks){
+        if ($blocks) {
             foreach ($blocks as $key => $value) {
                 $ghost->set('_block_' . $key, $value);
             }
-            foreach($this->_data as $key => $value)
+            foreach ($this->_data as $key => $value) {
                 $ghost->set($key, $value);
+            }
         }
 
         return $ghost->render('');
@@ -264,9 +302,11 @@ class Template implements RenderInterface
 
         foreach ($bodyLines as $key => $value) {
 
-            $bodyLines[$key] = preg_replace_callback("/{{ asset\('(.*)'\) }}/s", function ($match) {
-                return $this->processAsset($match[1]);
-            }, $value);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ asset\('(.*)'\) }}/s", function ($match) {
+                    return $this->processAsset($match[1]);
+                }, $value
+            );
         }
 
         $body = implode("\n", $bodyLines);
@@ -280,9 +320,11 @@ class Template implements RenderInterface
 
         foreach ($bodyLines as $key => $value) {
 
-            $bodyLines[$key] = preg_replace_callback("/{{ css\('(.*)'\) }}/s", function ($match) {
-                return $this->processAssetCss($match[1]);
-            }, $value);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ css\('(.*)'\) }}/s", function ($match) {
+                    return $this->processAssetCss($match[1]);
+                }, $value
+            );
         }
 
         $body = implode("\n", $bodyLines);
@@ -296,9 +338,11 @@ class Template implements RenderInterface
 
         foreach ($bodyLines as $key => $value) {
 
-            $bodyLines[$key] = preg_replace_callback("/{{ js\('(.*)'\) }}/s", function ($match) {
-                return $this->processAssetJs($match[1]);
-            }, $value);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ js\('(.*)'\) }}/s", function ($match) {
+                    return $this->processAssetJs($match[1]);
+                }, $value
+            );
         }
 
         $body = implode("\n", $bodyLines);
@@ -312,9 +356,11 @@ class Template implements RenderInterface
 
         foreach ($bodyLines as $key => $value) {
 
-            $bodyLines[$key] = preg_replace_callback("/{{ sys\('(.*)'\) }}/s", function ($match) {
-                return $this->processSys($match[1]);
-            }, $value);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ sys\('(.*)'\) }}/s", function ($match) {
+                    return $this->processSys($match[1]);
+                }, $value
+            );
         }
 
         $body = implode("\n", $bodyLines);
@@ -327,13 +373,15 @@ class Template implements RenderInterface
     {
 
         $bodyLines = explode("\n", $body);
-//        dd($bodyLines);
+        //        dd($bodyLines);
 
         foreach ($bodyLines as $key => $value) {
 
-            $bodyLines[$key] = preg_replace_callback("/{{ lang\('(.*)'\) }}/s", function ($match) {
-                return $this->processLang($match[1]);
-            }, $value);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ lang\('(.*)'\) }}/s", function ($match) {
+                    return $this->processLang($match[1]);
+                }, $value
+            );
         }
 
         $body = implode("\n", $bodyLines);
@@ -347,11 +395,13 @@ class Template implements RenderInterface
 
         foreach ($bodyLines as $key => $value) {
 
-            $bodyLines[$key] = preg_replace_callback("/{{ trans\('(.*)'\) }}/s", function ($match) {
-//                dd($match);
-                return $this->processLang($match[1]);
-            }, $value);
-//            dd($match);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ trans\('(.*)'\) }}/s", function ($match) {
+                    //                dd($match);
+                    return $this->processLang($match[1]);
+                }, $value
+            );
+            //            dd($match);
         }
 
         $body = implode("\n", $bodyLines);
@@ -361,27 +411,27 @@ class Template implements RenderInterface
 
     protected function processUrl($relativePath)
     {
-        return URL .  $relativePath;
+        return URL . $relativePath;
     }
 
     protected function processAsset($relativePath)
     {
-        return URL . '/assets/'. $relativePath;
+        return URL . '/assets/' . $relativePath;
     }
 
     protected function processAssetCss($relativePath)
     {
-        return '<link rel="stylesheet" href="'. URL . '/assets/css/'. $relativePath.'.css">';
+        return '<link rel="stylesheet" href="' . URL . '/assets/css/' . $relativePath . '.css">';
     }
 
     protected function processAssetJs($relativePath)
     {
-        return '<script src="'. URL . '/assets/js/'. $relativePath.'.js"></script>';
+        return '<script src="' . URL . '/assets/js/' . $relativePath . '.js"></script>';
     }
 
     protected function processSys($relativePath)
     {
-        return URL . 'System/'. $relativePath;
+        return URL . 'System/' . $relativePath;
     }
 
 
@@ -409,12 +459,13 @@ class Template implements RenderInterface
 
     protected function processLang($relativePath)
     {
-//        dd($relativePath);
+        //        dd($relativePath);
         $relativePath = explode('.', $relativePath);
-        if(Session::exists('lang'))
-            $file = include(ROOT . 'Storage/Lang/'.Session::get('lang').'/'.$relativePath[0].EXT);
-        else
-            $file = include(ROOT . 'Storage/Lang/en/'. $relativePath[0].EXT);
+        if (Session::exists('lang')) {
+            $file = include ROOT . 'Storage/Lang/' . Session::get('lang') . '/' . $relativePath[0] . EXT;
+        } else {
+            $file = include ROOT . 'Storage/Lang/en/' . $relativePath[0] . EXT;
+        }
         return $file[$relativePath[1]];
     }
 
@@ -424,9 +475,11 @@ class Template implements RenderInterface
 
         foreach ($bodyLines as $key => $value) {
             // |(include \'(.*)\')
-            $bodyLines[$key] = preg_replace_callback("/{{ include\('(.*)'\) }}/", function ($match) {
-                return $this->includeFile($match[1]);
-            }, $value);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ include\('(.*)'\) }}/", function ($match) {
+                    return $this->includeFile($match[1]);
+                }, $value
+            );
         }
 
         $body = implode("\n", $bodyLines);
@@ -439,9 +492,11 @@ class Template implements RenderInterface
         $bodyLines = explode("\n", $body);
 
         foreach ($bodyLines as $key => $value) {
-            $bodyLines[$key] = preg_replace_callback("/{{ component\('(.*)'\) }}/", function ($match) {
-                return $this->includeComponent($match[1]);
-            }, $value);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ component\('(.*)'\) }}/", function ($match) {
+                    return $this->includeComponent($match[1]);
+                }, $value
+            );
         }
 
         $body = implode("\n", $bodyLines);
@@ -453,11 +508,13 @@ class Template implements RenderInterface
     {
         $bodyLines = explode("\n", $body);
         foreach ($bodyLines as $key => $value) {
-            $bodyLines[$key] = preg_replace_callback("/{{ route\(([^,)]*)(.*)\) }}/s", function ($match) {
-                $route_string = trim($match[1], ' ');
-                $vars_string = trim($match[2], ', ');
-                return "<?php echo \\Silver\\Core\\Route::getRoute($route_string)->url($vars_string); ?>";
-            }, $value);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ route\(([^,)]*)(.*)\) }}/s", function ($match) {
+                    $route_string = trim($match[1], ' ');
+                    $vars_string = trim($match[2], ', ');
+                    return "<?php echo \\Silver\\Core\\Route::getRoute($route_string)->url($vars_string); ?>";
+                }, $value
+            );
         }
 
         $body = implode("\n", $bodyLines);
@@ -468,10 +525,12 @@ class Template implements RenderInterface
     protected function parseExtends($body)
     {
 
-        $body = preg_replace_callback("/{{ extends\('(.*)'\) }}/", function ($match) {
-            $this->_master = $match[1];
-            return '';
-        }, $body);
+        $body = preg_replace_callback(
+            "/{{ extends\('(.*)'\) }}/", function ($match) {
+                $this->_master = $match[1];
+                return '';
+            }, $body
+        );
 
         return $body;
     }
@@ -482,9 +541,11 @@ class Template implements RenderInterface
 
         foreach ($bodyLines as $key => $value) {
             // |(include \'(.*)\')
-            $bodyLines[$key] = preg_replace_callback("/{{ url\('(.*)'\) }}/s", function ($match) {
-                return $this->generateUrl($match[1]);
-            }, $value);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ url\('(.*)'\) }}/s", function ($match) {
+                    return $this->generateUrl($match[1]);
+                }, $value
+            );
         }
 
         $body = implode("\n", $bodyLines);
@@ -494,11 +555,10 @@ class Template implements RenderInterface
 
     protected function generateUrl($link)
     {
-        if(!empty($link)){
-            $url = URL.$link;
+        if (!empty($link)) {
+            $url = URL . $link;
             return $url;
-        }
-        else{
+        } else {
             return URL;
         }
 
@@ -511,9 +571,11 @@ class Template implements RenderInterface
 
         foreach ($bodyLines as $key => $value) {
             // |(include \'(.*)\')
-            $bodyLines[$key] = preg_replace_callback("/{{ path\('(.*)'\) }}/s", function ($match) {
-                return $this->generateUrlFromRoute($match[1]);
-            }, $value);
+            $bodyLines[$key] = preg_replace_callback(
+                "/{{ path\('(.*)'\) }}/s", function ($match) {
+                    return $this->generateUrlFromRoute($match[1]);
+                }, $value
+            );
         }
 
         $body = implode("\n", $bodyLines);
@@ -532,10 +594,11 @@ class Template implements RenderInterface
     {
         $alias = str_replace('.', '/', $alias);
 
-        $loadPath = ROOT."App/Views/{$alias}.ghost".EXT;
+        $loadPath = ROOT . "App/Views/{$alias}.ghost" . EXT;
 
-        if(! is_file($loadPath))
-          $loadPath = ROOT."App/Views/{$alias}.ghost.tpl";
+        if (!is_file($loadPath)) {
+            $loadPath = ROOT . "App/Views/{$alias}.ghost.tpl";
+        }
 
         if (file_exists($loadPath)) {
             $ghost = new self($loadPath);
@@ -549,10 +612,11 @@ class Template implements RenderInterface
     {
         $alias = str_replace('.', '/', $alias);
 
-        $loadPath = ROOT."App/Views/components/{$alias}.ghost".EXT;
+        $loadPath = ROOT . "App/Views/components/{$alias}.ghost" . EXT;
 
-        if(! is_file($loadPath))
-          $loadPath = ROOT."App/Views/components/{$alias}.ghost.tpl";
+        if (!is_file($loadPath)) {
+            $loadPath = ROOT . "App/Views/components/{$alias}.ghost.tpl";
+        }
 
         if (file_exists($loadPath)) {
             $ghost = new self($loadPath);
@@ -568,7 +632,7 @@ class Template implements RenderInterface
 
     protected function includeAsset($alias)
     {
-        $loadPath = ROOT."public/{$alias}";
+        $loadPath = ROOT . "public/{$alias}";
         if (file_exists($loadPath)) {
             $ghost = new self($loadPath);
             return $ghost->render($alias);
@@ -579,7 +643,7 @@ class Template implements RenderInterface
 
     protected function includeAssetCss($alias)
     {
-        $loadPath = '<link rel="stylesheet" href="'.ROOT."public/css/{$alias}".'">';
+        $loadPath = '<link rel="stylesheet" href="' . ROOT . "public/css/{$alias}" . '">';
         dd($loadPath);
         if (file_exists($loadPath)) {
             $ghost = new self($loadPath);
@@ -591,7 +655,7 @@ class Template implements RenderInterface
 
     protected function includeAssetJs($alias)
     {
-        $loadPath = ROOT."public/js/{$alias}";
+        $loadPath = ROOT . "public/js/{$alias}";
         if (file_exists($loadPath)) {
             $ghost = new self($loadPath);
             return $ghost->render($alias);
@@ -602,7 +666,7 @@ class Template implements RenderInterface
 
     protected function includeSys($alias)
     {
-        $loadPath = ROOT."System/{$alias}";
+        $loadPath = ROOT . "System/{$alias}";
         if (file_exists($loadPath)) {
             $ghost = new self($loadPath);
             return $ghost->render($alias);
@@ -614,7 +678,7 @@ class Template implements RenderInterface
     protected function getRoute($route_name, $vars = [])
     {
         $route = Route::getRoute($route_name);
-        if($route) {
+        if ($route) {
             return $route->url($vars);
         } else {
             throw new \Exception("Route $route_name not found.");
