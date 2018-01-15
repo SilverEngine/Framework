@@ -14,16 +14,18 @@ namespace Silver\Core\Http;
 
 use Silver\Http\Session;
 
-class Lang {
+class Lang
+{
 
     public static function get($relativePath)
     {
         $relativePath = explode('.', $relativePath);
         
-        if(Session::exists('lang'))
-            $file = include(ROOT . 'Storage/Lang/'.Session::get('lang').'/'.$relativePath[0].EXT);
-        else
-            $file = include(ROOT . 'Storage/Lang/en/'. $relativePath[0].EXT);
+        if(Session::exists('lang')) {
+            $file = include ROOT . 'Storage/Lang/'.Session::get('lang').'/'.$relativePath[0].EXT;
+        } else {
+            $file = include ROOT . 'Storage/Lang/en/'. $relativePath[0].EXT;
+        }
 
         return $file[$relativePath[1]];
     }

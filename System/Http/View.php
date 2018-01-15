@@ -60,16 +60,18 @@ class View implements RenderInterface
     public function withComponent($value = true, $key = false)
     {
 
-        if($key)
-          $key = 'component_'.$key;
-        else
-          $key = 'component_payload';
+        if($key) {
+            $key = 'component_'.$key;
+        } else {
+            $key = 'component_payload';
+        }
 
         $this->data[ $key ] = $value;
         return $this;
     }
 
-    public function data() {
+    public function data() 
+    {
         return $this->data;
     }
 
@@ -77,33 +79,36 @@ class View implements RenderInterface
     {
         $self = $this;
 
-        return ErrorHandler::withFilter(E_ALL ^ E_NOTICE, function() use ($self) {
-            $name = str_replace('.', '/', $self->template);
+        return ErrorHandler::withFilter(
+            E_ALL ^ E_NOTICE, function () use ($self) {
+                $name = str_replace('.', '/', $self->template);
 
-            if ($target = App::instance()->find('Views/' . $name . '.ghost.php')) {
-                $template = new Template($target, $self->data);
-                return $template->render();
-            } else if ($target = App::instance()->find('Views/' . $name . '.ghost.tpl')) {
-                $template = new Template($target, $self->data);
-                return $template->render();
-            } else if ($target = App::instance()->find('Views/' . $name . '.php')) {
-                try {
-                    foreach ($self->data as $key => $value)
-                        $$key = $value;
+                if ($target = App::instance()->find('Views/' . $name . '.ghost.php')) {
+                    $template = new Template($target, $self->data);
+                    return $template->render();
+                } else if ($target = App::instance()->find('Views/' . $name . '.ghost.tpl')) {
+                    $template = new Template($target, $self->data);
+                    return $template->render();
+                } else if ($target = App::instance()->find('Views/' . $name . '.php')) {
+                    try {
+                        foreach ($self->data as $key => $value) {
+                            $$key = $value;
+                        }
 
-                    ob_start();
-                    include($target);
-                    $content = ob_get_contents();
-                } finally {
-                    ob_end_clean();
+                        ob_start();
+                        include $target;
+                        $content = ob_get_contents();
+                    } finally {
+                        ob_end_clean();
+                    }
+                    return $content;
+                } else if ($target = App::instance()->find('Views/' . $name . '.html')) {
+                    return file_get_contents($target);
+                } else {
+                    throw new Exception("Template $name not found.");
                 }
-                return $content;
-            } else if ($target = App::instance()->find('Views/' . $name . '.html')) {
-                return file_get_contents($target);
-            } else {
-                throw new Exception("Template $name not found.");
             }
-        });
+        );
     }
 
     public function __call($key, $args)

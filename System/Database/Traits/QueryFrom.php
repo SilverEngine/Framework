@@ -6,10 +6,12 @@ use Silver\Database\Parts\Table;
 use Silver\Database\Parts\Column;
 use Silver\Database\Source;
 
-trait QueryFrom {
+trait QueryFrom
+{
     private $tables = [];
 
-    public function from($table, $alias = null) {
+    public function from($table, $alias = null) 
+    {
 
         if(is_callable($table)) {
             $table = $table();
@@ -24,7 +26,8 @@ trait QueryFrom {
         return $this;
     }
 
-    protected static function compileFrom($q) {
+    protected static function compileFrom($q) 
+    {
         if($q->tables) {
             return ' FROM ' . implode(', ', $q->tables);
         }

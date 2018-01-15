@@ -3,7 +3,8 @@
 namespace Silver\Test\Database;
 
 Test::data('weird', 'weird\'"`name');
-Test::data('data', [
+Test::data(
+    'data', [
     1 => [
         'id_main' => 1, // XXX autoinc
         'boolean' => 1, // FIXME: dialect
@@ -41,9 +42,11 @@ Test::data('data', [
         'enum' => 'b',
         'set' => 'b,c'
     ]
-]);
+    ]
+);
 
-Test::data('sdata', [
+Test::data(
+    'sdata', [
     1 => [
         'secondary_id' => 1,
         'id_main' => 1,
@@ -59,4 +62,5 @@ Test::data('sdata', [
         'id_main' => 2,
         'data' => 'b',
     ],
-]);
+    ]
+);

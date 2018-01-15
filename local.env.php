@@ -15,6 +15,10 @@ return [
 
     ],
 
+    'routes' => [
+      
+    ],
+
     'databases' => [
         'on' => true,
         'default' => 'local',

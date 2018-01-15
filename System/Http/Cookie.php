@@ -18,7 +18,8 @@ use Silver\Support\Crypter;
 /**
  * Cookie
  */
-class Cookie {
+class Cookie
+{
 
     private static $name;
     private static $value;
@@ -27,7 +28,7 @@ class Cookie {
     /**
      * @param     $name
      * @param     $value
-     * @param int $expire
+     * @param int     $expire
      * @param     $secured
      *
      * @return Cookie
@@ -38,17 +39,17 @@ class Cookie {
 
         self::$name = $name;
 
-        if ( $expire > 0 ) {
+        if ($expire > 0 ) {
             self::$expire = $expire;
         }
-        if ( $extend == true ) {
+        if ($extend == true ) {
             $time = self::$expire;
         } else {
             $time = time() + self::$expire;
         }
 
         //First we check if data $value is array or string
-        if ( is_array($value) ) {
+        if (is_array($value) ) {
             $data = [
                 "values"    => $value,
                 "expire"    => $time,
@@ -74,7 +75,7 @@ class Cookie {
 
     public function encrypt()
     {
-        if ( isset($_COOKIE) ) {
+        if (isset($_COOKIE) ) {
             $name = self::$name;
             $value = Crypter::crypt(self::$value);
             self::setCookie($name, $value, time() + self::$expire);
@@ -95,21 +96,21 @@ class Cookie {
     public static function get($name, $return_type = null)
     {
         //Difrend typed of return...meybe one function for that
-        if ( self::exists($name) ) {
+        if (self::exists($name) ) {
             self::$name = $name;
-            if ( self::is_crypted($name) == true ) {
+            if (self::is_crypted($name) == true ) {
                 $ret = json_decode(Crypter::decrypt($_COOKIE[$name]), true);
             } else {
                 $ret = json_decode($_COOKIE[$name], true);
             }
             //Return type 0 return only array of values
-            if ( $return_type == null ) {
+            if ($return_type == null ) {
                 return $ret['values'];
 
-            } else if ( $return_type == "expire" ) {
+            } else if ($return_type == "expire" ) {
                 return $ret['expire'];
 
-            } else if ( $return_type == "all" ) {
+            } else if ($return_type == "all" ) {
                 return $ret;
             }else{
                 return $ret['values'];
@@ -124,8 +125,8 @@ class Cookie {
      */
     public static function is_crypted($value)
     {
-        if ( ! is_null($value) ) {
-            if ( Crypter::decrypt($_COOKIE[$value]) != "" ) {
+        if (! is_null($value) ) {
+            if (Crypter::decrypt($_COOKIE[$value]) != "" ) {
                 //Cokie is crypted
                 return true;
             } else {
@@ -153,11 +154,11 @@ class Cookie {
         $old_expire = $old_data['expire'];
         $old_encrypted = $old_data['encrypted'];
 
-        if ( is_array($old_data) ) {
-            if ( ! is_array($new_value) ) {
+        if (is_array($old_data) ) {
+            if (! is_array($new_value) ) {
                 $new_value = array($new_value);
             }
-            if ( $old_encrypted == 1 ) {
+            if ($old_encrypted == 1 ) {
                 Cookie::set($key, array_merge($old_values, $new_value), $old_expire, true)->encrypt();
             } else {
                 Cookie::set($key, array_merge($old_values, $new_value), $old_expire, true);
@@ -182,9 +183,9 @@ class Cookie {
         $old_values = $old_data['values'];
         $old_expire = $old_data['expire'];
         $old_encrypted = $old_data['encrypted'];
-        if ( is_array($old_data) ) {
+        if (is_array($old_data) ) {
             unset($old_values[$value_to_delete]);
-            if ( $old_encrypted == 1 ) {
+            if ($old_encrypted == 1 ) {
                 Cookie::set($key, $old_values, $old_expire, true)->encrypt();
             } else {
                 Cookie::set($key, $old_values, $old_expire, true);
@@ -216,11 +217,13 @@ class Cookie {
 
     public static function flush()
     {
-        foreach ( self::all() as $key => $value )
+        foreach ( self::all() as $key => $value ) {
             self::delete($key);
+        }
     }
 
-    private static function setCookie($key, $value, $expiration) {
+    private static function setCookie($key, $value, $expiration) 
+    {
         Response::instance()->setCookie($key, $value, $expiration);
     }
 }

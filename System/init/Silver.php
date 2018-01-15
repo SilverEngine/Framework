@@ -19,8 +19,9 @@ class Silver
     public function run()
     {
         $result = Image::pull();
-        if (!$result)
+        if (!$result) {
             throw new Exception('Download error...');
+        }
     }
 
 }

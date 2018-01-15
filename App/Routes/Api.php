@@ -10,9 +10,12 @@
  * @link      https://github.com/SilverEngine/Framework
  */
 
-namespace App;
+namespace App\Routes;
 
 use Silver\Core\Route;
 
-Route::get('/', 'Welcome@welcome', 'home', 'public');
-Route::get('/demo', 'Welcome@demo', 'home', 'public');
+Route::group(['prefix' => 'api'], function(){
+  Route::get('/', function(){
+    return 'Welcome to the api';
+  });
+});

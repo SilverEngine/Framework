@@ -17,7 +17,9 @@ use \PHPUnit\Framework\TestCase;
 
 class ControllerTest extends TestCase
 {
-    /** @test  */
+    /**
+     * @test  
+     */
     public function testFirstMethod()
     {
         $num = 20;

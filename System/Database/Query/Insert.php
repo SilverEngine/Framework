@@ -8,12 +8,14 @@ use Silver\Database\Parts\Value;
 use Silver\Database\Parts\ColumnList;
 use Silver\Database\Source;
 
-class Insert extends Query {
+class Insert extends Query
+{
     private $table;
     private $headers = null;
     private $data = [];
 
-    public function __construct($table, $data = null) {
+    public function __construct($table, $data = null) 
+    {
         $source = Source::make($table);
         $this->addSource($source);
 
@@ -23,7 +25,8 @@ class Insert extends Query {
         }
     }
 
-    public function fill($data) {
+    public function fill($data) 
+    {
         if(!is_array($data)) {
             throw new \Exception("Data must be array.");
         }
@@ -62,17 +65,22 @@ class Insert extends Query {
         return $this;
     }
 
-    private function data_array($data) {
-        return array_map(function($d) {
-            return Value::ensure($d);
-        }, $data);
+    private function data_array($data) 
+    {
+        return array_map(
+            function ($d) {
+                return Value::ensure($d);
+            }, $data
+        );
     }
 
-    private function headers_exception() {
+    private function headers_exception() 
+    {
         throw new \Exception("All data in statement must have same format!");
     }
     
-    protected static function compile($q) {
+    protected static function compile($q) 
+    {
         $sql = 'INSERT INTO ' . $q->table;
 
         if($q->headers) {
@@ -80,9 +88,13 @@ class Insert extends Query {
             $sql .= ' (' . $headers . ')';
         }
 
-        $sql .= ' VALUES ' . implode(', ', array_map(function($data) {
-            return '(' . implode(', ', $data) . ')';
-        }, $q->data));
+        $sql .= ' VALUES ' . implode(
+            ', ', array_map(
+                function ($data) {
+                    return '(' . implode(', ', $data) . ')';
+                }, $q->data
+            )
+        );
 
         return $sql;
     }

@@ -19,20 +19,22 @@ use Silver\Exception\NotFoundException;
 use Silver\Core\ErrorHandler as Handler;
 use Closure;
 
-class ApiTransform implements MiddlewareInterface {
-    public function execute(Request $req, Response $res, Closure $next) {
+class ApiTransform implements MiddlewareInterface
+{
+    public function execute(Request $req, Response $res, Closure $next) 
+    {
         $data = $next();
 
-//       if (Request::header('accept', 'application/json')) {
-//            $data = $data->data();
-//
-//
-//            return [
-//                'data' => $data,
-//                'status' => \Silver\Http\Response::instance()->getCode(),
-//                'msg' => 'not found',
-//            ];
-//        }
+        //       if (Request::header('accept', 'application/json')) {
+        //            $data = $data->data();
+        //
+        //
+        //            return [
+        //                'data' => $data,
+        //                'status' => \Silver\Http\Response::instance()->getCode(),
+        //                'msg' => 'not found',
+        //            ];
+        //        }
 
         return $data;
     }

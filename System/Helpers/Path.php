@@ -14,7 +14,8 @@ namespace Silver\Helpers;
 
 use Silver\Exception;
 
-class Path {
+class Path
+{
     const SEP = DIRECTORY_SEPARATOR;
     private $jail;
     private $path;
@@ -28,7 +29,8 @@ class Path {
      *
      * Class is immutable.
      */
-    public function __construct($path, $jail = '') {
+    public function __construct($path, $jail = '') 
+    {
         $this->path = '';
         if ($jail) {
             $this->setJail($jail);
@@ -36,7 +38,8 @@ class Path {
         $this->setPath($path);
     }
 
-    public function cd($path) {
+    public function cd($path) 
+    {
         if ($path) {
             return new static($this->getPath() . $path, $this->getJail());
         } else {
@@ -44,15 +47,18 @@ class Path {
         }
     }
 
-    public function path() {
+    public function path() 
+    {
         return $this->real($this->path, $this->jail, true);
     }
 
-    public function __toString() {
+    public function __toString() 
+    {
         return $this->path();
     }
 
-    public function file($file) {
+    public function file($file) 
+    {
         $dest = $this->real($file, $this->path(), true);
 
         if (!is_file($dest)) {
@@ -62,21 +68,24 @@ class Path {
         return $dest;
     }
 
-    public function getPath() {
+    public function getPath() 
+    {
         if ($this->path) {
             return $this->path;
         }
         return '';
     }
 
-    public function getJail() {
+    public function getJail() 
+    {
         if ($this->jail) {
             return $this->jail;
         }
         return '';
     }
 
-    private function setPath($path) {
+    private function setPath($path) 
+    {
         $path = trim($path);
         if ($path) {
             if ($path[0] != self::SEP) {
@@ -86,7 +95,8 @@ class Path {
         }
     }
 
-    private function setJail($jail) {
+    private function setJail($jail) 
+    {
         $jail = trim($jail);
         if ($jail) {
             $this->jail = $this->real($jail);
@@ -96,7 +106,8 @@ class Path {
     /**
      * Return filtered path and throw exception if it is not exists.
      */
-    private function real($path, $jail = '', $fullpath = false) {
+    private function real($path, $jail = '', $fullpath = false) 
+    {
         if ($jail) {
             $jail = $this->real($jail);
         }
