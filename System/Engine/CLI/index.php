@@ -223,7 +223,12 @@ class CLI
     {
 
         $name = ucfirst($name);
-        $routes_path = ROOT . 'App/Routes.php';
+
+        if(is_file(ROOT . 'App'.DS.'Routes'.EXT))
+            $routes_path = ROOT . 'App'.DS.'Routes'.EXT;
+        else
+            $routes_path = ROOT . 'App'.DS.'Routes'.DS.'Web'.EXT;
+
         $content = FILE($routes_path);
         $fh = fopen($routes_path, 'w');
 
@@ -244,7 +249,10 @@ class CLI
                 $this->success('Route created!');
             }
         } else {
-            $this->error('Can not open App/Routes.php.');
+            if(is_file(ROOT . 'App'.DS.'Routes'.EXT))
+                $this->error('Can not open App/Routes.php.');
+            else
+                $this->error('Can not open App/Routes/Web.php.');
         }
     }
 

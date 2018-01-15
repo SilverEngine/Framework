@@ -15,6 +15,6 @@ return [
     'System/App/Routes',
 
     //Edit here your routes belown
-    'App/Routes/Routes',
+    'App/Routes/Web',
     'App/Routes/Api',
 ];
