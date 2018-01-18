@@ -74,8 +74,17 @@ class Kernel
      */
     public function loadRoutes()
     {
-        foreach (Env::get('routes', []) as $route) {
-            include_once ROOT . $route . EXT;
+        foreach (Env::get('routes', []) as $route)
+        {
+          // ndd($route);
+            if($route == 'App/Routes/Auth')
+            {
+              if(is_file(ROOT. $route.EXT))
+                include_once ROOT . $route . EXT;
+            }
+            else {
+                include_once ROOT . $route . EXT;
+            }
         }
     }
 

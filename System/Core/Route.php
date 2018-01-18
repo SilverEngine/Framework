@@ -420,7 +420,18 @@ class Route
      * @param $action
      * @param null   $name
      */
-    public static function any($route, $action, $name = null, $middleware ='public')
+    public static function package($packageName)
+    {
+        self::register("get", '/login', 'Auth/Login@get', 'auth_login', 'public', 'get');
+        self::register("get", '/register', 'Auth/Login@get', 'auth_login', 'public', 'get');
+    }
+
+    /**
+     * @param $route
+     * @param $action
+     * @param null   $name
+     */
+    public static function any($route, $action, $name = null, $middleware = 'public')
     {
         return self::register("any", $route, $action, $name, $middleware, 'any');
     }

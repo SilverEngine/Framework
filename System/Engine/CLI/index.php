@@ -38,13 +38,17 @@ class CLI
     private function run()
     {
         switch ($this->cmd) {
-        case "g":
+          case "g":
             return $this->make();
-                break;
+          break;
+
+          case "make":
+            return $this->make();
+          break;
 
         case "migrate":
             return $this->migrate();
-                break;
+        break;
 
 
         default:
@@ -87,10 +91,10 @@ class CLI
             foreach (['model', 'view', 'controller'] as $type) {
                 $this->generate($type, $this->args[3]);
             }
-        } elseif ($this->args[2] == 'controller' 
-            || $this->args[2] == 'model' 
-            || $this->args[2] == 'view' 
-            || $this->args[2] == 'helper' 
+        } elseif ($this->args[2] == 'controller'
+            || $this->args[2] == 'model'
+            || $this->args[2] == 'view'
+            || $this->args[2] == 'helper'
             || $this->args[2] == 'facade'
         ) {
             $this->generate($this->args[2], $this->args[3]);

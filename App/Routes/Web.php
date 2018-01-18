@@ -14,5 +14,8 @@ namespace App\Routes;
 
 use Silver\Core\Route;
 
-Route::get('/', 'Welcome@welcome', 'home', 'public');
+// Route::get('/', 'Welcome@welcome', 'home', 'public');
+Route::get('/', 'Welcome@demo', 'home', 'public');
 Route::get('/demo', 'Welcome@demo', 'home', 'public');
+
+// Route::package('auth');
