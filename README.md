@@ -50,6 +50,30 @@ The WIKI [WIKI Documentation](https://github.com/SilverEngine/Framework/wiki) of
 
 Thank you for considering contributing to the framework! The contribution guide can be found in the [documentation](https://silverengine.net/docs/contributions).
 
+### Tree
+> For easy use please Src file direct  namespace to alias  Silver/<name of your project>/<classes>
+```php
+<project root>
+├─ config/
+├─ node_modules/
+├─ public/
+......└── index.php
+├─ src/
+......├── Controllers/
+............└── DefaultController.php
+......├── Facades/
+......├── Helpers/
+......├── Templates/
+......└── Services/
+├─ tests/
+├─ translations/
+├─ var/
+......├─ cache/
+......├─ log/
+......└─ session/
+├─ vendor/
+└─ composer.json
+```
 ## Security & Vulnerabilities
 
 If you discover a security vulnerability within our engine, please send us email at support@silverengine.net
