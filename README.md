@@ -48,7 +48,18 @@ The WIKI [WIKI Documentation](https://github.com/SilverEngine/Framework/wiki) of
 
 ## Contributing
 
-Thank you for considering contributing to the framework! The contribution guide can be found in the [documentation](https://silverengine.net/docs/contributions).
+Thank you for considering contributing to the framework!
+
+### Rules to follow
+
+1. Same tree structure
+2. PSR-4 and PSR-2 
+3. Namespace need to start with an Alias \Silver\
+4. Follow manual for pagkagist  [Packagist docs](https://packagist.org/)
+5. (Optional) join us on Discord server [Join here](https://discord.gg/cwMygSP)
+5. Make docs with .MD
+6. Code need to be unit tested - php v5.6 |  [PHPUnit](https://phpunit.de/index.html)
+
 
 ### Tree
 > For easy use please Src/ file direct the namespace to alias 
@@ -59,6 +70,7 @@ Thank you for considering contributing to the framework! The contribution guide 
 ```php
 <project root>
 ├─ config/
+├─ docs/
 ├─ node_modules/
 ├─ public/
 ......└── index.php
