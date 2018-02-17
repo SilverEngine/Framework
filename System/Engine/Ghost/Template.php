@@ -13,6 +13,7 @@
 namespace Silver\Engine\Ghost;
 
 use Silver\Core\Blueprints\RenderInterface;
+use Silver\Core\Env;
 use Silver\Core\Kernel;
 use Silver\Core\Route;
 use Silver\Http\Session;
@@ -63,7 +64,12 @@ class Template implements RenderInterface
         $render = $this->parseTrans($render);
 
         $render = $this->parseExtends($render);
-        // $render = $this->parseUrl($render); // url()
+        
+        if(!empty(Env::get('port')))
+        {
+            $render = $this->parseUrl($render); // url()
+        }
+        
         $render = $this->parseAssets($render); // asset()
         $render = $this->parseAssetsCss($render); // asset()
         $render = $this->parseAssetsJs($render); // asset()
