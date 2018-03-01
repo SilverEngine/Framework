@@ -64,7 +64,7 @@ Thank you for considering contributing to the framework!
 ### Tree
 > For easy use please Src/ file direct the namespace to alias 
 ```php 
-\Silver\<name of your project>\<classe>
+\Silver\<name of your project>\<classes>
 ```
 
 ```php
