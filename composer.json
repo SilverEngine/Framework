@@ -10,6 +10,8 @@
     ],
     "minimum-stability": "dev",
     "require": {
+        "silverengine/components": "dev-master",
+        "lotfio-lakehal/ouch": "dev-develop"
     },
     "autoload" : {
         "psr-4" : {
