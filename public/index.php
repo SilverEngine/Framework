@@ -57,6 +57,8 @@ if ($database->on == true) {
     \Silver\Database\Query::setConnection($database->local->driver);
 }
 
+$ouch = new Ouch\Core\Reporter;
+$ouch->enable();
 
 $kernel->loadRoutes();
 $kernel->loadMiddlewares();
