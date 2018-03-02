@@ -50,6 +50,12 @@ The WIKI [WIKI Documentation](https://github.com/SilverEngine/Framework/wiki) of
 
 Thank you for considering contributing to the framework!
 
+Special thanks
+
+- [lotfio-lakehal](https://github.com/lotfio-lakehal)
+- [nmarulo](https://github.com/nmarulo)
+- [antigov](https://github.com/antigov)
+
 ### Rules to follow
 
 1. Same tree structure
