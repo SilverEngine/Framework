@@ -55,6 +55,7 @@ Special thanks
 - [lotfio-lakehal](https://github.com/lotfio-lakehal)
 - [nmarulo](https://github.com/nmarulo)
 - [antigov](https://github.com/antigov)
+- [mawaishanif](https://github.com/mawaishanif)
 
 ### Rules to follow
 
