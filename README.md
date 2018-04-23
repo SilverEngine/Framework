@@ -52,7 +52,7 @@ Thank you for considering contributing to the framework!
 
 Special thanks
 
-- [lotfio-lakehal](https://github.com/lotfio-lakehal)
+- [lotfio-lakehal](https://github.com/lotfio)
 - [nmarulo](https://github.com/nmarulo)
 - [antigov](https://github.com/antigov)
 - [mawaishanif](https://github.com/mawaishanif)
