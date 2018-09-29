@@ -10,6 +10,7 @@
  * @link      https://github.com/SilverEngine/Framework
  */
 
+declare(strict_types=1);
 
 /**
  * require initialisation file
