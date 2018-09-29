@@ -11,8 +11,7 @@
     "minimum-stability": "dev",
     "require": {
         "silverengine/components": "dev-master",
-        "lotfio/ouch": "dev-develop",
-        "php": ">7.0"
+        "lotfio-lakehal/ouch": "dev-develop"
     },
     "autoload" : {
         "psr-4" : {
