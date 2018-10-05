@@ -1,22 +1,21 @@
-<?php echo '<?php'; ?>
-
+<?php
 namespace App\Controllers;
 
 use Silver\Core\Controller;
 use Silver\Http\View;
 
 /**
-* {{{$name}}} controller
+* nejc controller
 */
-class {{{ucfirst($name)}}}Controller extends Controller
+class NejcController extends Controller
 {
 
-    protected $name = "{{$name}}";
+    protected $name = "nejc";
 
     public function get()
     {
-        //echo "Welcome in {{$name}} controller. This file is on App/Controllers/";
-        return View::make('{{$name}}')->with('name', $this->name);
+        //echo "Welcome in nejc controller. This file is on App/Controllers/";
+        return View::make('nejc')->with('name', $this->name);
     }
 
     public function post()

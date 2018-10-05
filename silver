@@ -23,6 +23,7 @@ $CWD = str_replace('\\', '/', dirname(__FILE__));
 $CWD = str_replace('/System/Engine/CLI', '', $CWD);
 //ltrim($CWD);
 define('ROOT', $CWD . '/');
+define('DS', DIRECTORY_SEPARATOR);
 
 
 /**
@@ -48,6 +49,9 @@ define('EXT', '.php');
 
 include_once(ROOT.'System/Core/Blueprints/RenderInterface'.EXT);
 include_once(ROOT.'System/Engine/Ghost/Template'.EXT);
+// include_once(ROOT. 'System//Core/AppInstanceTrait'.EXT);
+
+// include_once(ROOT.'System/Http/Request'.EXT);
 
 include_once('System/Engine/CLI/index.php');
 
