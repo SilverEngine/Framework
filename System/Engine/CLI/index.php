@@ -34,6 +34,8 @@ class CLI
             echo " ----- \n";
             echo " - Create Facade: php silver g facade {name} \n";
             echo " - Create Helper: php silver g helper {name} \n";
+            echo " ----- \n";
+            echo " - Delete CRUD resource: php silver g resource {name} \n";
             exit;
         }
 
@@ -95,9 +97,11 @@ class CLI
 
     private function make()
     {
+        // var_dump($this);
+        // exit;
 
         if ($this->args[2] == 'resource') {
-            foreach (['model', 'view', 'controller'] as $type) {
+            foreach (['controller', 'view', 'model'] as $type) {
                 $this->generate($type, $this->args[3]);
             }
         } elseif ($this->args[2] == 'controller'
@@ -232,6 +236,7 @@ class CLI
             case 'model':
             case 'controller':
                 $destination = ROOT . 'App/' . ucfirst($type) . 's/' . ucfirst($name) . ucfirst($type) . EXT;
+                $this->fix_routes($name, false);
                 break;
             case 'view':
                 $name = strtolower($name);

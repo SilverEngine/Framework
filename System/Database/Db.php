@@ -184,7 +184,7 @@ abstract class Db
     public static function exec($sql)
     {
         // FIXME: Log::debug('')
-        if ($this->isDebug()) {
+        if ($self::isDebug()) {
             echo "SQL-EXEC: $sql\n";
         }
         return self::connection()->exec($sql);
@@ -262,7 +262,7 @@ abstract class Db
 
     public function single()
     {
-        // TODO: ResultNotFoundException
+        //TODO: ResultNotFoundException
         $res = $this->get(PDO::FETCH_NUM);
         return $res[0];
     }
