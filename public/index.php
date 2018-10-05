@@ -64,7 +64,11 @@ if ($database->on == true) {
     \Silver\Database\Query::setConnection($database->local->driver);
 }
 
-
 $kernel->loadRoutes();
 $kernel->loadMiddlewares();
+/**
+ * - Load middlewares
+ * - Load service run inside the run 
+ * - 
+ */
 $kernel->run();

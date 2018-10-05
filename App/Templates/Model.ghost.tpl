@@ -6,7 +6,7 @@ use Silver\Core\Model;
 /**
  *
  */
-class {{{$name}}}Model extends Model
+class {{{ucfirst($name)}}}Model extends Model
 {
 
     protected $table = '{{ strtolower($name) }}';
