@@ -13,7 +13,7 @@
 </head>
 
 <body>
-<a href="{{ route('home') }}">welcome</a>
+
 #block(content)
 
 {{ js('app') }}

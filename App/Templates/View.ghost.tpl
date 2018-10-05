@@ -1,5 +1,5 @@
 {{ extends('layouts.master') }}
 
 #set[content]
-    Welcome in {{{$name}}}.
+    Welcome on the <b> @routeName()</b> page 
 #end
