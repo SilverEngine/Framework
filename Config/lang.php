@@ -10,11 +10,11 @@
  * @link      https://github.com/SilverEngine/Framework
  */
 
-$lang = array([
+$lang = [
     'default' => 'en',
     "en" => [
         "key"  => "en",
         "name" => "English",
         "path" => "Storage/Lang/",
     ],
-]);
+];

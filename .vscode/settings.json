@@ -1,0 +1,13 @@
+{
+  "files.exclude": {
+    "**/.vscode": true,
+    "**/README.md": true,
+    "**/LICENSE": true,
+    "**/.gitignore": true,
+    ".idea/": "explorerExcludedFiles",
+    ".phpintel/": "explorerExcludedFiles",
+    "vendor/": "explorerExcludedFiles",
+    "Storage/Logs/*.log": "explorerExcludedFiles",
+    "*.lock": "explorerExcludedFiles"
+  }
+}

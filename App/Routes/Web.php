@@ -16,3 +16,18 @@ use Silver\Core\Route;
 
 Route::get('/', 'Welcome@welcome', 'home', 'public');
 Route::get('/demo', 'Welcome@demo', 'home', 'public');
+
+// Route for Nejc controller.
+// Route::get('/nejc', 'Nejc@get', 'nejc', 'public');    -- removed by resource manager
+
+// Route for Nejc controller.
+// Route::get('/nejc', 'Nejc@get', 'nejc', 'public');    -- removed by resource manager
+
+// Route for Nejc controller.
+// Route::get('/nejc', 'Nejc@get', 'nejc', 'public');    -- removed by resource manager
+
+// Route for Nejc controller.
+// Route::get('/nejc', 'Nejc@get', 'nejc', 'public');    -- removed by resource manager
+
+// Route for Nejc controller.
+Route::get('/nejc', 'Nejc@get', 'nejc', 'public');
