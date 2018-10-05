@@ -1,13 +1,14 @@
 {
   "files.exclude": {
-    "**/.vscode": true,
-    "**/README.md": true,
-    "**/LICENSE": true,
-    "**/.gitignore": true,
-    ".idea/": "explorerExcludedFiles",
-    ".phpintel/": "explorerExcludedFiles",
-    "vendor/": "explorerExcludedFiles",
-    "Storage/Logs/*.log": "explorerExcludedFiles",
-    "*.lock": "explorerExcludedFiles"
+    "**/.vscode": false,
+    "**/README.md": false,
+    "**/LICENSE": false,
+    "**/.gitignore": false,
+    ".idea/": false,
+    ".phpintel/": false,
+    "vendor/": false,
+    "Storage/Logs/*.log": false,
+    "*.lock": false,
+    ".vscode": "explorerExcludedFiles"
   }
 }
