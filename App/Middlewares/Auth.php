@@ -33,14 +33,13 @@ class Auth implements MiddlewareInterface
 
     public function execute(Request $req, Response $res, Closure $next)
     {
-        if($req->route() == null) {
+        if ($req->route() == null) {
             return $next();
         }
 
-        if (! array_search($req->route()->middleware(), $this->unguard) !== false) {
+        if (!array_search($req->route()->middleware(), $this->unguard) !== false) {
             //Change here if you want to check if someone is loggin in owherwise use Error 404;
 
-            //Redirect::to('/');
             return \Silver\Http\View::error('404');
         }
 

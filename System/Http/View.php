@@ -34,13 +34,16 @@ class View implements RenderInterface
 
     public static function error($template, $data = [])
     {
-        return new static('errors'.DS.$template, $data);
+        return new static('errors' . DS . $template, $data);
     }
 
     public static function demo()
     {
         $branch = Git::test();
-        return new static('errors.default', ['_branch_' => $branch]);
+        // dd($branch);
+        return new static('demo.default', [
+            '_branch_' => $branch
+        ]);
     }
 
     public function __construct($template, $data = [])
@@ -53,24 +56,24 @@ class View implements RenderInterface
 
     public function with($key, $value = true)
     {
-        $this->data[ $key ] = $value;
+        $this->data[$key] = $value;
         return $this;
     }
 
     public function withComponent($value = true, $key = false)
     {
 
-        if($key) {
-            $key = 'component_'.$key;
+        if ($key) {
+            $key = 'component_' . $key;
         } else {
             $key = 'component_payload';
         }
 
-        $this->data[ $key ] = $value;
+        $this->data[$key] = $value;
         return $this;
     }
 
-    public function data() 
+    public function data()
     {
         return $this->data;
     }
@@ -80,7 +83,8 @@ class View implements RenderInterface
         $self = $this;
 
         return ErrorHandler::withFilter(
-            E_ALL ^ E_NOTICE, function () use ($self) {
+            E_ALL ^ E_NOTICE,
+            function () use ($self) {
                 $name = str_replace('.', '/', $self->template);
 
                 if ($target = App::instance()->find('Views/' . $name . '.ghost.php')) {
@@ -98,7 +102,8 @@ class View implements RenderInterface
                         ob_start();
                         include $target;
                         $content = ob_get_contents();
-                    } finally {
+                    }
+                    finally {
                         ob_end_clean();
                     }
                     return $content;

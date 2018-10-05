@@ -109,7 +109,11 @@ class Kernel
      */
     protected function executeMiddlewares($mws, Request $req, Response $res)
     {
+        /**
+         * App get init data
+        */
         $self = $this;
+
         if (count($mws) > 0) {
             $mw = array_shift($mws);
 
@@ -167,22 +171,57 @@ class Kernel
 
     public function run()
     {
+       
+    /**
+     * $this;
+     * - private App NULL
+     * - private Service array
+     * - private Middlewares array
+     */
+
+        /**
+         *  Set Application instance
+        */
         $this->app = $app = App::instance();
+
+
+        /**
+         *  Register Application request & response
+         */
         $app->register(
             $req = new Request,
             $res = new Response
         );
-        $mws = $this->middlewares;
 
+        /**
+         *  Load Service init
+         */
         $this->loadServices($req, $res);
 
-        $ret = $this->executeMiddlewares($mws, $req, $res);
 
+        /**
+         * - template string
+         * - data array
+         */
+        $ret = $this->executeMiddlewares($this->middlewares, $req, $res);
+
+
+ //FIXME: dont load from response make separate class that can access response
+
+        /**
+         * Set response data
+         * - private code int
+         * - private header array
+         * - private cookies array
+         * - private body obj
+         */
         if ($ret !== null) {
             $res->setBody($ret);
         }
-
-        //FIXME: dont load from response make separate class that can access response
+        
+        /**
+         * return null
+         */
         $res->send();
 
         $this->finalizeServices($req, $res);
