@@ -13,10 +13,10 @@
 namespace Silver\Engine\Ghost;
 
 use Silver\Core\Blueprints\RenderInterface;
-use Silver\Core\Env;
 use Silver\Core\Kernel;
 use Silver\Core\Route;
 use Silver\Http\Session;
+use Silver\Http\Request;
 
 /**
  * Template
@@ -64,17 +64,13 @@ class Template implements RenderInterface
         $render = $this->parseTrans($render);
 
         $render = $this->parseExtends($render);
-        
-        if(!empty(Env::get('port')))
-        {
-            $render = $this->parseUrl($render); // url()
-        }
-        
+        // $render = $this->parseUrl($render); // url()
         $render = $this->parseAssets($render); // asset()
         $render = $this->parseAssetsCss($render); // asset()
         $render = $this->parseAssetsJs($render); // asset()
         // $render = $this->parseSys($render); // sys()
         // $render = $this->parseRoutes($render); // path()
+        $render = $this->parseUrlName($render); // name()
         // $render = $this->parseRouteName($render); // routes
 
 
@@ -520,6 +516,27 @@ class Template implements RenderInterface
                     $vars_string = trim($match[2], ', ');
                     return "<?php echo \\Silver\\Core\\Route::getRoute($route_string)->url($vars_string); ?>";
                 }, $value
+            );
+        }
+
+        $body = implode("\n", $bodyLines);
+
+        return $body;
+    }
+
+    protected function parseUrlName($body)
+    {
+        $bodyLines = explode("\n", $body);
+        foreach ($bodyLines as $key => $value) {
+            $bodyLines[$key] = preg_replace_callback(
+                "/@routeName\(([^,)]*)(.*)\)/s",
+                function ($match) {
+                    // $route_string = trim($match[1], ' ');
+                    $segment = new Request;
+                    return $segment->segment(1);
+                    // return false;
+                },
+                $value
             );
         }
 

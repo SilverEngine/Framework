@@ -9,7 +9,6 @@
 return [
     'debug'         => true,
     'app_key'       => 'mysupersecurekey',
-    'port'          => false,
 
 
     'middlewares'   => [

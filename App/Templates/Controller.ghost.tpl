@@ -10,10 +10,13 @@ use Silver\Http\View;
 */
 class {{{ucfirst($name)}}}Controller extends Controller
 {
+
+    protected $name = "{{$name}}";
+
     public function get()
     {
-        echo "Welcome in {{$name}} controller. This file is on App/Controllers/";
-        //return View::make('');
+        //echo "Welcome in {{$name}} controller. This file is on App/Controllers/";
+        return View::make('{{$name}}')->with('name', $this->name);
     }
 
     public function post()

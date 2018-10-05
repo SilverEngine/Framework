@@ -1,5 +1,5 @@
 {{ extends('layouts.master') }}
 
 #set[content]
-    Welcome to SilverEngine demo page
+    Welcome to SilverEngine welcome page
 #end
