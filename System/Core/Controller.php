@@ -18,10 +18,25 @@ namespace Silver\Core;
  */
 class Controller
 {
+    public $model = null;
+    public $modelNamespace = null;
+    private $modelPath = null;
 
-    protected $modelname;
-    protected $model;
-    protected $obj;
+    public function __construct()
+    {
+        if (isset($this->controllerName)) {
+            $modelName = $this->controllerName;
+
+            $this->modelPath = ROOT . 'App' . DS . 'Models' . DS . ucfirst($modelName) . 'Model' . EXT;
+
+            if ($modelName and file_exists($this->modelPath)) {
+                $this->modelNamespace = $model = "\\App\\Models\\" . ucfirst($modelName) . 'Model';
+            } else {
+                throw new \Exception(sprintf('%s model file not found', $modelName));
+            }
+        }
+    }
+
 
     /**
      *    Access to model
@@ -30,54 +45,11 @@ class Controller
      */
     protected function model($model = false)
     {
-
         if ($model) {
-            $this->resourceName = $model;
+            $this->model = $model;
             $modelName = $model;
         } else {
-            $modelName = $this->resourceName;
+            $modelName = $this->controllerName;
         }
-
-
-        $path = ROOT . "App/Models/" . ucfirst($modelName) . "Model" . EXT;
-
-        if ($modelName AND file_exists($path)) {
-            $model = "\App\Models\\" . ucfirst($modelName) . 'Model';
-
-            //            $this->model = new $model();
-
-            return (object) new $model();
-
-        } else {
-            throw new \Exception(sprintf('%s model file not found', $modelName));
-        }
-    }
-
-    protected function getFilter()
-    {
-        return $this->obj;
-    }
-
-
-    protected function array_to_object($array)
-    {
-        return (object)$array;
-    }
-
-    protected function object_to_array($object)
-    {
-        return (array)$object;
-    }
-
-    /**
-     *    Helper include
-     *
-     * @return mixed
-     */
-    protected function helper($name)
-    {
-        $helper = "\App\helpers\\" . ucfirst($name);
-
-        return new $helper();
     }
 }
