@@ -329,7 +329,6 @@ class CLI
 
     private function fix_routes($name, $add = true)
     {
-
         $name = ucfirst($name);
 
         if (is_file(ROOT . 'App' . DS . 'Routes' . EXT))
