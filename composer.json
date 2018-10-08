@@ -11,13 +11,15 @@
     "minimum-stability": "dev",
     "require": {
         "lotfio/aven": "dev-master",
-        "lotfio/ouch": "dev-develop"
+        "lotfio/ouch": "dev-master",
+        "silverengine/cli": "dev-develop"
     },
     "autoload" : {
         "psr-4" : {
             "App\\" : "App/",
             "Silver\\": "System/",
-            "Database\\": "Database/"
+            "Database\\": "Database/",
+            "Cli\\":"vendow/silverengine/src"
         }
     },
 
