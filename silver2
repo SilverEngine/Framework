@@ -1,0 +1,85 @@
+#!/usr/bin/php
+<?php
+
+namespace Cli;
+
+// use Cli;
+
+require('vendor/autoload.php');
+
+define('EXT', '.php');
+define('DS', DIRECTORY_SEPARATOR);
+define('PATH', dirname(__FILE__) . DS);
+
+/*****************************************/
+/*               CONFIG                  */
+/*****************************************/
+
+define('TEST', true);
+
+//debug prod
+if (TEST) {
+    define('ROOT', PATH . 'vendor' . DS . 'silverengine' . DS . 'cli' . DS);
+    // define('ROOT', dirname(__FILE__) . DS);
+} else {
+    define('ROOT', dirname(__FILE__) . DS);
+    // define('ROOT', PATH . 'vendor' . DS . 'silverengine' . DS . 'cli' . DS);
+}
+
+// if (TEST) {
+
+//     define('ROOT', dirname(__FILE__) . DS);
+// } else {
+
+//     define('ROOT', PATH . 'vendor' . DS . 'silverengine' . DS . 'cli' . DS);
+// }
+
+define('TEMPLATE', ROOT . 'App' . DS . 'Templates'. DS);
+define('DESTINATION', dirname(__FILE__) . DS);
+
+/*****************************************/
+
+
+// var_dump(ROOT);
+
+// exit;
+define('APP', ROOT . 'src' . DS);
+
+
+
+/**
+ * @param $data
+ * @param bool $param
+ */
+if (!function_exists('dd')) {
+    function dd($data, $param = false)
+    {
+        if ($param) {
+            var_dump('<pre>', $data, '</pre>');
+        } else {
+            var_dump($data);
+        }
+        exit();
+    }
+}
+/**
+ * @param $data
+ * @param bool $param
+ */
+if (!function_exists('ndd')) {
+    function ndd($data, $param = false)
+    {
+        if ($param) {
+            var_dump('<pre>', $data, '<pre>');
+        } else {
+            var_dump($data);
+        }
+    }
+}
+
+// dd(APP . 'Cli' . EXT);
+
+// include(APP. 'Cli'. EXT);
+
+// include('src'.DIRECTORY_SEPARATOR.'Cli.php');
+new Cli($argv);
