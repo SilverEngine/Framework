@@ -11,8 +11,8 @@
     "minimum-stability": "dev",
     "require": {
         "lotfio/aven": "dev-master",
-        "lotfio/ouch": "dev-master",
-        "silverengine/cli": "dev-develop"
+        "silverengine/cli": "dev-develop",
+        "lotfio/ouch": "dev-master"
     },
     "autoload" : {
         "psr-4" : {
@@ -26,5 +26,8 @@
     "autoload-dev": {
         "psr-4": {
         }
+    },
+    "require-dev": {
+        "phpunit/phpunit": "^5"
     }
 }
