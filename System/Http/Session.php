@@ -20,15 +20,15 @@ class Session
 
     public static function construct()
     {
-        if(!isset($_SESSION['data'])) {
+        if (!isset($_SESSION['data'])) {
             $_SESSION['data'] = [];
         }
 
-        if(!isset($_SESSION['old-flash'])) {
+        if (!isset($_SESSION['old-flash'])) {
             $_SESSION['old-flash'] = [];
         }
 
-        if(!isset($_SESSION['flash'])) {
+        if (!isset($_SESSION['flash'])) {
             $_SESSION['flash'] = [];
         }
 
@@ -39,7 +39,7 @@ class Session
 
     /*
      * Return all user data;
-     */ 
+     */
     public static function all()
     {
         return array_merge($_SESSION['data'], $_SESSION['old-flash'], $_SESSION['flash']);
@@ -56,39 +56,38 @@ class Session
         self::delete($key);
         return $_SESSION['flash'][$key] = $value;
     }
-    
-    public static function exists($name) 
-    {
 
+    public static function exists($name)
+    {
         return isset(self::all()[$name]);
     }
 
     public static function get($name, $default = null)
     {
 
-        if(self::exists($name)) {
+        if (self::exists($name)) {
             return self::all()[$name];
         }
         return $default;
     }
 
-    public static function delete($key) 
+    public static function delete($key)
     {
-        if(isset($_SESSION['data'][$key])) {
+        if (isset($_SESSION['data'][$key])) {
             unset($_SESSION['data'][$key]);
-        } elseif(isset($_SESSION['old-flash'][$key])) {
+        } elseif (isset($_SESSION['old-flash'][$key])) {
             unset($_SESSION['old-flash'][$key]);
-        } elseif(isset($_SESSION['flash'][$key])) {
+        } elseif (isset($_SESSION['flash'][$key])) {
             unset($_SESSION['flash'][$key]);
         }
     }
 
-    public static function flush() 
+    public static function flush()
     {
         $_SESSION = [];
     }
 
-    public static function kill() 
+    public static function kill()
     {
         return session_destroy();
     }
