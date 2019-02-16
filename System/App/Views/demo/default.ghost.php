@@ -97,6 +97,9 @@
             color: #05759c;
             font-weight: 400;
         }
+        .main{
+            margin: 80px auto;
+        }
     </style>
 </head>
 <body>
@@ -108,7 +111,7 @@
     </div>
 
     <div class="label mt-2 float-right">
-        <b>Version:</b> <span>1.0.0</span>
+        <b>Version:</b> <span>1.0.5</span>
     </div>
     <div class="clearfix"></div>
 
@@ -130,19 +133,24 @@
         <main class="text-center nav-menu">
             <nav>
                 <ul>
-                    <li><a href="#">Changes</a></li>
-                    <li><a href="#">News</a></li>
+                    <li><a href="https://silverengine.net/">Changes</a></li>
+                    <li><a href="https://silverengine.net/">News</a></li>
                     <li><a href="https://silverengine.net/docs">Documentation</a></li>
-                    <li><a href="#">Contribution</a></li>
-                    <li><a href="#">Join us</a></li>
-                    <li><a href="#">Donate</a></li>
+                    <li><a href="https://discord.gg/cwMygSP">Contribution</a></li>
                 </ul>
             </nav>
         </main>
 
+        <div class="main">
+            <a href="https://discord.gg/cwMygSP" target="_blank">
+                <img src="https://steemitimages.com/DQmbidwaM258YWuVUR6qvWdqKCnXw8pUsV6wxbUmgD38BBq/0_lq-C3-gIuW9L9xxn.png" width="200">
+            </a>
+            <p>Join us on Community HUB</p>
+        </div>
+
         <footer class="text-center">
             <div class="col-12">
-                <p>SilverEngine Team &copy;2017-2018</p>
+                <p>SilverEngine Team &copy;2017-2019</p>
             </div>
         </footer>
 
