@@ -17,7 +17,7 @@ class Curl
 
     public function __construct()
     {
-
+//        TODO: Empty method fix please
     }
 
     public static function get($url, array $get = null, array $options = array())
@@ -63,16 +63,16 @@ class Curl
 
     public static function put()
     {
-
+//        TODO: Empty method fix please
     }
 
     public static function delete()
     {
-
+//        TODO: Empty method fix please
     }
 
     public static function file()
     {
-
+//        TODO: Empty method fix please
     }
 }
