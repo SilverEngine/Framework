@@ -14,7 +14,6 @@ SilverEngine is a powerful PHP Dynamical MVC framework built for developers who 
 
 ## Check Demo portfolio
 
-The [Demo page](https://silverengine.net/demo/)
 Download zip demo file [Download here](https://github.com/SilverEngine/Framework/archive/portfolio.zip)
 
 
