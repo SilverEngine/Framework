@@ -49,7 +49,43 @@ class Request implements RequestInterface
      */
     public function __construct()
     {
-        $this->uri = isset($_GET['uri']) ? $_GET['uri'] : "/";
+        // load uri from 
+        $this->uri = $this->getStrippedUri();
+    }
+
+    public function server($key, $default = false)
+    {
+        if ( isset($_SERVER[$key]) ) {
+            return $_SERVER[$key];
+        }
+
+        return $default;
+    }
+
+    /**
+     * Strip uri.
+     * @return string
+     */
+    public function getStrippedUri()
+    {
+        // /sitename/index.php
+        $path = explode('/', trim($this->server('SCRIPT_NAME', '/')));
+
+        // /sitename/portfolio/design
+        $uri  = explode('/', trim($this->server('REQUEST_URI'), '/'));
+
+        // strip file.
+        foreach ($path as $key => $val) {
+            if (isset($uri[$key]) && $val == $uri[$key]) { unset($uri[$key]); } 
+            else break;
+        }
+
+        // portfolio/design
+        $uri = implode('/', $uri);
+
+        // strip $_GET
+        $uri = explode('?', $uri);
+        return '/' . $uri[0];
     }
 
     /**
