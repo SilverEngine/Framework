@@ -46,6 +46,6 @@ define('CORE', SYS . 'Core' .DS);
 define('EXT', '.php');
 
 // files to be included
-require_once CORE . 'ErrorHandlers.php';
+require_once CORE . 'ErrorHandler.php';
 require_once CORE . 'Library.php';
 

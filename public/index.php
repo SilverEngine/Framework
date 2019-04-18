@@ -31,8 +31,8 @@ require_once '../vendor/autoload.php';
  */
 chdir(ROOT);
 
-$errorHandler = new Ouch\Reporter();
-$errorHandler->on();
+//$errorHandler = new Ouch\Reporter();
+//$errorHandler->on();
 
 
 // new ssd;
