@@ -79,7 +79,7 @@ div.output {
 	 display: none;
      }
     </style>
-    
+
     <script>
      var is_program_opened = false;
      function program_close() {
@@ -91,7 +91,7 @@ div.output {
 	 is_program_opened = !is_program_opened;
 	 $('#visual').toggle();
      }
-     
+
      function program_launch(html) {
 	 $('#visual').html(html);
 	 is_program_opened = true;
@@ -100,7 +100,7 @@ div.output {
     </script>
 <!-- END OF VISUAL programs -->
 
-                
+
     <script>
         var commands = {
             'clear': clearConsole,
@@ -154,7 +154,7 @@ function printOutput(ttt) {
 }
 
         function processCommand(rawData) {
-            var args = rawData.split(" ");
+            var args = rawData.str_splits(" ");
             var command = args[0];
             commandHistory[historyIndex++] = rawData;
             localStorage.setItem('command-history', JSON.stringify(commandHistory));
