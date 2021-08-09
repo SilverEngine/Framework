@@ -16,7 +16,7 @@
  */
 require_once '../System/Core/init.php';
 
-if(! is_dir('../vendor')) {
+if (!is_dir('../vendor')) {
     exit('Warning: Vendor folder is missing! Please add vendor folder or use CLI command: Composer update');
 }
 
@@ -31,17 +31,18 @@ require_once '../vendor/autoload.php';
  */
 chdir(ROOT);
 
-$errorHandler = new Ouch\Reporter();
-$errorHandler->on();
-
-
+if (PHP_VERSION >= 7.1 && class_exists(\Ouch\Reporter::class)) {
+    $errorHandler = new Ouch\Reporter();
+    $errorHandler->on();
+}
 // new ssd;
-
 // exit();
 
 /**
  * Load kernel
  */
+
+use Ouch\Reporter;
 use Silver\Core\Kernel;
 
 $kernel = new Kernel();
@@ -55,12 +56,11 @@ $kernel = new Kernel();
 $database = \Silver\Core\Env::get('databases');
 
 
-
 if ($database->on == true) {
 
     //    \Silver\Database\Query::connect('sqlite', 'sqlite:/Database/db.sqlite');
 
-    \Silver\Database\Query::connect($database->local->driver, 'mysql:host='.$database->local->hostname.';dbname='.$database->local->basename.';charset=utf8', $database->local->username, $database->local->password);
+    \Silver\Database\Query::connect($database->local->driver, 'mysql:host=' . $database->local->hostname . ';dbname=' . $database->local->basename . ';charset=utf8', $database->local->username, $database->local->password);
     \Silver\Database\Query::setConnection($database->local->driver);
 }
 
@@ -68,7 +68,7 @@ $kernel->loadRoutes();
 $kernel->loadMiddlewares();
 /**
  * - Load middlewares
- * - Load service run inside the run 
- * - 
+ * - Load service run inside the run
+ * -
  */
 $kernel->run();
