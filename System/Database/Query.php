@@ -3,7 +3,7 @@
 namespace Silver\Database;
 
 use Silver\Database\Query\Drop;
-use Silver\Database\Parts\Fn;
+use Silver\Database\Parts\Fnx;
 use Silver\Database\Parts\Column;
 
 abstract class Query extends Db
@@ -32,7 +32,7 @@ abstract class Query extends Db
             Column::ensure(
                 [
                 null,
-                Fn::count(),
+                Fnx::count(),
                 $column
                 ]
             )

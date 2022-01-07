@@ -4,7 +4,7 @@ namespace Silver\Test\Database;
 
 use Silver\Database\Query;
 use Silver\Database\Parts\Column;
-use Silver\Database\Parts\Fn;
+use Silver\Database\Parts\Fnx;
 
 $weird = Test::data('weird');
 $data = Test::data('data');
@@ -60,14 +60,14 @@ Test::define(
         Column::ensure(
             [
             null,
-            Fn::groupConcat('s.secondary_id'),
+            Fnx::groupConcat('s.secondary_id'),
             'ids'
             ]
         ),
         Column::ensure(
             [
             null,
-            Fn::groupConcat('s.data', '-'),
+            Fnx::groupConcat('s.data', '-'),
             'dt'
             ]
         )
@@ -76,7 +76,7 @@ Test::define(
     ->groupBy('id_main')
     // postgresql doesn't support references to select columns in having
     // ->having('dt', 'a,c'),
-    ->having(Fn::groupConcat('s.data', ':'), 'a:c'),
+    ->having(Fnx::groupConcat('s.data', ':'), 'a:c'),
     ['ids' => '1,2', 'dt' => 'a-c'],
     'having'
 );

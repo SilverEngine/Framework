@@ -2,7 +2,7 @@
 
 namespace Silver\Database\Parts;
 
-class Fn extends Part
+class Fnx extends Part
 {
 
     private $name;
