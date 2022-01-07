@@ -12,7 +12,8 @@
     "require": {
         "lotfio/aven": "dev-master",
         "silverengine/cli": "dev-develop",
-        "lotfio/ouch": "dev-master"
+        "lotfio/ouch": "dev-master",
+        "silverengine/core": "dev-main"
     },
     "autoload" : {
         "psr-4" : {
