@@ -5,40 +5,41 @@ namespace Silver\Database;
 
 use \PDO;
 
+/**
+ * Db is now a thin facade over the extracted managers — it preserves
+ * every legacy static entry point (`Db::`/`Query::`/`Model::`) by
+ * delegating:
+ *
+ *  - connection registry / raw / quote / exec → {@see ConnectionManager}
+ *  - nested transactions / counter           → {@see TransactionManager}
+ *
+ * What stays here is the per-instance side that `Query` (extends Db)
+ * genuinely needs: the executed statement, fetch style, debug flags and
+ * the result-fetching/transform machinery. Behaviour is unchanged.
+ */
 abstract class Db
 {
-    private static $dbs = [];
-    private static $default = null;
     private static $global_debug = false;
     private $debug = null;
     private $query = null;
-    private static $tx_counter = [];
 
     private $fetch_style = PDO::FETCH_OBJ;
 
     abstract public function toSql();
 
     // Optional virtual methods, used by ->first()
-    public function getLimit() 
+    public function getLimit()
     {
-        throw new \Exception('Unable to get limit on ' . static::class); 
+        throw new \Exception('Unable to get limit on ' . static::class);
     }
-    public function limit($count) 
+    public function limit($count)
     {
-        throw new \Exception('Unable to set limit for ' . static::class); 
+        throw new \Exception('Unable to set limit for ' . static::class);
     }
 
     public static function connect($name, $dsn, $username = null, $password = null): void
     {
-        self::$dbs[$name] = function () use ($name, $dsn, $username, $password) {
-            $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];
-
-            if (str_starts_with($dsn, 'mysql:') && defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
-                $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES 'utf8'";
-            }
-
-            return new PDO($dsn, $username, $password, $options);
-        };
+        ConnectionManager::connect($name, $dsn, $username, $password);
     }
 
     /** @param bool $enabled */
@@ -68,53 +69,23 @@ abstract class Db
     /** @throws \Exception */
     public static function setConnection($name): void
     {
-        if (!isset(self::$dbs[ $name ])) {
-            throw new \Exception("Connection '$name' not found.");
-        }
-        self::$default = $name;
+        ConnectionManager::setDefault($name);
     }
 
     public static function withConnection($name, $cb): void
     {
-        $prev = self::$default;
-        self::setConnection($name);
-        try {
-            $cb();
-        } finally {
-            self::$default = $prev;
-        }
+        ConnectionManager::withConnection($name, $cb);
     }
 
     public static function connections(): array
     {
-        return array_keys(self::$dbs);
+        return ConnectionManager::names();
     }
 
     /** @throws \Exception */
     public static function connection($name = null): PDO
     {
-        if ($name === null) {
-            $name = self::$default;
-        }
-
-        //        dd($name);
-
-        if ($name === null) {
-            throw new \Exception("Not default connection found.");
-        }
-
-        $db = self::$dbs[$name];
-
-        // Lazy loading
-        if ($db and is_callable($db)) {
-            $db = self::$dbs[ $name ] = $db();
-        }
-
-        if (!$db) {
-            throw new \Exception("Connection '$name' not found.");
-        }
-
-        return $db;
+        return ConnectionManager::pdo($name);
     }
 
     /**
@@ -123,25 +94,7 @@ abstract class Db
      */
     public static function quote($value)
     {
-        switch ($type = gettype($value)) {
-        case 'string':
-            return self::connection()->quote($value);
-        case 'integer':
-        case 'double':
-            return $value;
-        default:
-            throw new \Exception("Unable to quote value with type: $type");
-        }
-    }
-
-    /** @param array $bindings */
-    private static function raw($sql, $bindings = []): \PDOStatement
-    {
-        $db = self::connection();
-        $stmt = $db->prepare($sql);
-        $stmt->execute($bindings);
-
-        return $stmt;
+        return ConnectionManager::quote($value);
     }
 
     public static function exec($sql): int|false
@@ -150,14 +103,14 @@ abstract class Db
         if (self::$global_debug) {
             echo "SQL-EXEC: $sql\n";
         }
-        return self::connection()->exec($sql);
+        return ConnectionManager::exec($sql);
     }
 
     /** @param array $bindings */
     public static function query($sql, $bindings = []): static
     {
         $q = new static;
-        $q->query = self::raw($sql, $bindings);
+        $q->query = ConnectionManager::raw($sql, $bindings);
         return $q;
     }
 
@@ -174,13 +127,13 @@ abstract class Db
             }
         }
 
-        $this->query = self::raw($sql, $bindings);
+        $this->query = ConnectionManager::raw($sql, $bindings);
         return $this;
     }
 
     public static function lastInsertId(): string|false
     {
-        return self::connection()->lastInsertId();
+        return ConnectionManager::lastInsertId();
     }
 
     // What should we do?
@@ -262,7 +215,7 @@ abstract class Db
         return $result;
     }
 
-    private function prepareSelect($style) 
+    private function prepareSelect($style)
     {
         if (is_object($style)) {
             $this->selectForModel(get_class($style));
@@ -274,15 +227,15 @@ abstract class Db
     private function setQueryMode($style)
     {
         if (is_array($style)) {
-            $this->query->setFetchMode(PDO::FETCH_ASSOC); 
+            $this->query->setFetchMode(PDO::FETCH_ASSOC);
         } else if (is_object($style)) {
             $this->query->setFetchMode(PDO::FETCH_INTO, $style);
         } else if (is_string($style) && class_exists($style)) {
             $this->query->setFetchMode(PDO::FETCH_CLASS, $style);
         } else if(is_string($style)) {
-            $this->query->setFetchMode(PDO::FETCH_ASSOC); 
+            $this->query->setFetchMode(PDO::FETCH_ASSOC);
         } else {
-            $this->query->setFetchMode($style); 
+            $this->query->setFetchMode($style);
         }
     }
 
@@ -346,72 +299,25 @@ abstract class Db
      */
     public static function getTxCounter(): int
     {
-        $db = self::$default;
-
-        if (!isset(self::$tx_counter[ $db ])) {
-            self::$tx_counter[ $db ] = 0;
-        }
-
-        return self::$tx_counter[ $db ];
-    }
-
-    private static function setTxCounter($num): int
-    {
-        $db = self::$default;
-
-        return self::$tx_counter[ $db ] = $num;
-    }
-
-    /** @param int $delta */
-    private static function incTxCounter($delta = 1): int
-    {
-        $num = self::getTxCounter();
-        self::setTxCounter($num + $delta);
-
-        return $num + $delta;
+        return TransactionManager::level();
     }
 
     // Transactions
     public static function beginTransaction(): void
     {
-        $conn = self::connection();
-        $level = self::incTxCounter();
-
-        if ($level == 1) {
-            $conn->beginTransaction();
-        } else {
-            self::exec('SAVEPOINT LEVEL' . $level);
-        }
+        TransactionManager::begin();
     }
 
     /** @throws \Exception */
     public static function commit()
     {
-        $conn = self::connection();
-        $level = self::incTxCounter(-1) + 1;
-
-        if ($level < 1) {
-            throw new \Exception("There is no active transaction.");
-        } elseif ($level == 1) {
-            $conn->commit();
-        } else {
-            self::exec('RELEASE SAVEPOINT LEVEL' . $level);
-        }
+        TransactionManager::commit();
     }
 
     /** @throws \Exception */
     public static function rollBack(): void
     {
-        $conn = self::connection();
-        $level = self::incTxCounter(-1) + 1;
-
-        if ($level < 1) {
-            throw new \Exception("There is no active transaction.");
-        } elseif ($level == 1) {
-            $conn->rollBack();
-        } else {
-            self::exec('ROLLBACK TO SAVEPOINT LEVEL' . $level);
-        }
+        TransactionManager::rollBack();
     }
 
     /**
@@ -421,25 +327,11 @@ abstract class Db
      */
     public static function transaction($cb, $suppress = false)
     {
-        try {
-            self::beginTransaction();
-            $cb();
-
-            return self::commit();
-        } catch (\Exception $e) {
-            self::rollBack();
-            if ($suppress) {
-                return false;
-            } else {
-                throw $e;
-            }
-        }
+        return TransactionManager::run($cb, $suppress);
     }
 
     public static function driverName()
     {
-        $conn = self::connection();
-
-        return $conn->getAttribute(PDO::ATTR_DRIVER_NAME);
+        return ConnectionManager::driverName();
     }
 }
