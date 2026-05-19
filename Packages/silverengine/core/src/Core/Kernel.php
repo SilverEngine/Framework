@@ -52,29 +52,46 @@ class Kernel
 
     public function handle(Request $request, Response $response): mixed
     {
+        DebugTimer::begin('route resolve', 'request');
         $route = $request->route()
             ?? throw new NotFoundException('Route for ' . $request->getUri() . ' not found.');
+        DebugTimer::end('route resolve', 'request');
 
+        DebugTimer::begin('controller resolve', 'controller');
         $callable = $this->findCallable($route);
+        DebugTimer::end('controller resolve', 'controller');
 
-        return DI::call(
-            $callable,
-            array_merge(
-                $this->app->instances()->getAll(),
-                $route->variables(),
-            ),
-        );
+        DebugTimer::begin('controller action', 'controller');
+        try {
+            return DI::call(
+                $callable,
+                array_merge(
+                    $this->app->instances()->getAll(),
+                    $route->variables(),
+                ),
+            );
+        } finally {
+            DebugTimer::end('controller action', 'controller');
+        }
     }
 
     protected function executeMiddlewares(array $mws, Request $req, Response $res): mixed
     {
         if (count($mws) > 0) {
             $mw = array_shift($mws);
-            return $mw->execute(
-                $req,
-                $res,
-                fn () => $this->executeMiddlewares($mws, $req, $res),
-            );
+            $cls = $mw::class;
+            $label = substr($cls, strrpos($cls, '\\') + 1);
+
+            DebugTimer::begin($label, 'middleware');
+            try {
+                return $mw->execute(
+                    $req,
+                    $res,
+                    fn () => $this->executeMiddlewares($mws, $req, $res),
+                );
+            } finally {
+                DebugTimer::end($label, 'middleware');
+            }
         }
 
         return $this->handle($req, $res);
@@ -122,6 +139,7 @@ class Kernel
             $req = new Request(),
             $res = new Response(),
         );
+        DebugTimer::mark('request received', 'request');
 
         DebugTimer::begin('services', 'kernel');
         $this->loadServices($req, $res);
@@ -135,9 +153,10 @@ class Kernel
             $res->setBody($ret);
         }
 
-        DebugTimer::begin('response send', 'kernel');
+        DebugTimer::begin('view render', 'view');
         $res->send();
-        DebugTimer::end('response send', 'kernel');
+        DebugTimer::end('view render', 'view');
+        DebugTimer::mark('response sent', 'view');
 
         $this->finalizeServices($req, $res);
         exit;
