@@ -19,15 +19,9 @@ final class Crypter
         return openssl_decrypt(base64_decode($string), $cipher, $password) ?: '';
     }
 
-    public static function makePassword(int $len = 16, int $charsType = 1): string
+    public static function makePassword(int $len = 16, int|PasswordCharset $charsType = 1): string
     {
-        $alphabet = match ($charsType) {
-            2 => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890',
-            3 => 'ABCDEFGHIJKLMNOPQRSTUVWXYZ',
-            4 => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ',
-            5 => '1234567890',
-            default => 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ1234567890!#$%&()=?*+{}@',
-        };
+        $alphabet = PasswordCharset::resolve($charsType)->alphabet();
 
         $password = [];
         for ($i = 0; $i < $len; $i++) {

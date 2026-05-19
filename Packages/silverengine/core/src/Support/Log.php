@@ -5,23 +5,18 @@ namespace Silver\Support;
 
 final class Log
 {
-    private const array TYPES = [
-        'info', 'ok', 'warning', 'error', 'api', 'db',
-        'start', 'end', 'debug', 'normal', 'danger',
-        'aboard', 'finish', 'url',
-    ];
-
     public function __call(string $method, array $args): void
     {
-        if (!in_array($method, self::TYPES, true)) {
+        $type = LogType::tryFrom($method);
+        if ($type === null) {
             throw new \Exception(
-                "Undefined method Log::$method. Allowed: " . implode(', ', self::TYPES),
+                "Undefined method Log::$method. Allowed: " . LogType::names(),
             );
         }
-        $this->create($args[0] ?? '', $method);
+        $this->create($args[0] ?? '', $type);
     }
 
-    private function create(string $message, string $type): void
+    private function create(string $message, LogType $type): void
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
         $path = ROOT . 'Storage/Logs/' . date('Y-m-d') . '.log';
@@ -31,7 +26,7 @@ final class Log
             throw new \Exception("Unable to write to file $path.");
         }
 
-        $line = '[' . date('Y-m-d H:i:s') . '][ ' . $type . " ]\t$ip\t$message\r\n";
+        $line = '[' . date('Y-m-d H:i:s') . '][ ' . $type->value . " ]\t$ip\t$message\r\n";
         fwrite($fp, $line);
         fclose($fp);
     }
