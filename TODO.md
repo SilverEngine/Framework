@@ -156,12 +156,14 @@ all 4 Facades, ErrorException, NotFoundException
 - [x] `Config/Providers.php` — removed stale `Silver => System` mapping
 - [x] `Config/Routes.php` — updated system routes path
 - [x] Clean boot verified (zero warnings)
-- [~] Run full test suite (`Tests/`) — **blocked**: zero-dependency stance,
-      no PHPUnit in vendor. Does not gate the tag.
+- [x] Run full test suite (`Tests/`) — PHPUnit ^12 added as **require-dev**
+      (dev-only, runtime stays dependency-light). Suite green:
+      14 tests, 19 assertions, 1 skipped (network-only Curl test).
 - [x] ~~Update `error-handler` to `php >=8.4`~~ — resolved by removal:
       package absorbed into `silverengine/core`
       (`Silver\ErrorHandler\Reporter`), second path repo dropped
-- [ ] Tag `silverengine/core` v0.1.0 — ready (boot verified, single package)
+- [ ] Tag `silverengine/core` v0.1.0 — **intentionally deferred** (tag
+      step skipped by request; code is tag-ready)
 
 ---
 
@@ -193,7 +195,32 @@ all 4 Facades, ErrorException, NotFoundException
 - [x] First-class callable syntax (`$this->method(...)`)
 - [x] `never` return type
 - [x] Enums for finite value sets — `Silver\Http\HttpMethod`,
-      `Silver\Database\DbDriver`
-- [ ] `array_find`, `array_any`, `array_all` (PHP 8.4+)
-- [ ] Property hooks where they simplify getters/setters
-- [ ] Remove remaining legacy phpdoc that duplicates native types
+      `Silver\Database\DbDriver`, `Silver\Support\LogType`,
+      `Silver\Support\PasswordCharset`
+- [x] `array_find`, `array_any`, `array_all` (PHP 8.4+) —
+      `Response::send()` (array_find), `View::sharedFor()` (array_any);
+      remaining loops are accumulation/transform, not idiomatic candidates
+- [~] Property hooks where they simplify getters/setters — **no
+      behaviour-preserving application in core**: every get/set is
+      public method API (converting breaks callers), and the only magic
+      accessors (`QueryObject`) are a dynamic property bag hooks can't
+      model. Deferred to Phase B (where API changes are in scope).
+- [x] Remove remaining legacy phpdoc that duplicates native types —
+      Db/Query/Model/DBCreator stripped of zero-info tags; provably-safe
+      native return types added; informative phpdoc kept
+
+---
+
+## Phase A — Quality pass (checklist completion) [DONE, untagged]
+
+Mechanical-first, behaviour-preserving. PHPUnit ^12 dev-only baseline.
+5 commits. **Flagged for follow-up (Phase B / separate fix):**
+
+- `Database/DBCreator.php` — dead code, zero references; candidate for deletion
+- `ColumnDef::compileReference()` — `ON UPDATE` clause missing a space
+  (`ON UPDATECASCADE`); referential actions are an enum candidate
+- Ambiguous return types left untyped: `Db::{toSql,isDebug,quote,commit,
+  transaction,driverName,fetch}`, `QueryObject::__get/__set`
+
+> Phases B (design-pattern audit) and C (runtime performance) remain —
+> each its own spec/pass when picked up.
