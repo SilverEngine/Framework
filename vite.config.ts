@@ -59,7 +59,12 @@ export default defineConfig({
     outDir: 'public/build',
     emptyOutDir: true,
     rollupOptions: {
-      input: 'App/Resources/js/app.ts',
+      // `app` = the Wisp/Vue bundle; `styles` = a JS-free Tailwind stylesheet
+      // for server-rendered Ghost pages (welcome, errors).
+      input: {
+        app: 'App/Resources/js/app.ts',
+        styles: 'App/Resources/css/app.css',
+      },
     },
   },
 })
