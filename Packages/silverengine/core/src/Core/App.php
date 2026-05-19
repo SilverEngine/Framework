@@ -9,14 +9,14 @@ class App implements InstanceInterface
 {
     private static ?self $current = null;
     private string $path = 'App/';
-    private Instances $instances;
+    private Container $instances;
 
     public function __construct()
     {
-        $this->instances = new Instances();
+        $this->instances = new Container();
     }
 
-    public function instances(): Instances
+    public function instances(): Container
     {
         return $this->instances;
     }
