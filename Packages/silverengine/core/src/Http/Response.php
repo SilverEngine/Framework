@@ -70,16 +70,13 @@ class Response implements ResponseInterface
     {
         $accept = $_SERVER['HTTP_ACCEPT'] ?? '*/*';
         $types = preg_split('/[,;] */', $accept);
-        $contentType = false;
 
-        foreach ($types as $type) {
-            if (in_array($type, ['application/json', 'text/html', 'text/*', '*/*'], true)) {
-                $contentType = $type;
-                break;
-            }
-        }
+        $contentType = array_find(
+            $types,
+            static fn (string $type): bool => in_array($type, ['application/json', 'text/html', 'text/*', '*/*'], true),
+        );
 
-        if ($contentType === false) {
+        if ($contentType === null) {
             http_response_code(406);
             return;
         }
