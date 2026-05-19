@@ -25,49 +25,31 @@ class Model extends QueryObject
             ->first();
     }
 
-    /**
-     * @return mixed
-     */
     public function getFilterable()
     {
         return $this->filterable;
     }
 
-    /**
-     * @return mixed
-     */
     public function getIncludable()
     {
         return $this->includable;
     }
 
-    /**
-     * @return mixed
-     */
     public function getSearchable()
     {
         return $this->searchable;
     }
 
-    /**
-     * @return mixed
-     */
     public function getHidden()
     {
         return $this->hidden;
     }
 
-    /**
-     * @return mixed
-     */
     public function getFillable()
     {
         return $this->fillable;
     }
 
-    /**
-     * @return mixed
-     */
     public function getSelectable()
     {
         return $this->selectable;

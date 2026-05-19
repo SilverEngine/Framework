@@ -16,9 +16,6 @@ abstract class Db
 
     private $fetch_style = PDO::FETCH_OBJ;
 
-    /**
-     * @return mixed
-     */
     abstract public function toSql();
 
     // Optional virtual methods, used by ->first()
@@ -31,13 +28,7 @@ abstract class Db
         throw new \Exception('Unable to set limit for ' . static::class); 
     }
 
-    /**
-     * @param      $name
-     * @param      $dsn
-     * @param null $username
-     * @param null $password
-     */
-    public static function connect($name, $dsn, $username = null, $password = null)
+    public static function connect($name, $dsn, $username = null, $password = null): void
     {
         self::$dbs[$name] = function () use ($name, $dsn, $username, $password) {
             $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];
@@ -50,28 +41,21 @@ abstract class Db
         };
     }
 
-    /**
-     * @param bool $enabled
-     */
-    public static function debugMode($enabled = true)
+    /** @param bool $enabled */
+    public static function debugMode($enabled = true): void
     {
         self::$global_debug = $enabled;
     }
 
-    /**
-     * @param bool $enabled
-     * @return $this
-     */
-    public function debug($enabled = true)
+    /** @param bool $enabled */
+    public function debug($enabled = true): static
     {
         $this->debug = $enabled;
 
         return $this;
     }
 
-    /**
-     * @return bool|null
-     */
+    /** @return bool|null */
     public function isDebug()
     {
         if (isset($this) && $this instanceof Db && $this->debug !== null) {
@@ -81,11 +65,8 @@ abstract class Db
         return self::$global_debug;
     }
 
-    /**
-     * @param $name
-     * @throws \Exception
-     */
-    public static function setConnection($name)
+    /** @throws \Exception */
+    public static function setConnection($name): void
     {
         if (!isset(self::$dbs[ $name ])) {
             throw new \Exception("Connection '$name' not found.");
@@ -93,11 +74,7 @@ abstract class Db
         self::$default = $name;
     }
 
-    /**
-     * @param $name
-     * @param $cb
-     */
-    public static function withConnection($name, $cb)
+    public static function withConnection($name, $cb): void
     {
         $prev = self::$default;
         self::setConnection($name);
@@ -108,20 +85,13 @@ abstract class Db
         }
     }
 
-    /**
-     * @return array
-     */
-    public static function connections()
+    public static function connections(): array
     {
         return array_keys(self::$dbs);
     }
 
-    /**
-     * @param null $name
-     * @return mixed
-     * @throws \Exception
-     */
-    public static function connection($name = null)
+    /** @throws \Exception */
+    public static function connection($name = null): PDO
     {
         if ($name === null) {
             $name = self::$default;
@@ -148,9 +118,8 @@ abstract class Db
     }
 
     /**
-     * @param $value
-     * @return mixed
-     * @throws \Exception
+     * @return string|int|float quoted string, or numeric value unchanged
+     * @throws \Exception on unsupported value type
      */
     public static function quote($value)
     {
@@ -165,12 +134,8 @@ abstract class Db
         }
     }
 
-    /**
-     * @param       $sql
-     * @param array $bindings
-     * @return mixed
-     */
-    private static function raw($sql, $bindings = [])
+    /** @param array $bindings */
+    private static function raw($sql, $bindings = []): \PDOStatement
     {
         $db = self::connection();
         $stmt = $db->prepare($sql);
@@ -179,11 +144,7 @@ abstract class Db
         return $stmt;
     }
 
-    /**
-     * @param $sql
-     * @return mixed
-     */
-    public static function exec($sql)
+    public static function exec($sql): int|false
     {
         // FIXME: Log::debug('')
         if (self::$global_debug) {
@@ -192,12 +153,8 @@ abstract class Db
         return self::connection()->exec($sql);
     }
 
-    /**
-     * @param       $sql
-     * @param array $bindings
-     * @return static
-     */
-    public static function query($sql, $bindings = [])
+    /** @param array $bindings */
+    public static function query($sql, $bindings = []): static
     {
         $q = new static;
         $q->query = self::raw($sql, $bindings);
@@ -205,11 +162,7 @@ abstract class Db
     }
 
 
-    /**
-     * @param bool $silent
-     * @return $this
-     */
-    public function execute()
+    public function execute(): static
     {
         $sql = $this->toSql();
         $bindings = $this->getBindings();
@@ -225,21 +178,18 @@ abstract class Db
         return $this;
     }
 
-    public static function lastInsertId()
+    public static function lastInsertId(): string|false
     {
         return self::connection()->lastInsertId();
     }
 
     // What should we do?
-    /**
-     * @return mixed
-     */
-    public function affected()
+    public function affected(): int
     {
         return $this->query->rowCount();
     }
 
-    public function setFetchStyle($style) 
+    public function setFetchStyle($style): static
     {
         $this->fetch_style = $style;
         return $this;
@@ -360,9 +310,6 @@ abstract class Db
     }
 
     // Fetch next?
-    /**
-     * @return mixed
-     */
     // @Deprecated
     public function fetch($pdo_fetch_style = PDO::FETCH_OBJ)
     {
@@ -379,11 +326,8 @@ abstract class Db
         return $this->query->fetch();
     }
 
-    /**
-     * @return mixed
-     */
     // @Deprecated
-    public function fetchAll($pdo_fetch_style = PDO::FETCH_OBJ)
+    public function fetchAll($pdo_fetch_style = PDO::FETCH_OBJ): array
     {
         $this->execute(true);
 
@@ -399,10 +343,8 @@ abstract class Db
      * NOTE, XXX: This is public, becouse mysql need to check if
      * connection is within transaction.
      * Maybe we should make an alias function transactionLevel()
-     * 
-     * @return mixed
      */
-    public static function getTxCounter()
+    public static function getTxCounter(): int
     {
         $db = self::$default;
 
@@ -413,22 +355,15 @@ abstract class Db
         return self::$tx_counter[ $db ];
     }
 
-    /**
-     * @param $num
-     * @return mixed
-     */
-    private static function setTxCounter($num)
+    private static function setTxCounter($num): int
     {
         $db = self::$default;
 
         return self::$tx_counter[ $db ] = $num;
     }
 
-    /**
-     * @param int $delta
-     * @return mixed
-     */
-    private static function incTxCounter($delta = 1)
+    /** @param int $delta */
+    private static function incTxCounter($delta = 1): int
     {
         $num = self::getTxCounter();
         self::setTxCounter($num + $delta);
@@ -437,10 +372,7 @@ abstract class Db
     }
 
     // Transactions
-    /**
-     *
-     */
-    public static function beginTransaction()
+    public static function beginTransaction(): void
     {
         $conn = self::connection();
         $level = self::incTxCounter();
@@ -452,9 +384,7 @@ abstract class Db
         }
     }
 
-    /**
-     * @throws \Exception
-     */
+    /** @throws \Exception */
     public static function commit()
     {
         $conn = self::connection();
@@ -469,10 +399,8 @@ abstract class Db
         }
     }
 
-    /**
-     * @throws \Exception
-     */
-    public static function rollBack()
+    /** @throws \Exception */
+    public static function rollBack(): void
     {
         $conn = self::connection();
         $level = self::incTxCounter(-1) + 1;
@@ -487,7 +415,6 @@ abstract class Db
     }
 
     /**
-     * @param      $cb
      * @param bool $suppress
      * @return bool|void
      * @throws \Exception
@@ -509,9 +436,6 @@ abstract class Db
         }
     }
 
-    /**
-     * @return mixed
-     */
     public static function driverName()
     {
         $conn = self::connection();
