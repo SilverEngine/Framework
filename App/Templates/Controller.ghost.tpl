@@ -16,7 +16,7 @@ class {{{ucfirst($name)}}}Controller extends Controller
     public function get()
     {
         //echo "Welcome in {{$name}} controller. This file is on App/Controllers/";
-        return View::make('{{$name}}')->with('name', $this->name);
+        return View::make('{{strtolower($name)}}')->with('name', $this->name);
     }
 
     public function post()
