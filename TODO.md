@@ -222,5 +222,81 @@ Mechanical-first, behaviour-preserving. PHPUnit ^12 dev-only baseline.
 - Ambiguous return types left untyped: `Db::{toSql,isDebug,quote,commit,
   transaction,driverName,fetch}`, `QueryObject::__get/__set`
 
-> Phases B (design-pattern audit) and C (runtime performance) remain —
-> each its own spec/pass when picked up.
+---
+
+## Phase B — Design-pattern audit (full audit, API changes allowed)
+
+Test-first: characterization tests pin observable behaviour BEFORE each
+structural change. Per-batch gate (tests → refactor → suite green →
+commit). PHPUnit baseline grew 8 → 35 tests, 62 assertions, 1 skipped.
+
+### Done
+
+- [x] **B6 — drop legacy `$_` member prefix.** `Route` private/static
+      members `$_foo → $foo` (`$jails`/static→`$jailStack`; PHP forbids
+      same-name instance+static). `QueryObject::$_table/$_primary →
+      $table/$primaryKey` (typed `?string`, kept `static` — static
+      active-record needs table/PK without an instance); migrated
+      `App/Models/Users.php`. Tests: `RouteTest`, `QueryObjectTest`.
+- [x] **B1 — dialect Strategy.** Extracted `Silver\Database\Dialect`
+      (`segment()`/`classFor()`) from the inline `Compiler::toSql()`
+      `ucfirst+substr_replace+class_exists`; uses `DbDriver` enum,
+      identical fallback. Tests: `DialectCompileTest` (SQL pinned
+      pre-refactor), `DialectTest`.
+- [x] **B2 — Query factory + `QueryType` enum.** Replaced stringly
+      `Query::instance()`; `queryClass()`/`make()` resolve the identical
+      FQN. Test: `QueryTypeTest` (enum map + insert/update/delete/drop
+      SQL pinned).
+- [x] **B3 — CLI `Command` enum.** Replaced `match($this->cmd)`
+      literals; alias-aware `parse()` (`c`→Generate, unknown→null).
+      Proportionate — no class-per-command framework. Test:
+      `CommandTest`.
+
+### Remaining — large, high-blast-radius (checkpoint: do as focused sessions)
+
+- [ ] **B4 — split the `Db` God class.** Decompose connection registry
+      / transaction manager / result fetching out of the 445-LOC
+      `Db.php` behind a backward-compatible facade. Plan: (1) extend
+      characterization (in-memory SQLite: connect, tx begin/commit/
+      rollback + savepoint levels, get/all/first fetch shapes) BEFORE
+      touching code; (2) extract `ConnectionManager` (the `$dbs`/
+      `$default`/lazy-PDO logic), `TransactionManager` (`$tx_counter`
+      + SAVEPOINT levels), keep `Db` as a thin facade delegating to
+      them so `Query`/`Model` callers are unchanged; (3) then type the
+      ambiguous returns flagged below.
+- [ ] **B5 — real IoC container.** Today `Instances` is a registry, not
+      a container. Add `bind()` / `singleton()` / interface→impl /
+      closure factories / recursive autowiring + constructor injection
+      for controllers & middleware. Plan: (1) characterization of the
+      current shallow `DI::call` contract (method injection by class
+      name + route vars); (2) introduce `Container` (autowiring +
+      bindings) keeping `DI::call` semantics as the method-injection
+      front end; (3) constructor-inject controllers in
+      `Kernel::findCallable` and `new $mw()` in `loadMiddlewares`;
+      (4) unify the 3 singleton mechanisms; route `Facade` through the
+      container; (5) fix the `ServiceProvider` contract.
+
+### Findings backlog (surfaced during A/B, not silently changed)
+
+- `Database/DBCreator.php` — dead code, zero refs; delete candidate.
+- Ambiguous return types still untyped (do in B4): `Db::{toSql,isDebug,
+  quote,commit,transaction,driverName,fetch}`, `QueryObject::__get/__set`
+  (dynamic property bag — not a property-hook candidate).
+- `Route::url()` depends on the global `BASEPATH` constant defined only
+  by `public/index.php` — should come via config/container (B5). Test
+  env defines `BASEPATH=''`.
+- **Dual `Model` lineage:** `Silver\Database\Model` (static active-
+  record, extends `QueryObject`) vs `Silver\Core\Model` (instance,
+  `protected string $primaryKey`). Reconcile/clarify in B4.
+- `ServiceProvider` interface (`before(mixed $kernel)`/`register(mixed
+  $app)`/`after()`) does not match how `Kernel` invokes providers
+  (`before($req,$res)`/`after($req,$res)`, `register()` never called).
+  Fix in B5.
+- Dead `Kernel::call()` static (duplicates `DI`, no callers) — remove
+  in B5.
+- `Facade` keeps its own `static $objects` cache outside `Instances` —
+  same class can exist twice. Unify in B5.
+- Cosmetic: `Query\Delete` compiles `DELETE  FROM` (double space) —
+  valid SQL, left verbatim (behaviour-preserving); tidy opportunistically.
+
+> Phase C (runtime performance) still remains — its own pass when picked up.
