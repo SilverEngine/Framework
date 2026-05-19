@@ -5,21 +5,21 @@ namespace Silver\Core;
 
 class Route
 {
-    private string $_method;
-    private string $_route;
-    private mixed $_action;
-    private array $_jails;
-    private ?string $_name;
-    private string $_middleware;
-    private ?string $_type;
-    private array $_variables = [];
+    private string $method;
+    private string $route;
+    private mixed $action;
+    private array $jails;
+    private ?string $name;
+    private string $middleware;
+    private ?string $type;
+    private array $variables = [];
 
-    private static array $jails = [];
-    private static string $_prefix = '';
-    private static array $_routes = [];
-    private static array $_route_index = [];
+    private static array $jailStack = [];
+    private static string $prefix = '';
+    private static array $routes = [];
+    private static array $routeIndex = [];
 
-    private static array $_types = [
+    private static array $types = [
         'int'    => '/^[0-9]+$/',
         'string' => '/^[a-zA-Z]+/$',
         'hash'   => 'md5',
@@ -33,43 +33,43 @@ class Route
         string $middleware = 'public',
         ?string $type = null,
     ) {
-        $this->_method = strtolower($method);
-        $this->_route = $route;
-        $this->_action = $action;
-        $this->_jails = self::$jails;
-        $this->_name = $name;
-        $this->_middleware = $middleware;
-        $this->_type = $type;
+        $this->method = strtolower($method);
+        $this->route = $route;
+        $this->action = $action;
+        $this->jails = self::$jailStack;
+        $this->name = $name;
+        $this->middleware = $middleware;
+        $this->type = $type;
     }
 
     public function action(): mixed
     {
-        return $this->_action;
+        return $this->action;
     }
 
     public function type(): ?string
     {
-        return $this->_type;
+        return $this->type;
     }
 
     public function name(): ?string
     {
-        return $this->_name;
+        return $this->name;
     }
 
     public function middleware(): string
     {
-        return $this->_middleware;
+        return $this->middleware;
     }
 
     public function method(): string
     {
-        return $this->_method;
+        return $this->method;
     }
 
     public function url(array $vars = []): string
     {
-        $parts = explode('/', $this->_route);
+        $parts = explode('/', $this->route);
         $url = [];
         $i_variable = 0;
 
@@ -81,8 +81,8 @@ class Route
             if (str_starts_with($part, '{')) {
                 $key = trim($part, '{}');
                 $value = isset($vars[0])
-                    ? ($vars[$i_variable++] ?? throw new \Exception("Route {$this->_route} has no variable $key."))
-                    : ($vars[$key] ?? throw new \Exception("Route {$this->_route} has no variable $key."));
+                    ? ($vars[$i_variable++] ?? throw new \Exception("Route {$this->route} has no variable $key."))
+                    : ($vars[$key] ?? throw new \Exception("Route {$this->route} has no variable $key."));
                 $url[] = $value;
             } else {
                 $url[] = $part;
@@ -94,22 +94,22 @@ class Route
 
     public function variables(): array
     {
-        return $this->_variables;
+        return $this->variables;
     }
 
     public function route(): string
     {
-        return $this->_route;
+        return $this->route;
     }
 
     public static function all(): array
     {
-        return self::$_routes;
+        return self::$routes;
     }
 
     public function segment(int $index): mixed
     {
-        $segments = explode('/', $this->_route);
+        $segments = explode('/', $this->route);
         $seg = $segments[$index];
 
         if (str_starts_with($seg, '{')) {
@@ -117,7 +117,7 @@ class Route
             if (str_ends_with($seg, '?')) {
                 $seg = substr($seg, 0, -1);
             }
-            return $this->_variables[$seg];
+            return $this->variables[$seg];
         }
 
         return $seg;
@@ -125,11 +125,11 @@ class Route
 
     public function check(string $method, string $url): bool
     {
-        if ($this->_method !== 'any' && $method !== $this->_method) {
+        if ($this->method !== 'any' && $method !== $this->method) {
             return false;
         }
 
-        $route = explode('/', rtrim($this->_route, '/'));
+        $route = explode('/', rtrim($this->route, '/'));
         $urlParts = explode('/', rtrim($url, '/'));
 
         while ($route) {
@@ -144,7 +144,7 @@ class Route
 
                 if (str_contains($varname, ':')) {
                     [$varname, $typeName] = explode(':', $varname);
-                    $rule = self::$_types[$typeName] ?? throw new \Exception("Invalid route variable type $typeName.");
+                    $rule = self::$types[$typeName] ?? throw new \Exception("Invalid route variable type $typeName.");
 
                     if (str_starts_with($rule, '/')) {
                         if (!preg_match($rule, $urlParts[0] ?? '')) {
@@ -158,11 +158,11 @@ class Route
                 }
 
                 if ($urlParts) {
-                    $this->_variables[$varname] = $urlParts[0];
+                    $this->variables[$varname] = $urlParts[0];
                 } elseif ($required) {
                     return false;
                 } else {
-                    $this->_variables[$varname] = null;
+                    $this->variables[$varname] = null;
                 }
             } else {
                 if (!$urlParts || $route[0] !== $urlParts[0]) {
@@ -179,7 +179,7 @@ class Route
         }
 
         // Check jails (deprecated)
-        foreach ($this->_jails as $jail) {
+        foreach ($this->jails as $jail) {
             $jailParts = explode('@', $jail);
             $class = $jailParts[0];
             $jailMethod = $jailParts[1] ?? 'protect';
@@ -197,24 +197,24 @@ class Route
     public static function group(array $args, callable $fn): void
     {
         if (isset($args['jail'])) {
-            self::$jails[] = $args['jail'];
+            self::$jailStack[] = $args['jail'];
         }
 
-        $old_prefix = self::$_prefix;
-        self::$_prefix .= '/' . ($args['prefix'] ?? '');
+        $old_prefix = self::$prefix;
+        self::$prefix .= '/' . ($args['prefix'] ?? '');
 
         $fn();
 
-        self::$_prefix = $old_prefix;
+        self::$prefix = $old_prefix;
 
         if (isset($args['jail'])) {
-            array_pop(self::$jails);
+            array_pop(self::$jailStack);
         }
     }
 
     public static function find(string $requestUrl, string $requestMethod): ?self
     {
-        foreach (self::$_routes as $route) {
+        foreach (self::$routes as $route) {
             if ($route->check($requestMethod, $requestUrl)) {
                 return $route;
             }
@@ -230,12 +230,12 @@ class Route
         string $middleware = 'public',
         string $type = '',
     ): void {
-        $route = self::$_prefix . $route;
+        $route = self::$prefix . $route;
         foreach (explode('|', $method) as $m) {
             $r = new self($m, $route, $action, $name, $middleware, $type);
-            self::$_routes[] = $r;
+            self::$routes[] = $r;
             if ($name !== null) {
-                self::$_route_index[$name] = $r;
+                self::$routeIndex[$name] = $r;
             }
         }
     }
@@ -283,6 +283,6 @@ class Route
 
     public static function getRoute(string $name): self
     {
-        return self::$_route_index[$name] ?? throw new \Exception("Route $name not found.");
+        return self::$routeIndex[$name] ?? throw new \Exception("Route $name not found.");
     }
 }

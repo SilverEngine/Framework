@@ -6,6 +6,7 @@
     </testsuite>
   </testsuites>
   <php>
+    <const name="BASEPATH" value=""/>
     <server name="SERVER_NAME" value="Nginx"/>
     <server name="SERVER_PORT" value="80"/>
     <server name="HTTP_HOST" value="http://localhost"/>
