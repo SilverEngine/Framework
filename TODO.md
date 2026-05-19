@@ -217,8 +217,8 @@ Mechanical-first, behaviour-preserving. PHPUnit ^12 dev-only baseline.
 5 commits. **Flagged for follow-up (Phase B / separate fix):**
 
 - `Database/DBCreator.php` — dead code, zero references; candidate for deletion
-- `ColumnDef::compileReference()` — `ON UPDATE` clause missing a space
-  (`ON UPDATECASCADE`); referential actions are an enum candidate
+- ~~`ColumnDef::compileReference()` `ON UPDATE` spacing bug~~ — **fixed**
+  (`fix(db)`); referential actions still an enum candidate for Phase B
 - Ambiguous return types left untyped: `Db::{toSql,isDebug,quote,commit,
   transaction,driverName,fetch}`, `QueryObject::__get/__set`
 
