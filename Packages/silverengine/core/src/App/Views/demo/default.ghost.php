@@ -112,6 +112,8 @@
 
     <div class="label mt-2 float-right">
         <b>Version:</b> <span>1.0.5</span>
+        &middot;
+        <b>Load:</b> <span><?php echo defined('APP_START') ? number_format((hrtime(true) - APP_START) / 1e6, 2) . 'ms' : 'N/A'; ?></span>
     </div>
     <div class="clearfix"></div>
 

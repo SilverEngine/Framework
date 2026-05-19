@@ -7,7 +7,7 @@
 <body>
 #if($debug)
 <div style='clear: both; font-size: 14px; font-family: Helvetica; color: #000;'>
-    Current branch: <span style='color:#000; font-weight: bold; text-transform: uppercase;'>{{ ucfirst($_branch_) }}</span>
+    Current branch: <span style='color:#000; font-weight: bold; text-transform: uppercase;'>{{ ucfirst($_branch_ ?? '') }}</span>
 </div>
 #endif
 <header>
