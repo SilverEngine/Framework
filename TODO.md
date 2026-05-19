@@ -307,4 +307,60 @@ commit). PHPUnit baseline grew 8 → 35 tests, 62 assertions, 1 skipped.
 - Cosmetic: `Query\Delete` compiles `DELETE  FROM` (double space) —
   valid SQL, left verbatim (behaviour-preserving); tidy opportunistically.
 
-> Phase C (runtime performance) still remains — its own pass when picked up.
+---
+
+## Phase C — Runtime performance [measure-first; DONE]
+
+Profiled with the in-repo DebugTimer/RequestRecorder over 50 recorded
+requests (`/`, `/wisp-demo`, `/demo`) on the `php -S` dev server.
+
+### Measured baseline (median ms)
+
+| phase | dev server | warm process |
+|---|---|---|
+| `Env::construct` | **6.32** | **0.77** |
+| view render | 1.53 | — |
+| per middleware (×5) | ~1.2–1.5 | — |
+| database connect | 1.38 | — |
+| controller resolve | 0.74 | — |
+| controller action | 0.38 | — |
+| route resolve | 0.014 | — |
+| services | 0.008 | — |
+| boot header (autoload→mw) | 21.65 | — |
+
+### Conclusion (data, not guesswork)
+
+- The apparent `Env::construct` hot spot is **a no-opcache artifact**:
+  this runtime has **no opcache at all**, so `php -S` recompiles every
+  file every request. Warm (single long-lived process, mimicking
+  php-fpm+opcache) `Env::construct` is **0.77 ms**, and the
+  `json_decode(json_encode())` config clone I suspected is **0.035 ms**
+  — hypothesis rejected by measurement.
+- **No code path is algorithmically slow.** Route match 0.014 ms,
+  services 0.008 ms, controller action 0.38 ms. Speculative code
+  micro-optimisation would add risk for zero proven gain — explicitly
+  against measure-first.
+
+### Changes (zero behaviour risk)
+
+- `composer.json` → `config.optimize-autoloader: true` (+ sort-packages):
+  every `composer install` now emits a classmap **with PSR-4 fallback**.
+  Dev boot 21.65 → 20.62 ms; the real benefit is production scale
+  (no per-class PSR-4 stat walk).
+
+### Deployment levers (the actual wins — documentation, not code)
+
+- **opcache is the dominant production lever.** With php-fpm + opcache
+  the boot collapses toward the warm numbers (~3–5 ms total vs ~21 ms).
+  No code change can match this; it is a deploy requirement.
+- **Do NOT use `classmap-authoritative`** with this framework. It would
+  break correctness: `Kernel::findCallable()` resolves App controllers
+  by file convention (`include_once` + `new $class`), and
+  `Dialect::classFor()` / `QueryType` rely on `class_exists()` for
+  optional dialect/query variants — an authoritative classmap returns
+  false for anything not pre-listed (user controllers, dialect
+  variants), breaking dynamic resolution. `optimize-autoloader` is the
+  correct, safe choice (classmap + PSR-4 fallback).
+
+> All phases (A, B, C) complete. Remaining items live in the findings
+> backlog above (dead `DBCreator`, optional `Db` facade return-typing).
