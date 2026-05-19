@@ -21,7 +21,10 @@ final class ErrorHandler implements MiddlewareInterface
             return Handler::render($e);
         } catch (\Throwable $e) {
             $res->setCode(500);
-            $wrapped = new \Silver\Exception\Exception($e->getMessage(), (int) $e->getCode());
+            // Keep the original throwable as `previous` so the error
+            // page shows its real class, file/line and stack trace
+            // (the wrapper's own trace would be useless).
+            $wrapped = new \Silver\Exception\Exception($e->getMessage(), (int) $e->getCode(), $e);
             $wrapped->setFile($e->getFile());
             $wrapped->setLine($e->getLine());
             return Handler::render($wrapped);

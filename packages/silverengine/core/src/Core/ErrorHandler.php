@@ -79,6 +79,57 @@ final class ErrorHandler
         return "Not a file: '" . print_r($file, true) . "'";
     }
 
+    /**
+     * Flatten a throwable's trace into display frames:
+     * `where` = Class::method() / function(), plus file:line.
+     *
+     * @return list<array{where:string,file:string,line:int|string}>
+     */
+    private static function normalizeFrames(\Throwable $e): array
+    {
+        $frames = [];
+        foreach ($e->getTrace() as $f) {
+            $where = ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '') . '()';
+            $frames[] = [
+                'where' => $where === '()' ? '{main}' : $where,
+                'file'  => $f['file'] ?? '[internal]',
+                'line'  => $f['line'] ?? '',
+            ];
+        }
+        return $frames;
+    }
+
+    /**
+     * Best-effort request context for the debug page. Never throws —
+     * the error page must render even if the request is unavailable.
+     *
+     * @return array<string,mixed>
+     */
+    private static function requestContext(): array
+    {
+        try {
+            $route = Request::route();
+
+            return [
+                'method' => Request::method(),
+                'uri'    => Request::getUri() ?? ($_SERVER['REQUEST_URI'] ?? ''),
+                'route'  => $route?->name() ?? '—',
+                'query'  => $_GET,
+                'input'  => Request::method() === 'get' ? [] : Request::all(),
+                'ip'     => $_SERVER['REMOTE_ADDR'] ?? '—',
+            ];
+        } catch (\Throwable) {
+            return [
+                'method' => $_SERVER['REQUEST_METHOD'] ?? '—',
+                'uri'    => $_SERVER['REQUEST_URI'] ?? '—',
+                'route'  => '—',
+                'query'  => $_GET,
+                'input'  => [],
+                'ip'     => $_SERVER['REMOTE_ADDR'] ?? '—',
+            ];
+        }
+    }
+
     public static function render(Exception $e, bool $finalize = false): mixed
     {
         $view = null;
@@ -102,16 +153,18 @@ final class ErrorHandler
                 }
 
                 header('Content-type: Application/json');
-                $payload = [
-                    'data' => [
-                        'message' => $e->getMessage(),
-                        'code'    => 500,
-                        'file'    => $e->getFile(),
-                        'on line' => $e->getLine(),
-                        'trace'   => $e->getTrace(),
-                    ],
+                $data = [
+                    'message' => $e->getMessage(),
+                    'code'    => 500,
                 ];
-                echo json_encode($payload);
+                // Never leak file/line/trace to API clients in production.
+                if (self::isDebug()) {
+                    $orig = $e->getPrevious() ?? $e;
+                    $data['file']  = $e->getFile();
+                    $data['line']  = $e->getLine();
+                    $data['trace'] = $orig->getTrace();
+                }
+                echo json_encode(['data' => $data]);
                 exit();
             } catch (\Throwable $e2) {
                 self::finalize("Fatal error: " . $e2->getMessage());
@@ -123,12 +176,15 @@ final class ErrorHandler
                         ->with('message', $e->getMessage())
                         ->with('debug', self::isDebug());
                 } else {
+                    $orig = $e->getPrevious() ?? $e;
                     $view = View::make('errors.500')
                         ->with('message', $e->getMessage())
+                        ->with('class', $orig::class)
                         ->with('file', $e->getFile())
                         ->with('line', $e->getLine())
                         ->with('code_around', self::codeAround($e))
-                        ->with('back_trace', $e->getTrace())
+                        ->with('frames', self::normalizeFrames($orig))
+                        ->with('request', self::requestContext())
                         ->with('debug', self::isDebug());
                 }
 
