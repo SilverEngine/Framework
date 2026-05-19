@@ -83,11 +83,13 @@ class View implements RenderInterface
         $data = self::$shared;
 
         foreach (self::$composers as $composer) {
-            foreach ($composer['patterns'] as $pattern) {
-                if ($pattern === $name || fnmatch($pattern, $name)) {
-                    $data = array_merge($data, (array) ($composer['callback'])($name));
-                    break;
-                }
+            $matches = array_any(
+                $composer['patterns'],
+                static fn (string $pattern): bool => $pattern === $name || fnmatch($pattern, $name),
+            );
+
+            if ($matches) {
+                $data = array_merge($data, (array) ($composer['callback'])($name));
             }
         }
 
