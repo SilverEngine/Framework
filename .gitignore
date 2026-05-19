@@ -1,6 +1,10 @@
 .idea/
 .phpintel/
 vendor/
+Database/*.sqlite
 Storage/Logs/*.log
 *.lock
 .vscode
+docs/
+.claude/
+CLAUDE.md
