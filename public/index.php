@@ -1,81 +1,95 @@
 <?php
+declare(strict_types=1);
 
-/**
- * SilverEngine  - PHP MVC framework
- *
- * @package   SilverEngine
- * @author    SilverEngine Team
- * @copyright 2015-2017
- * @license   MIT
- * @link      https://github.com/SilverEngine/Framework
- */
-
-
-/**
- * require initialisation file
- */
 use Silver\ErrorHandler\Reporter;
 use Silver\Core\Kernel;
+use Silver\Core\Env;
 
-require_once '../System/Core/init.php';
+/*
+|--------------------------------------------------------------------------
+| Bootstrap constants
+|--------------------------------------------------------------------------
+*/
+error_reporting(E_ALL);
+ini_set('display_errors', 'On');
 
-if (!is_dir('../vendor')) {
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$PREFIX = preg_replace('{/index.php$}', '', str_replace('\\', '/', $_SERVER['SCRIPT_NAME']));
+$HOST = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '')
+    . '://' . $_SERVER['SERVER_NAME']
+    . ($_SERVER['SERVER_PORT'] != 80 ? ':' . $_SERVER['SERVER_PORT'] : '');
+
+define('DS', DIRECTORY_SEPARATOR);
+define('BASEPATH', $PREFIX);
+define('URL', $HOST . $PREFIX);
+define('CURRENT_URL', $HOST . $_SERVER['REQUEST_URI']);
+define('ROOT', dirname(__DIR__) . DS);
+define('SYS', ROOT . 'System' . DS);
+define('CORE', SYS . 'Core' . DS);
+define('EXT', '.php');
+
+/*
+|--------------------------------------------------------------------------
+| Autoloader
+|--------------------------------------------------------------------------
+*/
+if (!is_dir(ROOT . 'vendor')) {
     exit('Vendor folder missing. Run: composer install');
 }
 
-/**
- * psr-4 autoloading
- */
-require_once '../vendor/autoload.php';
+require_once ROOT . 'vendor/autoload.php';
 
-
-/**
- * switch to root directory
- */
 chdir(ROOT);
 
+/*
+|--------------------------------------------------------------------------
+| Environment (.env)
+|--------------------------------------------------------------------------
+*/
+Env::construct(ROOT);
+
+/*
+|--------------------------------------------------------------------------
+| Error handling
+|--------------------------------------------------------------------------
+*/
 if (class_exists(Reporter::class)) {
-    $errorHandler = new Reporter();
-    $errorHandler->on();
+    (new Reporter())->on();
 }
-// new ssd;
-// exit();
 
-/**
- * Load kernel
- */
+Silver\Core\ErrorHandler::setFilter(E_ALL);
+set_error_handler(Silver\Core\ErrorHandler::handle_error(...), E_ALL);
+set_exception_handler(Silver\Core\ErrorHandler::handle_ex(...));
+register_shutdown_function(Silver\Core\ErrorHandler::handle_fatal(...));
 
+/*
+|--------------------------------------------------------------------------
+| Database
+|--------------------------------------------------------------------------
+*/
+$database = Env::get('databases');
+
+if ($database && $database->on) {
+    $local = $database->local;
+
+    $dsn = match ($local->driver) {
+        'sqlite' => 'sqlite:' . ROOT . $local->database,
+        default  => $local->driver . ':host=' . $local->hostname . ';dbname=' . $local->basename . ';charset=utf8',
+    };
+
+    \Silver\Database\Query::connect($local->driver, $dsn, $local->username, $local->password);
+    \Silver\Database\Query::setConnection($local->driver);
+}
+
+/*
+|--------------------------------------------------------------------------
+| Run
+|--------------------------------------------------------------------------
+*/
 $kernel = new Kernel();
-
-
-/**
- * Load database config
- */
-
-// FIXME: on ORM somewhere;
-$database = \Silver\Core\Env::get('databases');
-
-
-if ($database->on == true) {
-
-    if ($database->local->driver === 'sqlite') {
-        $dsn = 'sqlite:' . ROOT . $database->local->database;
-    } else {
-        $dsn = $database->local->driver
-            . ':host=' . $database->local->hostname
-            . ';dbname=' . $database->local->basename
-            . ';charset=utf8';
-    }
-
-    \Silver\Database\Query::connect($database->local->driver, $dsn, $database->local->username, $database->local->password);
-    \Silver\Database\Query::setConnection($database->local->driver);
-}
-
 $kernel->loadRoutes();
 $kernel->loadMiddlewares();
-/**
- * - Load middlewares
- * - Load service run inside the run
- * -
- */
 $kernel->run();
