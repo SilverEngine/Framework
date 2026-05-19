@@ -15,9 +15,11 @@ enum Command: string
 {
     case Generate = 'g';
     case Delete   = 'd';
-    case Migrate  = 'migrate';
-    case Serve    = 'serve';
-    case Help     = 'help';
+    case Migrate       = 'migrate';
+    case Serve         = 'serve';
+    case Optimize      = 'optimize';
+    case OptimizeClear = 'optimize:clear';
+    case Help          = 'help';
 
     public static function parse(string $cmd): ?self
     {

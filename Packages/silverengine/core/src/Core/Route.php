@@ -285,4 +285,42 @@ class Route
     {
         return self::$routeIndex[$name] ?? throw new \Exception("Route $name not found.");
     }
+
+    /**
+     * Flat, serialisable definitions of every registered route for the
+     * route cache. Returns null if any route uses a Closure action
+     * (closures can't be cached) so the caller falls back to including
+     * the route files — same policy as Laravel's route:cache.
+     *
+     * @return list<array{0:string,1:string,2:string,3:?string,4:string,5:string}>|null
+     */
+    public static function definitions(): ?array
+    {
+        $defs = [];
+        foreach (self::$routes as $r) {
+            if (!is_string($r->action())) {
+                return null;
+            }
+            $defs[] = [
+                $r->method(),
+                $r->route(),
+                $r->action(),
+                $r->name(),
+                $r->middleware(),
+                $r->type() ?? '',
+            ];
+        }
+        return $defs;
+    }
+
+    /**
+     * Rebuild the route table from cached definitions (no route-file
+     * includes). @param list<array> $defs
+     */
+    public static function loadDefinitions(array $defs): void
+    {
+        foreach ($defs as $d) {
+            self::register($d[0], $d[1], $d[2], $d[3], $d[4], $d[5]);
+        }
+    }
 }

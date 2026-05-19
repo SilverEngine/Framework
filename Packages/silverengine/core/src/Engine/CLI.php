@@ -4,6 +4,8 @@ declare(strict_types=1);
 namespace Silver\Engine;
 
 use Silver\Engine\Ghost\Template;
+use Silver\Core\Env;
+use Silver\Core\Route;
 
 class CLI
 {
@@ -27,11 +29,77 @@ class CLI
         match (Command::parse($this->cmd)) {
             Command::Generate => $this->make(),
             Command::Delete   => $this->delete(),
-            Command::Migrate  => $this->migrate(),
-            Command::Serve    => $this->serve(),
-            Command::Help     => $this->help(),
-            null              => $this->error('Command not found: ' . $this->cmd),
+            Command::Migrate       => $this->migrate(),
+            Command::Serve         => $this->serve(),
+            Command::Optimize      => $this->optimize(),
+            Command::OptimizeClear => $this->optimizeClear(),
+            Command::Help          => $this->help(),
+            null                   => $this->error('Command not found: ' . $this->cmd),
         };
+    }
+
+    private function optimize(): void
+    {
+        // Always rebuild from a clean state.
+        $this->clearCaches();
+
+        // Fresh config (cache just removed → build() path), needed to
+        // know the route-file list.
+        Env::construct(ROOT);
+
+        $cacheDir = ROOT . 'Storage/cache/';
+        @mkdir($cacheDir, 0775, true);
+
+        // Route cache: include the route files to populate Route, then
+        // dump flat definitions — unless a Closure route forbids it.
+        foreach (Env::get('routes', []) as $route) {
+            include_once ROOT . $route . '.php';
+        }
+        $defs = Route::definitions();
+        if ($defs === null) {
+            $this->error('Route cache skipped: a route uses a Closure action (not cacheable).');
+        } else {
+            file_put_contents(
+                $cacheDir . 'routes.php',
+                "<?php\n\nreturn " . var_export($defs, true) . ";\n",
+                LOCK_EX,
+            );
+            $this->success('Routes cached      -> Storage/cache/routes.php (' . count($defs) . ' routes)');
+        }
+
+        // Config cache.
+        $cfg = Env::cacheConfig(ROOT);
+        $this->success('Config cached      -> ' . str_replace(ROOT, '', $cfg));
+
+        // Optimized Composer autoloader (classmap + PSR-4 fallback).
+        if (file_exists(ROOT . 'composer.json')) {
+            @exec('composer dump-autoload -o --quiet 2>&1', $out, $code);
+            $this->success($code === 0
+                ? 'Autoloader         -> composer dump-autoload -o'
+                : 'Autoloader skipped -> run "composer dump-autoload -o" manually');
+        }
+
+        $this->success('Optimized. Run "php silver optimize:clear" after editing .env / Config / routes.');
+    }
+
+    private function optimizeClear(): void
+    {
+        $removed = $this->clearCaches();
+        $this->success($removed > 0
+            ? "Cleared {$removed} cache file(s) from Storage/cache/."
+            : 'Nothing to clear (no caches present).');
+    }
+
+    private function clearCaches(): int
+    {
+        $removed = 0;
+        foreach (['config.php', 'routes.php'] as $f) {
+            $path = ROOT . 'Storage/cache/' . $f;
+            if (is_file($path) && @unlink($path)) {
+                $removed++;
+            }
+        }
+        return $removed;
     }
 
     private function migrate(): void
@@ -85,6 +153,9 @@ class CLI
          -----
          Start dev server: php silver serve [host:port]
          Run migrations:   php silver migrate
+         -----
+         Optimize (cache config+routes, -o autoload): php silver optimize
+         Clear caches:                                php silver optimize:clear
          -----
          Create CRUD resource: php silver g resource {name}
          Create Controller:    php silver g controller {name}

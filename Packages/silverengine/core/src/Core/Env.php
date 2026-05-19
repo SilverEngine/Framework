@@ -11,22 +11,81 @@ final class Env
     private static ?stdClass $envData = null;
     private static string $name = '';
 
+    public static function cachePath(string $root): string
+    {
+        return rtrim($root, '/') . '/Storage/cache/config.php';
+    }
+
     public static function construct(?string $root = null): void
     {
         $root ??= defined('ROOT') ? ROOT : getcwd() . '/';
 
-        // Load .env file via vlucas/phpdotenv
+        // Fast path: a `php silver optimize` config cache freezes the
+        // fully merged config + APP_ENV into one file, skipping dotenv
+        // parsing and the Config/ scandir+include on every request.
+        $cache = self::cachePath($root);
+        if (is_file($cache)) {
+            $cached = require $cache;
+            self::$name    = $cached['name'];
+            self::$envData = json_decode(json_encode($cached['config']));
+            return;
+        }
+
+        [$name, $config] = self::build($root);
+        self::$name    = $name;
+        self::$envData = json_decode(json_encode($config));
+    }
+
+    /**
+     * Build the merged config from scratch (.env + Config/ + overrides).
+     * Shared by the normal boot path and the optimize cache builder.
+     *
+     * @return array{0:string,1:array<string,mixed>}
+     */
+    private static function build(string $root): array
+    {
         $dotenv = Dotenv::createImmutable(rtrim($root, '/'));
         $dotenv->safeLoad();
 
-        self::$name = $_ENV['APP_ENV'] ?? 'local';
+        $name = $_ENV['APP_ENV'] ?? 'local';
 
         $config = self::readConfiguration($root);
-
-        // Overlay env vars onto config where applicable
         self::applyEnvOverrides($config);
 
+        return [$name, $config];
+    }
+
+    /**
+     * Write the config cache (used by `php silver optimize`). Returns the
+     * file path. Also primes the in-process config so the running CLI
+     * sees the same data.
+     */
+    public static function cacheConfig(?string $root = null): string
+    {
+        $root ??= defined('ROOT') ? ROOT : getcwd() . '/';
+
+        [$name, $config] = self::build($root);
+        self::$name    = $name;
         self::$envData = json_decode(json_encode($config));
+
+        $path = self::cachePath($root);
+        @mkdir(dirname($path), 0775, true);
+
+        file_put_contents(
+            $path,
+            "<?php\n\nreturn " . var_export(['name' => $name, 'config' => $config], true) . ";\n",
+            LOCK_EX,
+        );
+
+        return $path;
+    }
+
+    public static function clearConfigCache(?string $root = null): bool
+    {
+        $root ??= defined('ROOT') ? ROOT : getcwd() . '/';
+        $path = self::cachePath($root);
+
+        return is_file($path) ? @unlink($path) : false;
     }
 
     public static function name(): string
