@@ -1,0 +1,19 @@
+{
+    "name": "silverengine/core",
+    "description": "Core framework package for SilverEngine. Zero external dependencies (except vlucas/phpdotenv).",
+    "type": "library",
+    "license": "MIT",
+    "require": {
+        "php": ">=8.4",
+        "vlucas/phpdotenv": "^5.6"
+    },
+    "autoload": {
+        "psr-4": {
+            "Silver\\": "src/"
+        },
+        "files": [
+            "src/Core/helpers.php",
+            "src/Core/Library.php"
+        ]
+    }
+}
