@@ -142,18 +142,4 @@ class Kernel
         $this->finalizeServices($req, $res);
         exit;
     }
-
-    public static function call(callable|array $function, array $args = []): mixed
-    {
-        if (is_callable($function)) {
-            return $function(...$args);
-        }
-
-        if (is_array($function)) {
-            [$controller, $method] = $function;
-            return $controller->$method(...$args);
-        }
-
-        throw new \Exception("Don't know how to call \$function");
-    }
 }
