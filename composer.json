@@ -30,7 +30,5 @@
     "autoload-dev": {
         "psr-4": {}
     },
-    "require-dev": {
-        "phpunit/phpunit": "^5"
-    }
+    "require-dev": {}
 }
