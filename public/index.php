@@ -30,8 +30,6 @@ define('BASEPATH', $PREFIX);
 define('URL', $HOST . $PREFIX);
 define('CURRENT_URL', $HOST . $_SERVER['REQUEST_URI']);
 define('ROOT', dirname(__DIR__) . DS);
-define('SYS', ROOT . 'System' . DS);
-define('CORE', SYS . 'Core' . DS);
 define('EXT', '.php');
 
 /*
