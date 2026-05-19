@@ -2,6 +2,7 @@
 .phpintel/
 vendor/
 node_modules/
+.phpunit.cache/
 public/build/
 .env
 Database/*.sqlite

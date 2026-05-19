@@ -2,14 +2,14 @@
 
 namespace Tests\Unit\Framework\Http;
 
-use \PHPUnit\Framework\TestCase;
+use PHPUnit\Framework\TestCase;
 use Silver\Http\Session;
 
 class SessionsTest extends TestCase
 {
-    protected $session;
+    protected Session $session;
 
-    public function setUp()
+    protected function setUp(): void
     {
         $this->session = new Session();
     }
