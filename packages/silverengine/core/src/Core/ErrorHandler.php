@@ -130,41 +130,51 @@ final class ErrorHandler
         }
     }
 
+    /**
+     * Consistent API error envelope (same shape for 404, 500, anything).
+     * Always: status + message. Debug only: exception class, file, line
+     * and the normalized stack frames (same frames as the HTML page).
+     * Pure — no output/exit — so it is unit-testable.
+     *
+     * @return array<string,mixed>
+     */
+    public static function apiErrorBody(Exception $e, int $status): array
+    {
+        $body = [
+            'status'  => $status,
+            'message' => $e->getMessage() ?: 'Error',
+        ];
+
+        if (self::isDebug()) {
+            $orig = $e->getPrevious() ?? $e;
+            $body['exception'] = $orig::class;
+            $body['file']      = $e->getFile();
+            $body['line']      = $e->getLine();
+            $body['trace']     = self::normalizeFrames($orig);
+        }
+
+        return $body;
+    }
+
     public static function render(Exception $e, bool $finalize = false): mixed
     {
         $view = null;
 
         if (Request::segment(1) === 'api' || (Request::segment(1) === 'public' && Request::segment(2) === 'api')) {
             try {
-                if ($e instanceof NotFoundException) {
-                    $payload = [
-                        'data' => [
-                            'message' => $e->getMessage(),
-                            'code'    => $e->getCode() ?: 404,
-                            'debug'   => [
-                                'file' => $e->getFile(),
-                                'line' => $e->getLine(),
-                            ],
-                        ],
-                    ];
-                    header('Content-type: Application/json');
-                    echo json_encode($payload);
-                    exit();
+                $status = $e instanceof NotFoundException
+                    ? ($e->getCode() ?: 404)
+                    : 500;
+
+                if (!headers_sent()) {
+                    http_response_code($status);
+                    header('Content-Type: application/json; charset=utf-8');
                 }
 
-                header('Content-type: Application/json');
-                $data = [
-                    'message' => $e->getMessage(),
-                    'code'    => 500,
-                ];
-                // Never leak file/line/trace to API clients in production.
-                if (self::isDebug()) {
-                    $orig = $e->getPrevious() ?? $e;
-                    $data['file']  = $e->getFile();
-                    $data['line']  = $e->getLine();
-                    $data['trace'] = $orig->getTrace();
-                }
-                echo json_encode(['data' => $data]);
+                $flags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
+                    | (self::isDebug() ? JSON_PRETTY_PRINT : 0);
+
+                echo json_encode(['error' => self::apiErrorBody($e, $status)], $flags);
                 exit();
             } catch (\Throwable $e2) {
                 self::finalize("Fatal error: " . $e2->getMessage());

@@ -63,4 +63,42 @@ class ErrorPageTest extends TestCase
         $this->assertStringNotContainsString('RuntimeException', $html);
         $this->assertStringNotContainsString('Stack trace', $html);
     }
+
+    private function apiBody(bool $debug, \Throwable $orig, int $status): array
+    {
+        $_ENV['APP_DEBUG'] = $debug ? 'true' : 'false';
+        Env::construct(getcwd() . '/');
+
+        $w = new SilverException($orig->getMessage(), (int) $orig->getCode(), $orig);
+        $w->setFile($orig->getFile());
+        $w->setLine($orig->getLine());
+
+        return ErrorHandler::apiErrorBody($w, $status);
+    }
+
+    public function testApiErrorBodyProductionIsMinimal(): void
+    {
+        $body = $this->apiBody(false, new \RuntimeException('db password leaked here'), 500);
+
+        $this->assertSame(['status' => 500, 'message' => 'db password leaked here'], $body);
+        $this->assertArrayNotHasKey('exception', $body);
+        $this->assertArrayNotHasKey('file', $body);
+        $this->assertArrayNotHasKey('trace', $body);
+    }
+
+    public function testApiErrorBodyDebugIsRichAndConsistent(): void
+    {
+        $body = $this->apiBody(true, new \LogicException('bad call'), 404);
+
+        $this->assertSame(404, $body['status']);
+        $this->assertSame('bad call', $body['message']);
+        $this->assertSame(\LogicException::class, $body['exception']); // real class, not the wrapper
+        $this->assertArrayHasKey('file', $body);
+        $this->assertArrayHasKey('line', $body);
+        $this->assertIsArray($body['trace']);
+        // Same normalized frame shape as the HTML page.
+        if ($body['trace'] !== []) {
+            $this->assertArrayHasKey('where', $body['trace'][0]);
+        }
+    }
 }
