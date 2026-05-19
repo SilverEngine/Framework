@@ -8,6 +8,7 @@ public/build/
 Database/*.sqlite
 Storage/Logs/*.log
 Storage/debug/
+Storage/cache/
 *.lock
 .vscode
 docs/
