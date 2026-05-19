@@ -6,8 +6,8 @@ namespace Silver\Database;
 class QueryObject
 {
     
-    protected static $_table = null;
-    protected static $_primary = null;
+    protected static ?string $table = null;
+    protected static ?string $primaryKey = null;
     private $props = [];
     private $dirty = [];
 
@@ -18,8 +18,8 @@ class QueryObject
 
     public static function tableName() 
     {
-        if (static::$_table !== null) {
-            return static::$_table;
+        if (static::$table !== null) {
+            return static::$table;
         }
 
         static $table = null;
@@ -37,8 +37,8 @@ class QueryObject
 
     public static function primaryKey() 
     {
-        if (static::$_primary !== null) {
-            return static::$_primary;
+        if (static::$primaryKey !== null) {
+            return static::$primaryKey;
         }
         return 'id';
     }
