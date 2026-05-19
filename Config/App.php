@@ -12,7 +12,7 @@
 
 return [
 
-    'silver_key' => '__Your_Secret_Key_Go_Here__',
+    'silver_key' => env('APP_KEY', '__Your_Secret_Key_Go_Here__'),
 
     'terminal' => [
         'online' => false,
@@ -26,7 +26,7 @@ return [
         'App'      => 'App/',
         'Database' => 'Database/',
         'Storage'  => 'Storage/',
-        'System'   => 'System/',
+        'Packages' => 'Packages/',
         'Public'   => 'Public/',
     ],
 
