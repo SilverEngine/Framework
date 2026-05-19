@@ -13,17 +13,12 @@
     "repositories": [
         {
             "type": "path",
-            "url": "Packages/silverengine/error-handler"
-        },
-        {
-            "type": "path",
             "url": "Packages/silverengine/core"
         }
     ],
     "require": {
         "php": ">=8.4",
         "silverengine/core": "@dev",
-        "silverengine/error-handler": "@dev",
         "nejcc/php-datatypes": "^1.0"
     },
     "autoload": {
