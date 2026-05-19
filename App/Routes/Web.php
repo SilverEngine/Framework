@@ -16,3 +16,4 @@ use Silver\Core\Route;
 
 Route::get('/', 'Welcome@welcome', 'home', 'public');
 Route::get('/demo', 'Welcome@demo', 'home', 'public');
+Route::get('/wisp-demo', 'Welcome@wisp', 'wisp.demo', 'public');

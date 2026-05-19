@@ -15,12 +15,83 @@ class View implements RenderInterface
     private string $template;
     private array $data = [];
 
+    /** @var array<string,mixed> Global data merged into every view and Wisp page. */
+    private static array $shared = [];
+
+    /** @var list<array{patterns:list<string>,callback:callable}> */
+    private static array $composers = [];
+
     public function __construct(string $template, array $data = [])
     {
         $this->template = $template;
         foreach ($data as $key => $value) {
             $this->with($key, $value);
         }
+    }
+
+    /**
+     * Share data globally — available as $key in every Ghost template and as
+     * a shared prop in every Wisp page. Pass an array to share several keys.
+     *
+     * Note: shared values are also serialized into Wisp's client-side JSON,
+     * so keep them client-safe.
+     */
+    public static function share(string|array $key, mixed $value = null): void
+    {
+        foreach (is_array($key) ? $key : [$key => $value] as $k => $v) {
+            self::$shared[$k] = $v;
+        }
+    }
+
+    /** @return array<string,mixed> */
+    public static function shared(): array
+    {
+        return self::$shared;
+    }
+
+    /**
+     * Register a composer: $callback(string $name): array is invoked whenever
+     * a view/Wisp component whose name matches $patterns renders, and its
+     * return value is merged into that render's data.
+     *
+     * @param string|list<string> $patterns Exact name or fnmatch wildcard
+     *                                       ("Users/*", "errors.*").
+     */
+    public static function composer(string|array $patterns, callable $callback): void
+    {
+        self::$composers[] = [
+            'patterns'  => array_values((array) $patterns),
+            'callback'  => $callback,
+        ];
+    }
+
+    /** Reset shared data + composers (tests, long-lived processes). */
+    public static function flushShared(): void
+    {
+        self::$shared = [];
+        self::$composers = [];
+    }
+
+    /**
+     * Resolve shared data + matching composer output for a given view or
+     * Wisp component name. Instance/prop data is layered on top by the caller.
+     *
+     * @return array<string,mixed>
+     */
+    public static function sharedFor(string $name): array
+    {
+        $data = self::$shared;
+
+        foreach (self::$composers as $composer) {
+            foreach ($composer['patterns'] as $pattern) {
+                if ($pattern === $name || fnmatch($pattern, $name)) {
+                    $data = array_merge($data, (array) ($composer['callback'])($name));
+                    break;
+                }
+            }
+        }
+
+        return $data;
     }
 
     public static function make(string $template, array $data = []): static
@@ -64,6 +135,8 @@ class View implements RenderInterface
             E_ALL ^ E_NOTICE,
             function (): string {
                 $name = str_replace('.', '/', $this->template);
+                // Instance data wins over shared/composer data.
+                $data = array_merge(self::sharedFor($this->template), $this->data);
 
                 $extensions = ['.ghost.php', '.ghost.tpl', '.php', '.html'];
 
@@ -79,7 +152,7 @@ class View implements RenderInterface
 
                     if ($ext === '.php') {
                         try {
-                            foreach ($this->data as $key => $value) {
+                            foreach ($data as $key => $value) {
                                 $$key = $value;
                             }
                             ob_start();
@@ -92,7 +165,7 @@ class View implements RenderInterface
                     }
 
                     // .ghost.php or .ghost.tpl
-                    return (new Template($target, $this->data))->render();
+                    return (new Template($target, $data))->render();
                 }
 
                 throw new Exception("Template $name not found.");

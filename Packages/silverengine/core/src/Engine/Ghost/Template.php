@@ -52,6 +52,8 @@ class Template implements RenderInterface
         $render = $this->parseAssets($render);
         $render = $this->parseAssetsCss($render);
         $render = $this->parseAssetsJs($render);
+        $render = $this->parseVite($render);
+        $render = $this->parseWisp($render);
         $render = $this->parseUrlName($render);
         $render = $this->parseComponent($render);
         $render = $this->parseBlocks($render);
@@ -211,6 +213,35 @@ class Template implements RenderInterface
     protected function parseAssets(string $body): string
     {
         return $this->processLines($body, "/{{ asset\('(.*)'\) }}/s", fn(string $path) => URL . '/assets/' . $path);
+    }
+
+    /** {{ vite() }} -> dev-server HMR tags, or hashed manifest tags in prod. */
+    protected function parseVite(string $body): string
+    {
+        return preg_replace_callback(
+            '/{{ vite\(\) }}/',
+            fn(): string => Vite::tags(),
+            $body,
+        );
+    }
+
+    /** {{ wisp() }} -> the Inertia root element with the page object baked in. */
+    protected function parseWisp(string $body): string
+    {
+        return preg_replace_callback(
+            '/{{ wisp\(\) }}/',
+            function (): string {
+                $page = $this->data['_wisp_page'] ?? [];
+                $json = htmlspecialchars(
+                    (string) json_encode($page, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+                    ENT_QUOTES,
+                    'UTF-8',
+                );
+
+                return '<div id="app" data-page="' . $json . '"></div>';
+            },
+            $body,
+        );
     }
 
     protected function parseAssetsCss(string $body): string

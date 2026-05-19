@@ -115,6 +115,22 @@ class Response implements ResponseInterface
             ? "\n<!-- Page generated in " . number_format((hrtime(true) - APP_START) / 1e6, 2) . "ms -->"
             : '';
 
+        // Wisp: serve the page object as JSON on Inertia navigations,
+        // or the full Ghost shell on a fresh/full page load.
+        if ($body instanceof \Silver\Engine\Ghost\WispResponse) {
+            header('Vary: X-Inertia');
+
+            if (!empty($_SERVER['HTTP_X_INERTIA'])) {
+                header('Content-Type: application/json');
+                header('X-Inertia: true');
+                print json_encode($body->data());
+            } else {
+                print $body->render() . $timeComment;
+            }
+
+            return;
+        }
+
         match ($contentType) {
             '*/*', 'text/*', 'text/html' => match (true) {
                 is_string($body), is_numeric($body) => print($body . $timeComment),

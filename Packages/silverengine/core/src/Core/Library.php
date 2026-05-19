@@ -93,6 +93,13 @@ if (!function_exists('js')) {
     }
 }
 
+if (!function_exists('wisp')) {
+    function wisp(string $component, array $props = []): \Silver\Engine\Ghost\WispResponse
+    {
+        return \Silver\Engine\Ghost\Wisp::render($component, $props);
+    }
+}
+
 if (!function_exists('route')) {
     function route(string $name, array $args = []): string
     {

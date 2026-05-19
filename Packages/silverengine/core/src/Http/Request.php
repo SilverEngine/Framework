@@ -105,4 +105,73 @@ class Request implements RequestInterface
     {
         return Route::find($this->getUri() ?? '/', $this->method());
     }
+
+    /**
+     * Typed access to a single request header. Key is case/format-insensitive
+     * ("X-Inertia", "x-inertia", "X_INERTIA" all resolve to HTTP_X_INERTIA).
+     */
+    public function headerValue(string $key, ?string $default = null): ?string
+    {
+        $norm = strtoupper(str_replace('-', '_', $key));
+        $value = $this->header()[$norm] ?? null;
+
+        return $value !== null ? (string) $value : $default;
+    }
+
+    public function hasHeader(string $key): bool
+    {
+        return $this->headerValue($key) !== null;
+    }
+
+    /** A query-string value ($_GET). */
+    public function query(string $key, mixed $default = null): mixed
+    {
+        return $_GET[$key] ?? $default;
+    }
+
+    /**
+     * The decoded JSON request body, or a single dot-free key from it.
+     */
+    public function json(?string $key = null, mixed $default = null): mixed
+    {
+        static $decoded = null;
+
+        if ($decoded === null) {
+            $raw = file_get_contents('php://input') ?: '';
+            $decoded = json_decode($raw, true);
+            $decoded = is_array($decoded) ? $decoded : [];
+        }
+
+        if ($key === null) {
+            return $decoded;
+        }
+
+        return $decoded[$key] ?? $default;
+    }
+
+    public function bool(string $key, bool $default = false): bool
+    {
+        $value = $this->input($key);
+
+        return $value === null
+            ? $default
+            : filter_var($value, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? $default;
+    }
+
+    public function int(string $key, int $default = 0): int
+    {
+        $value = $this->input($key);
+
+        return is_numeric($value) ? (int) $value : $default;
+    }
+
+    /** True when the client expects/accepts a JSON response. */
+    public function wantsJson(): bool
+    {
+        $accept = $_SERVER['HTTP_ACCEPT'] ?? '';
+
+        return $this->ajax()
+            || str_contains($accept, 'application/json')
+            || $this->hasHeader('X-Inertia');
+    }
 }
