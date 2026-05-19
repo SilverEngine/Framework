@@ -252,18 +252,23 @@ commit). PHPUnit baseline grew 8 → 35 tests, 62 assertions, 1 skipped.
       Proportionate — no class-per-command framework. Test:
       `CommandTest`.
 
+- [x] **B4 — split the `Db` God class.** Extracted `ConnectionManager`
+      (registry/lazy-PDO/raw/exec/quote/lastInsertId/driverName) and
+      `TransactionManager` (depth counter + nested BEGIN/COMMIT/ROLLBACK
+      + SAVEPOINT levels, savepoint SQL still via `Db::exec()` for the
+      debug echo). `Db` is now a thin BC facade keeping only the
+      per-instance fetch/debug side; every `Db::`/`Query::`/`Model::`
+      static entry point unchanged. Found + fixed a **pre-existing**
+      bug first (separate `fix(db)`): `class_exists($style)` before a
+      string check threw `TypeError` under `strict_types` — all builder
+      result-fetch with default style was broken. Tests: `DbBehaviorTest`
+      (10, characterization pinned pre-refactor), `DbFetchTest` (5,
+      TDD red→green for the bug). Ambiguous returns
+      (`Db::{toSql,isDebug,quote,commit,transaction,driverName,fetch}`)
+      left untyped — separate optional polish, see backlog.
+
 ### Remaining — large, high-blast-radius (checkpoint: do as focused sessions)
 
-- [ ] **B4 — split the `Db` God class.** Decompose connection registry
-      / transaction manager / result fetching out of the 445-LOC
-      `Db.php` behind a backward-compatible facade. Plan: (1) extend
-      characterization (in-memory SQLite: connect, tx begin/commit/
-      rollback + savepoint levels, get/all/first fetch shapes) BEFORE
-      touching code; (2) extract `ConnectionManager` (the `$dbs`/
-      `$default`/lazy-PDO logic), `TransactionManager` (`$tx_counter`
-      + SAVEPOINT levels), keep `Db` as a thin facade delegating to
-      them so `Query`/`Model` callers are unchanged; (3) then type the
-      ambiguous returns flagged below.
 - [ ] **B5 — real IoC container.** Today `Instances` is a registry, not
       a container. Add `bind()` / `singleton()` / interface→impl /
       closure factories / recursive autowiring + constructor injection
@@ -279,9 +284,12 @@ commit). PHPUnit baseline grew 8 → 35 tests, 62 assertions, 1 skipped.
 ### Findings backlog (surfaced during A/B, not silently changed)
 
 - `Database/DBCreator.php` — dead code, zero refs; delete candidate.
-- Ambiguous return types still untyped (do in B4): `Db::{toSql,isDebug,
-  quote,commit,transaction,driverName,fetch}`, `QueryObject::__get/__set`
-  (dynamic property bag — not a property-hook candidate).
+- ~~Builder fetch `class_exists(int)` TypeError~~ — **fixed** (`fix(db)`,
+  TDD, `DbFetchTest`).
+- Ambiguous return types still untyped (optional polish, low value):
+  `Db::{toSql,isDebug,quote,commit,transaction,driverName,fetch}`,
+  `QueryObject::__get/__set` (dynamic property bag — not a
+  property-hook candidate).
 - `Route::url()` depends on the global `BASEPATH` constant defined only
   by `public/index.php` — should come via config/container (B5). Test
   env defines `BASEPATH=''`.
