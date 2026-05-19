@@ -16,8 +16,9 @@ class Kernel
 
     public function loadMiddlewares(): void
     {
+        $container = App::instance()->instances();
         foreach (Env::get('middlewares', []) as $mw) {
-            $this->middlewares[] = new $mw();
+            $this->middlewares[] = $container->make($mw);
         }
     }
 
@@ -100,7 +101,7 @@ class Kernel
             if (file_exists($fullPath)) {
                 include_once $fullPath;
                 $fullClass = $nsPrefix . 'Controllers\\' . $class . 'Controller';
-                $controller = new $fullClass();
+                $controller = $this->app->instances()->make($fullClass);
 
                 if (method_exists($controller, $method)) {
                     return [$controller, $method];
