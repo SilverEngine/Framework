@@ -321,7 +321,7 @@ class Route
         foreach (explode("|", $method) as $m) {
             $r = new Route($m, $route, $action, $name, $middleware,  $type);
             self::$_routes[] = $r;
-            self::$_route_index[ $name ] = $r;
+            self::$_route_index[ $name ?? '' ] = $r;
         }
     }
 
