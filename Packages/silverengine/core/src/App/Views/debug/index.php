@@ -115,6 +115,8 @@
         .timeline-bar:hover { opacity: 1; }
         .cat-boot { background: #58a6ff; }
         .cat-kernel { background: #3fb950; }
+        .cat-request { background: #56d4dd; }
+        .cat-middleware { background: #e3b341; }
         .cat-controller { background: #d2a8ff; }
         .cat-view { background: #f0883e; }
         .cat-app { background: #8b949e; }
@@ -197,6 +199,8 @@
             <div class="timeline-legend">
                 <span><i class="legend-dot cat-boot"></i> Boot</span>
                 <span><i class="legend-dot cat-kernel"></i> Kernel</span>
+                <span><i class="legend-dot cat-request"></i> Request</span>
+                <span><i class="legend-dot cat-middleware"></i> Middleware</span>
                 <span><i class="legend-dot cat-controller"></i> Controller</span>
                 <span><i class="legend-dot cat-view"></i> View</span>
             </div>
