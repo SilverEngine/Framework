@@ -5,10 +5,10 @@ node_modules/
 .phpunit.cache/
 public/build/
 .env
-Database/*.sqlite
-Storage/Logs/*.log
-Storage/debug/
-Storage/cache/
+database/*.sqlite
+storage/Logs/*.log
+storage/debug/
+storage/cache/
 *.lock
 .vscode
 docs/
