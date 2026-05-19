@@ -119,7 +119,7 @@ class ColumnDef extends Part
             $sql = " FOREIGN KEY ({$name}) REFERENCES " . $references->getTable() . '(' . $references->getColumn() . ')';
 
             if($q->onUpdate !== null) {
-                $sql .= ' ON UPDATE';
+                $sql .= ' ON UPDATE ';
                 switch($q->onUpdate) {
                 case 'cascade': $sql .= 'CASCADE'; 
                     break;
