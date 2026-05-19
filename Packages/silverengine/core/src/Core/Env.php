@@ -78,40 +78,13 @@ final class Env
 
     private static function applyEnvOverrides(array &$config): void
     {
-        // Map .env keys to config structure
+        // Top-level overrides from .env
         if (isset($_ENV['APP_DEBUG'])) {
             $config['debug'] = filter_var($_ENV['APP_DEBUG'], FILTER_VALIDATE_BOOLEAN);
         }
-        if (isset($_ENV['APP_KEY'])) {
-            $config['app_key'] = $_ENV['APP_KEY'];
-        }
 
-        // Database overrides
-        if (isset($_ENV['DB_DRIVER'])) {
-            $config['databases'] ??= ['on' => true];
-            $config['databases']['on'] = true;
-            $config['databases']['default'] = $_ENV['DB_CONNECTION'] ?? 'local';
-            $config['databases']['local'] = [
-                'service'       => true,
-                'driver'        => $_ENV['DB_DRIVER'] ?? 'sqlite',
-                'database'      => $_ENV['DB_DATABASE'] ?? 'Database/db.sqlite',
-                'hostname'      => $_ENV['DB_HOST'] ?? 'localhost',
-                'port'          => $_ENV['DB_PORT'] ?? '3306',
-                'username'      => $_ENV['DB_USERNAME'] ?? '',
-                'password'      => $_ENV['DB_PASSWORD'] ?? '',
-                'basename'      => $_ENV['DB_DATABASE'] ?? '',
-                'limit_request' => (int) ($_ENV['DB_LIMIT_REQUEST'] ?? 25),
-            ];
-        }
-
-        // Mail overrides
-        if (isset($_ENV['MAIL_SERVICE'])) {
-            $config['mail'] = [
-                'service' => filter_var($_ENV['MAIL_SERVICE'], FILTER_VALIDATE_BOOLEAN),
-                'email'   => $_ENV['MAIL_FROM_ADDRESS'] ?? '',
-                'name'    => $_ENV['MAIL_FROM_NAME'] ?? '',
-            ];
-        }
+        // Config files now use env() directly for DB, mail, app_key etc.
+        // No hardcoded overrides needed — single source of truth in Config/*.php
     }
 
 }

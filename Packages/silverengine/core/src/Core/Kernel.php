@@ -6,6 +6,7 @@ namespace Silver\Core;
 use Silver\Http\Request;
 use Silver\Http\Response;
 use Silver\Exception\NotFoundException;
+use Silver\Support\DebugTimer;
 
 class Kernel
 {
@@ -88,18 +89,17 @@ class Kernel
 
         [$class, $method] = explode('@', $action);
 
-        $folders = [
-            $this->app->path(),
-            $this->app->systemPath(),
+        $locations = [
+            [$this->app->path(), 'App\\'],
+            [$this->app->systemPath(), 'System\\App\\'],
         ];
 
-        foreach ($folders as $folder) {
-            $full = $folder . 'Controllers/' . $class;
-            $fullClass = str_replace('/', '\\', $full . 'Controller');
-            $fullPath = $full . 'Controller.php';
+        foreach ($locations as [$folder, $nsPrefix]) {
+            $fullPath = $folder . 'Controllers/' . $class . 'Controller.php';
 
             if (file_exists($fullPath)) {
                 include_once $fullPath;
+                $fullClass = $nsPrefix . 'Controllers\\' . $class . 'Controller';
                 $controller = new $fullClass();
 
                 if (method_exists($controller, $method)) {
@@ -122,15 +122,22 @@ class Kernel
             $res = new Response(),
         );
 
+        DebugTimer::begin('services', 'kernel');
         $this->loadServices($req, $res);
+        DebugTimer::end('services', 'kernel');
 
+        DebugTimer::begin('middlewares + controller', 'kernel');
         $ret = $this->executeMiddlewares($this->middlewares, $req, $res);
+        DebugTimer::end('middlewares + controller', 'kernel');
 
         if ($ret !== null) {
             $res->setBody($ret);
         }
 
+        DebugTimer::begin('response send', 'kernel');
         $res->send();
+        DebugTimer::end('response send', 'kernel');
+
         $this->finalizeServices($req, $res);
         exit;
     }

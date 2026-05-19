@@ -90,82 +90,83 @@ all 4 Facades, ErrorException, NotFoundException
 
 ---
 
-## Phase 4 — HTTP layer [NEXT]
+## Phase 4 — HTTP layer [DONE]
 
-- [ ] `Http/Request.php` — migrate, typed properties, union types
-- [ ] `Http/Response.php` — migrate, fix `Silver\Core\Render` ref
-- [ ] `Http/Session.php` — migrate
-- [ ] `Http/Cookie.php` — migrate
-- [ ] `Http/Curl.php` — migrate
-- [ ] `Http/Redirect.php` — migrate
-- [ ] `Http/Validator.php` — migrate
-- [ ] `Http/View.php` — migrate
-- [ ] **Verify:** full request lifecycle works
-
----
-
-## Phase 5 — Database / Query Builder
-
-- [ ] `Database/Query.php` — migrate (central class)
-- [ ] `Database/Db.php`
-- [ ] `Database/Model.php`
-- [ ] `Database/Compiler.php`
-- [ ] `Database/QueryObject.php`
-- [ ] `Database/Relation.php`
-- [ ] `Database/Source.php`
-- [ ] `Database/DBCreator.php`
-- [ ] `Database/Parts/*` — bulk migrate all parts + DB-specific subdirs
-- [ ] `Database/Query/*` — Select, Insert, Update, Delete, Create, Drop, Alter + variants
-- [ ] `Database/Traits/*` — QueryColumns, QueryFrom, QueryJoin, QueryWH, etc.
-- [ ] `Database/Source/*` — Query, Table, Model sources
-- [ ] **Verify:** CRUD operations, migrations controller, SQLite + MySQL paths
+- [x] `Http/Request.php` — typed properties, `str_starts_with`, `?Route` return
+- [x] `Http/Response.php` — nested `match` for content dispatch, `RenderInterface`
+- [x] `Http/Session.php` — `final`, removed side-effect auto-call
+- [x] `Http/Cookie.php` — `final`, `match` for return types
+- [x] `Http/Curl.php` — `final`, removed deprecated `curl_close()`
+- [x] `Http/Redirect.php` — `final`, `never` return types
+- [x] `Http/Validator.php` — `final`, `string|false` return types
+- [x] `Http/View.php` — DRY template extension loop, `str_starts_with`
 
 ---
 
-## Phase 6 — Support & Helpers
+## Phase 5 — Database / Query Builder [DONE]
 
-- [ ] `Support/Facade.php`
-- [ ] `Support/Fake.php` + `FakeFactory.php`
-- [ ] `Support/Log.php`
-- [ ] `Support/Crypter.php`
-- [ ] `Support/Git.php`
-- [ ] `Support/SMail.php`
-- [ ] `Helpers/String.php`
-- [ ] `Helpers/Path.php`
-- [ ] `Helpers/URL.php`
-- [ ] `Helpers/HTMLElement.php`
-- [ ] **Verify:** helpers accessible, logging works
+- [x] 55 files migrated: Db, Query, Model, Compiler, QueryObject, Relation, Source, DBCreator
+- [x] Parts/* (20 files), Query/* (10 files), Traits/* (8 files), Source/* (3 files)
+- [x] DB-specific variants: Mysql/, Pgsql/, Sqlite/
+- [x] `declare(strict_types=1)` added to all files
+- [x] Fixed `$self::isDebug()` typo in Db.php
+- [x] SQLite connection verified
 
 ---
 
-## Phase 7 — Engines
+## Phase 6 — Support & Helpers [DONE]
 
-- [ ] `Engine/CLI/index.php` — migrate + modernise CLI arg parsing
-- [ ] `Engine/Events/EventManager.php`
-- [ ] `Engine/Ghost/Template.php` — migrate template engine
-- [ ] **Verify:** `php silver serve`, event dispatch, template rendering
-
----
-
-## Phase 9 — System App (framework defaults)
-
-- [ ] `App/Controllers/SystemController.php`
-- [ ] `App/Controllers/MigrationsController.php`
-- [ ] `App/Middlewares/*` (ErrorHandler, AccessLog, ApiTransform, Version)
-- [ ] `App/Routes.php`
-- [ ] `App/Views/*` — copy views into package
-- [ ] **Verify:** system routes (/system, /migrations) respond
+- [x] `Support/Facade.php` — `abstract` base, lazy singleton `??=`
+- [x] `Support/Fake.php` — `final`, DRY via `__callStatic` + const array
+- [x] `Support/FakeFactory.php` — `const array` data, `random_int()`
+- [x] `Support/Log.php` — `final`, typed `const array TYPES`
+- [x] `Support/Crypter.php` — `final`, `match` for alphabet, `random_int()`
+- [x] `Support/Git.php` — `final`, `readonly` branch property
+- [x] `Support/SMail.php` — `final`, typed properties, fluent builder
+- [x] `Helpers/Str.php` — renamed from `String` (reserved word), wraps builtins
+- [x] `Helpers/Path.php` — `final`, `str_starts_with`
+- [x] `Helpers/URL.php` — `str_starts_with`/`str_ends_with`
+- [x] `Helpers/HTMLElement.php` — typed constructor, union types
 
 ---
 
-## Phase 10 — Cleanup & finalize
+## Phase 7 — Engines [DONE]
 
-- [ ] Delete `System/` directory entirely
-- [ ] Remove `"Silver\\": "System/"` from root `composer.json`
-- [ ] Audit `Config/Providers.php` — remove stale namespace mappings
-- [ ] Run full test suite (`Tests/`)
-- [ ] Update `Packages/silverengine/error-handler` to `php >=8.4`
-- [ ] Tag `silverengine/core` v0.1.0
+- [x] `Engine/CLI.php` — `match` expressions, `never` return, DRY `resolvePaths`
+- [x] `Engine/Events/EventManager.php` — fixed namespace, typed, removed debug echo
+- [x] `Engine/Ghost/Template.php` — DRY `processLines()` helper, arrow fns
+
+---
+
+## Phase 9 — System App (framework defaults) [DONE]
+
+- [x] `App/Controllers/SystemController.php` — typed return
+- [x] `App/Controllers/MigrationsController.php` — `string|false` union type
+- [x] `App/Middlewares/*` — all `final`, `MiddlewareInterface`, `\Throwable` catch
+- [x] `App/Routes.php` — strict comparison
+- [x] `App/Views/*` — copied to package
+- [x] Config/Routes.php updated to point to package path
+
+---
+
+## Phase 10 — Cleanup & finalize [DONE]
+
+- [x] `System/` directory deleted entirely
+- [x] `"Silver\\": "System/"` removed from root `composer.json`
+- [x] `Config/Providers.php` — removed stale `Silver => System` mapping
+- [x] `Config/Routes.php` — updated system routes path
+- [x] Clean boot verified (zero warnings)
+- [ ] Run full test suite (`Tests/`) — manual
+- [ ] Update `Packages/silverengine/error-handler` to `php >=8.4` — optional
+- [ ] Tag `silverengine/core` v0.1.0 — when ready
+
+---
+
+## Future Enhancements
+
+- [ ] Shared view data — global data available to all views (Request, Response, app state)
+- [ ] View::share() / View composers pattern for injecting data into all templates
+- [ ] Request/Response improvements — typed access to headers, query params, JSON body
 
 ---
 

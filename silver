@@ -19,6 +19,4 @@ if (!function_exists('dd')) {
 
 require_once ROOT . 'vendor/autoload.php';
 
-include_once ROOT . 'System/Engine/CLI/index.php';
-
 return new CLI($argv);

@@ -97,6 +97,16 @@ class Route
         return $this->_variables;
     }
 
+    public function route(): string
+    {
+        return $this->_route;
+    }
+
+    public static function all(): array
+    {
+        return self::$_routes;
+    }
+
     public function segment(int $index): mixed
     {
         $segments = explode('/', $this->_route);
