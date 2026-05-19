@@ -13,7 +13,6 @@
 return [
     'App\\Local' => 'App/Local',
     'App' => 'App',
-    'Silver' => 'System',
     'Database' => 'Database',
 ];
 
