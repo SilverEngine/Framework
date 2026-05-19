@@ -24,13 +24,13 @@ class CLI
 
     private function run(): void
     {
-        match ($this->cmd) {
-            'g', 'c'   => $this->make(),
-            'd'        => $this->delete(),
-            'migrate'  => $this->migrate(),
-            'serve'    => $this->serve(),
-            'help'     => $this->help(),
-            default    => $this->error('Command not found: ' . $this->cmd),
+        match (Command::parse($this->cmd)) {
+            Command::Generate => $this->make(),
+            Command::Delete   => $this->delete(),
+            Command::Migrate  => $this->migrate(),
+            Command::Serve    => $this->serve(),
+            Command::Help     => $this->help(),
+            null              => $this->error('Command not found: ' . $this->cmd),
         };
     }
 
