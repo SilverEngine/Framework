@@ -17,7 +17,7 @@ abstract class Query extends Db
     /** @param array ...$columns */
     public static function select(...$columns)
     {
-        return self::instance('select', [$columns]);
+        return self::instance(QueryType::Select, [$columns]);
     }
 
     /** @param string $column */
@@ -37,40 +37,44 @@ abstract class Query extends Db
     /** @param array ...$columns */
     public static function delete(...$columns)
     {
-        return self::instance('delete', [$columns]);
+        return self::instance(QueryType::Delete, [$columns]);
     }
 
     /** @param array $updates */
     public static function update($table, $updates = [])
     {
-        return self::instance('update', [$table, $updates]);
+        return self::instance(QueryType::Update, [$table, $updates]);
     }
 
     public static function insert($table, $data = null)
     {
-        return self::instance('insert', [$table, $data]);
+        return self::instance(QueryType::Insert, [$table, $data]);
     }
 
     public static function create($table, $cb)
     {
-        return self::instance('create', [$table, $cb]);
+        return self::instance(QueryType::Create, [$table, $cb]);
     }
 
     public static function drop($table)
     {
-        return self::instance('drop', [$table]);
+        return self::instance(QueryType::Drop, [$table]);
     }
 
     public static function alter($table, $cb = null)
     {
-        return self::instance('alter', [$table, $cb]);
+        return self::instance(QueryType::Alter, [$table, $cb]);
     }
 
-    /** @param array $args */
-    protected static function instance($type, $args = [])
+    /**
+     * Typed query factory. Kept as the internal seam subclasses can
+     * extend; resolution delegates to {@see QueryType::make()}.
+     *
+     * @param array<int,mixed> $args
+     */
+    protected static function instance(QueryType $type, array $args = []): Query
     {
-        $class = 'Silver\\Database\\Query\\' . ucfirst($type);
-        return new $class(...$args);
+        return $type->make($args);
     }
 
     public function bind($value)
