@@ -14,10 +14,13 @@
 /**
  * require initialisation file
  */
+use Silver\ErrorHandler\Reporter;
+use Silver\Core\Kernel;
+
 require_once '../System/Core/init.php';
 
 if (!is_dir('../vendor')) {
-    exit('Warning: Vendor folder is missing! Please add vendor folder or use CLI command: Composer update');
+    exit('Vendor folder missing. Run: composer install');
 }
 
 /**
@@ -31,8 +34,8 @@ require_once '../vendor/autoload.php';
  */
 chdir(ROOT);
 
-if (PHP_VERSION >= 7.1 && class_exists(\Ouch\Reporter::class)) {
-    $errorHandler = new Ouch\Reporter();
+if (class_exists(Reporter::class)) {
+    $errorHandler = new Reporter();
     $errorHandler->on();
 }
 // new ssd;
@@ -41,9 +44,6 @@ if (PHP_VERSION >= 7.1 && class_exists(\Ouch\Reporter::class)) {
 /**
  * Load kernel
  */
-
-use Ouch\Reporter;
-use Silver\Core\Kernel;
 
 $kernel = new Kernel();
 
