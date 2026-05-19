@@ -19,7 +19,7 @@ use Silver\Database\Model;
  */
 class Users extends Model
 {
-    protected static $_table = 'users';
+    protected static $table = 'users';
 
     protected $hidden = [
         'password',
