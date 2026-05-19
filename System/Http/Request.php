@@ -45,11 +45,44 @@ class Request implements RequestInterface
 
     /**
      * Request constructor.
-     * initialize requeted uri
+     * initialize requested uri
      */
     public function __construct()
     {
-        $this->uri = isset($_GET['uri']) ? $_GET['uri'] : "/";
+        $this->uri = $this->resolveUri();
+    }
+
+    /**
+     * Resolve the requested route path.
+     *
+     * Apache's mod_rewrite front controller passes the path as
+     * ?uri=/path. Servers without that rewrite (PHP built-in server,
+     * nginx try_files) don't set it, so fall back to the real request
+     * path derived from REQUEST_URI.
+     *
+     * @return string
+     */
+    private function resolveUri()
+    {
+        if (isset($_GET['uri']) && $_GET['uri'] !== '') {
+            return $_GET['uri'];
+        }
+
+        $uri = $_SERVER['REQUEST_URI'] ?? '/';
+
+        // drop the query string
+        if (($q = strpos($uri, '?')) !== false) {
+            $uri = substr($uri, 0, $q);
+        }
+
+        // strip the application base path (sub-directory installs)
+        if (defined('BASEPATH') && BASEPATH !== '' && str_starts_with($uri, BASEPATH)) {
+            $uri = substr($uri, strlen(BASEPATH));
+        }
+
+        $uri = '/' . ltrim(rawurldecode($uri), '/');
+
+        return $uri;
     }
 
     /**

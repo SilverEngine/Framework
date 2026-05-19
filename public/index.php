@@ -14,10 +14,13 @@
 /**
  * require initialisation file
  */
+use Silver\ErrorHandler\Reporter;
+use Silver\Core\Kernel;
+
 require_once '../System/Core/init.php';
 
 if (!is_dir('../vendor')) {
-    exit('Warning: Vendor folder is missing! Please add vendor folder or use CLI command: Composer update');
+    exit('Vendor folder missing. Run: composer install');
 }
 
 /**
@@ -31,8 +34,8 @@ require_once '../vendor/autoload.php';
  */
 chdir(ROOT);
 
-if (PHP_VERSION >= 7.1 && class_exists(\Ouch\Reporter::class)) {
-    $errorHandler = new Ouch\Reporter();
+if (class_exists(Reporter::class)) {
+    $errorHandler = new Reporter();
     $errorHandler->on();
 }
 // new ssd;
@@ -41,9 +44,6 @@ if (PHP_VERSION >= 7.1 && class_exists(\Ouch\Reporter::class)) {
 /**
  * Load kernel
  */
-
-use Ouch\Reporter;
-use Silver\Core\Kernel;
 
 $kernel = new Kernel();
 
@@ -58,9 +58,16 @@ $database = \Silver\Core\Env::get('databases');
 
 if ($database->on == true) {
 
-    //    \Silver\Database\Query::connect('sqlite', 'sqlite:/Database/db.sqlite');
+    if ($database->local->driver === 'sqlite') {
+        $dsn = 'sqlite:' . ROOT . $database->local->database;
+    } else {
+        $dsn = $database->local->driver
+            . ':host=' . $database->local->hostname
+            . ';dbname=' . $database->local->basename
+            . ';charset=utf8';
+    }
 
-    \Silver\Database\Query::connect($database->local->driver, 'mysql:host=' . $database->local->hostname . ';dbname=' . $database->local->basename . ';charset=utf8', $database->local->username, $database->local->password);
+    \Silver\Database\Query::connect($database->local->driver, $dsn, $database->local->username, $database->local->password);
     \Silver\Database\Query::setConnection($database->local->driver);
 }
 
