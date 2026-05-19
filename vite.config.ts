@@ -46,7 +46,7 @@ function hotFile(): Plugin {
 export default defineConfig({
   plugins: [vue(), tailwindcss(), hotFile()],
   resolve: {
-    alias: { '@': resolve('App/Resources/js') },
+    alias: { '@': resolve('app/Resources/js') },
   },
   // Static assets are served by PHP from public/assets — Vite's publicDir
   // would otherwise recursively copy public/ into public/build.
@@ -62,8 +62,8 @@ export default defineConfig({
       // `app` = the Wisp/Vue bundle; `styles` = a JS-free Tailwind stylesheet
       // for server-rendered Ghost pages (welcome, errors).
       input: {
-        app: 'App/Resources/js/app.ts',
-        styles: 'App/Resources/css/app.css',
+        app: 'app/Resources/js/app.ts',
+        styles: 'app/Resources/css/app.css',
       },
     },
   },
