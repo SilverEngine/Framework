@@ -12,7 +12,7 @@
 
 namespace Silver\Engine\Ghost;
 
-use Silver\Core\Blueprints\RenderInterface;
+use Silver\Core\Contracts\RenderInterface;
 use Silver\Core\Kernel;
 use Silver\Core\Route;
 use Silver\Http\Session;
@@ -40,12 +40,12 @@ class Template implements RenderInterface
         return $this;
     }
 
-    public function data()
+    public function data(): array
     {
         return $this->_data;
     }
 
-    public function render()
+    public function render(): string
     {
         if (!file_exists($this->_file)) {
             throw new \Exception("File not found {$this->_file}");

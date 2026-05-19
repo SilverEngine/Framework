@@ -12,16 +12,14 @@
 
 namespace Silver\App\Middlewares;
 
-use Silver\Core\Blueprints\MiddlewareInterface;
+use Silver\Core\Contracts\MiddlewareInterface;
 use Silver\Http\Request;
 use Silver\Http\Response;
-use Silver\Exception\NotFoundException;
-use Silver\Core\ErrorHandler as Handler;
 use Closure;
 
 class ApiTransform implements MiddlewareInterface
 {
-    public function execute(Request $req, Response $res, Closure $next) 
+    public function execute(Request $req, Response $res, Closure $next): mixed
     {
         $data = $next();
 

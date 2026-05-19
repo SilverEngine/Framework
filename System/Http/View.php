@@ -12,7 +12,7 @@
 
 namespace Silver\Http;
 
-use Silver\Core\Blueprints\RenderInterface;
+use Silver\Core\Contracts\RenderInterface;
 use Silver\Core\App;
 use Silver\Core\ErrorHandler;
 use Silver\Engine\Ghost\Template;
@@ -73,12 +73,12 @@ class View implements RenderInterface
         return $this;
     }
 
-    public function data()
+    public function data(): array
     {
         return $this->data;
     }
 
-    public function render()
+    public function render(): string
     {
         $self = $this;
 

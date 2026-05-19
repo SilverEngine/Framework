@@ -12,7 +12,7 @@
 
 namespace Silver\App\Middlewares;
 
-use Silver\Core\Blueprints\MiddlewareInterface;
+use Silver\Core\Contracts\MiddlewareInterface;
 use Silver\Http\Request;
 use Silver\Http\Response;
 use Silver\Exception\NotFoundException;
@@ -21,7 +21,7 @@ use Closure;
 
 class ErrorHandler implements MiddlewareInterface
 {
-    public function execute(Request $req, Response $res, Closure $next) 
+    public function execute(Request $req, Response $res, Closure $next): mixed
     {
         try {
             return $next();
