@@ -14,12 +14,12 @@
     "types": ["vite/client", "node"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["App/Resources/js/*"]
+      "@/*": ["app/Resources/js/*"]
     }
   },
   "include": [
-    "App/Resources/js/**/*.ts",
-    "App/Resources/js/**/*.vue",
+    "app/Resources/js/**/*.ts",
+    "app/Resources/js/**/*.vue",
     "env.d.ts",
     "vite.config.ts"
   ]
