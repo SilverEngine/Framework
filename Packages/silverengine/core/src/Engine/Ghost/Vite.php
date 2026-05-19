@@ -15,6 +15,7 @@ namespace Silver\Engine\Ghost;
 final class Vite
 {
     private const ENTRY = 'App/Resources/js/app.ts';
+    private const CSS_ENTRY = 'App/Resources/css/app.css';
 
     public static function hotFile(): string
     {
@@ -80,6 +81,47 @@ final class Vite
         }
 
         $tags[] = '<script type="module" src="' . $base . $entry['file'] . '"></script>';
+
+        return implode("\n", $tags);
+    }
+
+    /**
+     * JS-free Tailwind stylesheet for server-rendered Ghost pages (welcome,
+     * errors). Dev: Vite injects the CSS via its module (no Vue). Prod: a
+     * plain <link> from the manifest. Not built: empty string — the page
+     * still renders (unstyled) and never errors.
+     */
+    public static function cssTags(): string
+    {
+        if (self::isHot()) {
+            $origin = rtrim(trim((string) file_get_contents(self::hotFile())), '/');
+
+            return implode("\n", [
+                '<script type="module" src="' . $origin . '/@vite/client"></script>',
+                '<script type="module" src="' . $origin . '/' . self::CSS_ENTRY . '"></script>',
+            ]);
+        }
+
+        $manifest = self::manifestFile();
+        if (!is_file($manifest)) {
+            return '';
+        }
+
+        $data = json_decode((string) file_get_contents($manifest), true) ?: [];
+        $entry = $data[self::CSS_ENTRY] ?? null;
+        if ($entry === null) {
+            return '';
+        }
+
+        $base = (defined('URL') ? URL : '') . '/build/';
+        $tags = [];
+
+        foreach ($entry['css'] ?? [] as $css) {
+            $tags[] = '<link rel="stylesheet" href="' . $base . $css . '">';
+        }
+        if (str_ends_with((string) ($entry['file'] ?? ''), '.css')) {
+            $tags[] = '<link rel="stylesheet" href="' . $base . $entry['file'] . '">';
+        }
 
         return implode("\n", $tags);
     }

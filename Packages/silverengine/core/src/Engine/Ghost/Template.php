@@ -53,6 +53,7 @@ class Template implements RenderInterface
         $render = $this->parseAssetsCss($render);
         $render = $this->parseAssetsJs($render);
         $render = $this->parseVite($render);
+        $render = $this->parseViteCss($render);
         $render = $this->parseWisp($render);
         $render = $this->parseUrlName($render);
         $render = $this->parseComponent($render);
@@ -221,6 +222,16 @@ class Template implements RenderInterface
         return preg_replace_callback(
             '/{{ vite\(\) }}/',
             fn(): string => Vite::tags(),
+            $body,
+        );
+    }
+
+    /** {{ viteCss() }} -> JS-free Tailwind stylesheet for server-rendered pages. */
+    protected function parseViteCss(string $body): string
+    {
+        return preg_replace_callback(
+            '/{{ viteCss\(\) }}/',
+            fn(): string => Vite::cssTags(),
             $body,
         );
     }
