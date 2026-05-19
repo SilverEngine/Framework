@@ -1,80 +1,63 @@
 <?php
-
-/**
- * SilverEngine  - PHP MVC framework
- *
- * @package   SilverEngine
- * @author    SilverEngine Team
- * @copyright 2015-2017
- * @license   MIT
- * @link      https://github.com/SilverEngine/Framework
- */
+declare(strict_types=1);
 
 namespace Silver\Helpers;
 
-use Silver\Exception;
+use Silver\Exception\Exception;
 
 class URL
 {
+    private array $parts = [];
 
-    private $parts = [];
-
-    public function __construct($url)
+    public function __construct(string $url)
     {
         $this->merge($url);
     }
 
-    public static function make($url, $query = [])
+    public static function make(string $url, array $query = []): static
     {
-        $url = new static($url);
+        $instance = new static($url);
         if ($query) {
-            $url->setPart('query', $query);
+            $instance->setPart('query', $query);
         }
-
-        return $url;
+        return $instance;
     }
 
-    public static function mail($email)
+    public function setPart(string $key, mixed $value, bool $override = true): static
     {
-        return new static('mailto', null, null, null, $email);
-    }
-
-    public function setPart($key, $value, $override = true)
-    {
-        if ($key == 'path') {
-            $key = ($value[0] == '/') ? 'absPath' : 'relPath';
+        if ($key === 'path') {
+            $key = (isset($value[0]) && $value[0] === '/') ? 'absPath' : 'relPath';
         }
 
-        if (!isset($this->parts[ $key ]) || $override) {
-            $this->parts[ $key ] = $value;
+        if (!isset($this->parts[$key]) || $override) {
+            $this->parts[$key] = $value;
         }
 
         return $this;
     }
 
-    public function getPath()
+    public function getPath(): string
     {
         $abs = $this->part('absPath', '');
         $rel = $this->part('relPath', '');
-        if ($abs && $rel && !String::endsWith($abs, '/')) {
+
+        if ($abs !== '' && $rel !== '' && !str_ends_with($abs, '/')) {
             $abs .= '/';
         }
 
         return $abs . $rel;
     }
 
-    public function part($key, $default = null)
+    public function part(string $key, mixed $default = null): mixed
     {
-        if ($key == 'path') {
+        if ($key === 'path') {
             return $this->getPath();
         }
 
-        return isset($this->parts[ $key ])
-            ? $this->parts[ $key ]
-            : $default;
+        return $this->parts[$key] ?? $default;
     }
 
-    public function merge($url, $override = true)
+    public function merge(string $url, bool $override = true): static
     {
         foreach (parse_url($url) as $key => $value) {
             $this->setPart($key, $value, $override);
@@ -83,25 +66,23 @@ class URL
         return $this;
     }
 
-
-    // XXX Trait
-    public function __call($method, $args)
+    public function __call(string $method, array $args): mixed
     {
-        if (String::startsWith($method, 'set')) {
+        if (str_starts_with($method, 'set')) {
             $key = lcfirst(substr($method, 3));
-            $this->setParam($key, $args[0]);
-
+            $this->setPart($key, $args[0]);
             return $this;
-        } elseif (String::startsWith($method, 'get')) {
-            $key = lcfirst(substr($method, 3));
-
-            return $this->part($key);
-        } else {
-            throw new Exception("Call undefined method " . static::class . "::" . $method . '()');
         }
+
+        if (str_starts_with($method, 'get')) {
+            $key = lcfirst(substr($method, 3));
+            return $this->part($key);
+        }
+
+        throw new Exception("Call undefined method " . static::class . "::" . $method . '()');
     }
 
-    public function __toString()
+    public function __toString(): string
     {
         $url = '';
 
