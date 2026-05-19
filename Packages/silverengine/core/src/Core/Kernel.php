@@ -46,6 +46,12 @@ class Kernel
 
     public function loadRoutes(): void
     {
+        $cache = ROOT . 'Storage/cache/routes.php';
+        if (is_file($cache)) {
+            Route::loadDefinitions(require $cache);
+            return;
+        }
+
         foreach (Env::get('routes', []) as $route) {
             include_once ROOT . $route . '.php';
         }
