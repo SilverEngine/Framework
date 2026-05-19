@@ -11,7 +11,6 @@ class Request implements RequestInterface
 {
     use AppInstanceTrait;
 
-    private static array $methods = ['get', 'post', 'put', 'delete', 'patch', 'options'];
     private ?string $uri;
 
     public function __construct()
@@ -45,8 +44,9 @@ class Request implements RequestInterface
 
     public function method(): string
     {
-        $method = strtolower($this->param('_method', $_SERVER['REQUEST_METHOD'] ?? 'GET'));
-        return in_array($method, self::$methods, true) ? $method : 'get';
+        return HttpMethod::parse(
+            $this->param('_method', $_SERVER['REQUEST_METHOD'] ?? 'GET')
+        )->value;
     }
 
     public function header(string|false $key = false): array
