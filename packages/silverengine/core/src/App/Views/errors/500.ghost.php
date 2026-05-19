@@ -1,53 +1,98 @@
 <!DOCTYPE html>
-<html lang="en" class="h-full">
+<html lang="en">
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <title>500 — Server Error</title>
-    {{ viteCss() }}
+    <title>{{ $debug ? $class : '500 — Server Error' }}</title>
+    <style>
+        /* Self-contained by design: the error page must render even when
+           the app, the asset build or the database is broken — it never
+           depends on Vite/Tailwind. Palette mirrors the slate/rose theme. */
+        :root { color-scheme: dark }
+        * { box-sizing: border-box }
+        body { margin:0; padding:2.5rem 1.25rem; background:#020617; color:#e2e8f0;
+               font:14px/1.6 ui-sans-serif,system-ui,-apple-system,sans-serif }
+        .wrap { max-width:60rem; margin:0 auto }
+        .center { min-height:80vh; display:flex; flex-direction:column;
+                  align-items:center; justify-content:center; gap:.6rem; text-align:center }
+        .code { font-size:5rem; font-weight:900; color:#3f3f46; margin:0; line-height:1 }
+        .badge { display:inline-block; font:600 11px/1 ui-sans-serif; letter-spacing:.15em;
+                 text-transform:uppercase; color:#fb7185; background:rgba(244,63,94,.12);
+                 border:1px solid rgba(244,63,94,.35); padding:.4rem .6rem;
+                 border-radius:.4rem; margin-bottom:1rem }
+        h1 { color:#fda4af; font-size:1.35rem; margin:0 0 .35rem }
+        .msg { color:#f1f5f9; margin:0 0 .25rem; font-size:1rem }
+        .loc { color:#7dd3fc; font:13px ui-monospace,Menlo,Consolas,monospace; margin-bottom:1.5rem }
+        h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.12em;
+             color:#a78bfa; margin:1.75rem 0 .5rem }
+        pre { font:13px/1.6 ui-monospace,Menlo,Consolas,monospace; background:#0f172a;
+              border:1px solid #1e293b; padding:1rem; border-radius:.6rem;
+              overflow:auto; margin:0 }
+        table.req { width:100%; border-collapse:collapse; font-size:13px;
+                    background:#0f172a; border:1px solid #1e293b; border-radius:.6rem; overflow:hidden }
+        table.req td { padding:.5rem .75rem; border-top:1px solid #1e293b; vertical-align:top }
+        table.req td:first-child { color:#94a3b8; width:9rem; text-transform:uppercase;
+                                   font-size:11px; letter-spacing:.08em }
+        table.req tr:first-child td { border-top:0 }
+        .frames { background:#0f172a; border:1px solid #1e293b; border-radius:.6rem }
+        .frame { display:flex; justify-content:space-between; gap:1rem;
+                 padding:.55rem .9rem; border-top:1px solid #1e293b; font-size:13px }
+        .frame:first-child { border-top:0 }
+        .frame .where { color:#e2e8f0; font:13px ui-monospace,monospace; word-break:break-all }
+        .frame .at { color:#64748b; font:12px ui-monospace,monospace; white-space:nowrap }
+        a.home { margin-top:.75rem; display:inline-block; padding:.55rem 1.25rem;
+                 border-radius:.5rem; background:#4f46e5; color:#fff; text-decoration:none }
+        a.home:hover { background:#6366f1 }
+        .muted { color:#94a3b8; max-width:32rem }
+    </style>
 </head>
-<body class="h-full bg-slate-950 text-slate-100 antialiased">
-<main class="min-h-full flex flex-col items-center justify-center gap-6 px-6 py-12">
+<body>
 
-    <div class="text-center">
-        <p class="text-7xl font-black text-rose-500/40">500</p>
-        <h1 class="text-2xl font-semibold mt-1">Server error</h1>
-        #if($debug)
-            <p class="text-xs uppercase tracking-widest text-slate-500 mt-2">
-                Branch: {{ ucfirst($_branch_ ?? '') ?: 'n/a' }}
-            </p>
-        #endif
-    </div>
+#if($debug)
+    <div class="wrap">
+        <span class="badge">Unhandled exception</span>
+        <h1>{{ $class }}</h1>
+        <p class="msg">{{ $message }}</p>
+        <div class="loc">{{ $file }}:{{ $line }}</div>
 
-    #if($debug)
-        <div class="w-full max-w-3xl space-y-4">
-            <div class="rounded-lg bg-rose-950/40 ring-1 ring-rose-900 px-4 py-3">
-                <p class="font-semibold text-rose-300">{{ $message }}</p>
-                <p class="text-sm text-slate-400 mt-1">
-                    {{ $file ?: $class }} <span class="text-slate-500">on line</span> {{ $line }}
-                </p>
-            </div>
+        <h2>Request</h2>
+        <table class="req">
+            <tr><td>Method</td><td>{{ strtoupper($request['method'] ?? '-') }}</td></tr>
+            <tr><td>URI</td><td>{{ $request['uri'] ?? '-' }}</td></tr>
+            <tr><td>Route</td><td>{{ $request['route'] ?? '-' }}</td></tr>
+            <tr><td>Client</td><td>{{ $request['ip'] ?? '-' }}</td></tr>
+            #if(!empty($request['query']))
+                <tr><td>Query</td><td>{{ json_encode($request['query']) }}</td></tr>
+            #endif
+            #if(!empty($request['input']))
+                <tr><td>Input</td><td>{{ json_encode($request['input']) }}</td></tr>
+            #endif
+        </table>
 
-            <pre class="rounded-lg bg-slate-900 ring-1 ring-slate-800 p-4 overflow-auto text-sm leading-relaxed"><code>{{ $code_around }}</code></pre>
+        <h2>Source</h2>
+        <pre>{{ $code_around }}</pre>
 
-            <div class="rounded-lg bg-slate-900 ring-1 ring-slate-800 divide-y divide-slate-800">
-                #foreach($back_trace as $bt)
-                    #if(isset($bt['file']))
-                        <div class="flex items-center justify-between gap-4 px-4 py-2 text-sm">
-                            <span class="truncate text-slate-300">{{ $bt['file'] }}</span>
-                            <span class="shrink-0 text-slate-500">line {{ $bt['line'] ?? '?' }}</span>
-                        </div>
-                    #endif
-                #endforeach
-            </div>
+        <h2>Stack trace</h2>
+        <div class="frames">
+            #foreach($frames as $f)
+                <div class="frame">
+                    <span class="where">{{ $f['where'] }}</span>
+                    <span class="at">{{ $f['file'] }}:{{ $f['line'] }}</span>
+                </div>
+            #endforeach
+            #if(empty($frames))
+                <div class="frame"><span class="where">{main}</span></div>
+            #endif
         </div>
-    #else
-        <p class="max-w-md text-center text-slate-400">
-            Something went wrong on our end. Please try again later.
-        </p>
-        <a href="/" class="px-5 py-2 rounded-md bg-indigo-600 hover:bg-indigo-500 transition-colors">Back home</a>
-    #endif
+    </div>
+#else
+    <div class="center">
+        <p class="code">500</p>
+        <h1>Server error</h1>
+        <p class="muted">Something went wrong on our end. Please try again later.</p>
+        <a class="home" href="/">Back home</a>
+    </div>
+#endif
 
-</main>
 </body>
 </html>
