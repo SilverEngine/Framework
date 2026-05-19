@@ -164,9 +164,17 @@ all 4 Facades, ErrorException, NotFoundException
 
 ## Future Enhancements
 
-- [ ] Shared view data — global data available to all views (Request, Response, app state)
-- [ ] View::share() / View composers pattern for injecting data into all templates
-- [ ] Request/Response improvements — typed access to headers, query params, JSON body
+- [x] Shared view data — unified `View::share()` store, available in Ghost views AND Wisp pages (`Wisp::share()` delegates to it)
+- [x] View composers — `View::composer($pattern, $cb)`, exact + fnmatch wildcard, merged at render via `View::sharedFor()`
+- [x] Request improvements — typed `headerValue()`, `hasHeader()`, `query()`, `json()`, `bool()`, `int()`, `wantsJson()`; WispResponse + Wisp middleware refactored off raw `$_SERVER`
+
+### Frontend (Wisp) — DONE
+
+- [x] Vite + Vue 3 + TypeScript + Tailwind 4, official `@inertiajs/vue3` client
+- [x] First-party `Silver\Engine\Ghost\{Wisp,WispResponse,Vite,LazyProp,DeferProp}`, `{{ wisp() }}` / `{{ vite() }}` directives, `wisp()` helper
+- [x] Inertia wire protocol (X-Inertia headers), version 409 / 303 handshake middleware
+- [x] Lazy + deferred props, partial reloads, prefetch-ready `deferredProps`
+- [x] `composer dev` runs PHP + Vite concurrently; `composer serve` = PHP only
 
 ---
 
