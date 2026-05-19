@@ -29,11 +29,12 @@
     "autoload": {
         "psr-4": {
             "App\\": "App/",
-            "Silver\\": "System/",
-            "Database\\": "Database/"
+            "Database\\": "Database/",
+            "System\\App\\": "Packages/silverengine/core/src/App/"
         }
     },
     "autoload-dev": {
         "psr-4": {}
-    }
+    },
+    "require-dev": {}
 }

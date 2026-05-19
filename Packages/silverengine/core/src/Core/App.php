@@ -45,7 +45,7 @@ class App implements InstanceInterface
 
     public function systemPath(string $path = ''): string
     {
-        return 'System/App/' . $path;
+        return 'Packages/silverengine/core/src/App/' . $path;
     }
 
     public function find(string $path): ?string
