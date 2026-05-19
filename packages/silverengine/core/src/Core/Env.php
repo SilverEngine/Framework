@@ -115,24 +115,77 @@ final class Env
         }
     }
 
+    /**
+     * Merge the framework config defaults (shipped in the core package)
+     * with the application's `config/` overrides. For each config name
+     * present in either layer, the app file deep-merges over the core
+     * default of the same name (see {@see self::mergeConfig()}).
+     */
     private static function readConfiguration(string $root): array
     {
-        $config = [];
-        $configDir = $root . 'config/';
+        $coreDir = dirname(__DIR__) . '/Config/';
+        $appDir  = rtrim($root, '/') . '/config/';
 
-        if (!is_dir($configDir)) {
-            return $config;
-        }
+        $core = self::loadConfigDir($coreDir);
+        $app  = self::loadConfigDir($appDir);
 
-        foreach (scandir($configDir) as $file) {
-            if ($file === '.' || $file === '..') {
-                continue;
-            }
-            $name = strtolower(substr($file, 0, -4));
-            $config[$name] = include $configDir . $file;
+        $config = $core;
+        foreach ($app as $name => $value) {
+            $config[$name] = (isset($core[$name]) && is_array($core[$name]) && is_array($value))
+                ? self::mergeConfig($core[$name], $value)
+                : $value;
         }
 
         return $config;
+    }
+
+    /** @return array<string,mixed> filename (lowercased, no .php) => returned config */
+    private static function loadConfigDir(string $dir): array
+    {
+        $config = [];
+        if (!is_dir($dir)) {
+            return $config;
+        }
+
+        foreach (scandir($dir) as $file) {
+            if (!str_ends_with($file, '.php')) {
+                continue;
+            }
+            $config[strtolower(substr($file, 0, -4))] = include $dir . $file;
+        }
+
+        return $config;
+    }
+
+    /**
+     * Recursive config merge. Associative arrays merge key-by-key
+     * (override wins, untouched keys inherited); a list or scalar in the
+     * override replaces the base value wholesale.
+     *
+     * @param array<mixed> $base
+     * @param array<mixed> $override
+     * @return array<mixed>
+     */
+    public static function mergeConfig(array $base, array $override): array
+    {
+        foreach ($override as $key => $value) {
+            if (
+                array_key_exists($key, $base)
+                && is_array($base[$key]) && is_array($value)
+                && self::isAssoc($base[$key]) && self::isAssoc($value)
+            ) {
+                $base[$key] = self::mergeConfig($base[$key], $value);
+            } else {
+                $base[$key] = $value;
+            }
+        }
+
+        return $base;
+    }
+
+    private static function isAssoc(array $a): bool
+    {
+        return $a !== [] && array_keys($a) !== range(0, count($a) - 1);
     }
 
     private static function applyEnvOverrides(array &$config): void
