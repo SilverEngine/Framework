@@ -144,6 +144,7 @@
 <div class="tabs">
     <div class="tab active" data-tab="overview"><span class="icon">&#9889;</span>Overview</div>
     <div class="tab" data-tab="timeline"><span class="icon">&#9202;</span>Timeline</div>
+    <div class="tab" data-tab="recordings"><span class="icon">&#128253;</span>Recordings<?php if (!empty($recordings)): ?> <span style="color:#8b949e;">(<?= count($recordings) ?>)</span><?php endif; ?></div>
     <div class="tab" data-tab="routes"><span class="icon">&#128268;</span>Routes</div>
     <div class="tab" data-tab="request"><span class="icon">&#128229;</span>Request</div>
     <div class="tab" data-tab="database"><span class="icon">&#128451;</span>Database</div>
@@ -193,6 +194,22 @@
             $spans = array_filter($timeline, fn($e) => $e['type'] === 'span');
             $marks = array_filter($timeline, fn($e) => $e['type'] === 'mark');
         ?>
+        <?php if (!empty($recording)): ?>
+        <div class="panel panel-full" style="margin-bottom:1rem;border-left:3px solid #56d4dd;">
+            <div class="panel-body" style="display:flex;justify-content:space-between;align-items:center;padding:0.75rem 1rem;">
+                <div style="font-size:0.85rem;">
+                    <span style="color:#56d4dd;">&#9210; Recorded request</span>
+                    &nbsp; <b><?= htmlspecialchars($recording['method']) ?></b>
+                    <?= htmlspecialchars($recording['path']) ?>
+                    &nbsp;<span style="color:#8b949e;">&middot; status <?= (int)$recording['status'] ?>
+                    &middot; <?= number_format($recording['total_ms'], 2) ?>ms
+                    &middot; <?= htmlspecialchars($recording['at']) ?>
+                    &middot; <?= number_format($recording['mem_peak_kb'] / 1024, 1) ?>MB peak</span>
+                </div>
+                <a href="?tab=timeline" style="color:#58a6ff;font-size:0.8rem;">&times; back to live</a>
+            </div>
+        </div>
+        <?php endif; ?>
         <!-- Waterfall -->
         <div class="panel panel-full">
             <div class="panel-title"><span class="icon">&#9202;</span> Request Waterfall (<?= number_format($maxMs, 2) ?>ms total)</div>
@@ -271,6 +288,53 @@
                     </tr>
                     <?php endforeach; ?>
                 </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Recordings Tab -->
+    <div class="tab-content" id="tab-recordings">
+        <div class="panel panel-full">
+            <div class="panel-title"><span class="icon">&#128253;</span> Recorded Requests
+                &mdash; click one to replay its full lifecycle in the Timeline tab</div>
+            <div class="panel-body" style="padding:0.5rem 1rem;">
+                <?php if (empty($recordings)): ?>
+                    <p style="color:#8b949e;padding:1rem;">No recordings yet. Browse your app
+                    (recording is on while <code>APP_DEBUG</code> + <code>recorder.enabled</code>;
+                    paths in <code>Config/Recorder.php</code> <code>ignore</code> are skipped),
+                    then come back here.</p>
+                <?php else: ?>
+                    <table style="width:100%;font-size:0.82rem;">
+                        <tr style="color:#8b949e;text-align:left;">
+                            <th style="padding:4px 8px;">When</th>
+                            <th style="padding:4px 8px;">Method</th>
+                            <th style="padding:4px 8px;">Path</th>
+                            <th style="padding:4px 8px;text-align:center;">Status</th>
+                            <th style="padding:4px 8px;text-align:right;">Time</th>
+                            <th style="padding:4px 8px;text-align:right;">Mem</th>
+                            <th style="padding:4px 8px;text-align:right;">Files</th>
+                        </tr>
+                        <?php foreach ($recordings as $r): ?>
+                        <?php
+                            $st = (int)($r['status'] ?? 0);
+                            $stColor = $st >= 500 ? '#da3633' : ($st >= 400 ? '#e3b341' : ($st >= 300 ? '#58a6ff' : '#3fb950'));
+                            $sel = !empty($recording) && ($recording['id'] ?? null) === ($r['id'] ?? null);
+                        ?>
+                        <tr style="border-top:1px solid #21262d;<?= $sel ? 'background:#161b22;' : '' ?>">
+                            <td style="padding:5px 8px;color:#8b949e;white-space:nowrap;"><?= htmlspecialchars($r['at'] ?? '') ?></td>
+                            <td style="padding:5px 8px;"><b><?= htmlspecialchars($r['method'] ?? '') ?></b></td>
+                            <td style="padding:5px 8px;">
+                                <a href="?recording=<?= urlencode($r['id'] ?? '') ?>&amp;tab=timeline"
+                                   style="color:#58a6ff;text-decoration:none;"><?= htmlspecialchars($r['path'] ?? '') ?></a>
+                            </td>
+                            <td style="padding:5px 8px;text-align:center;color:<?= $stColor ?>;"><?= $st ?></td>
+                            <td style="padding:5px 8px;text-align:right;color:#d2a8ff;white-space:nowrap;"><?= number_format((float)($r['total_ms'] ?? 0), 2) ?> ms</td>
+                            <td style="padding:5px 8px;text-align:right;color:#8b949e;white-space:nowrap;"><?= number_format(((float)($r['mem_peak_kb'] ?? 0)) / 1024, 1) ?> MB</td>
+                            <td style="padding:5px 8px;text-align:right;color:#8b949e;"><?= (int)($r['files_count'] ?? 0) ?></td>
+                        </tr>
+                        <?php endforeach; ?>
+                    </table>
+                <?php endif; ?>
             </div>
         </div>
     </div>
