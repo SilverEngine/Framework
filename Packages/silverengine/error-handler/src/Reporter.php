@@ -40,15 +40,32 @@ final class Reporter
     }
 
     /**
-     * Convert PHP errors to ErrorException so they flow through one path.
-     * Respect the error-suppression operator and error_reporting().
+     * Severities that should halt execution. Everything else
+     * (warnings, notices, deprecations, strict) is logged but
+     * must not turn into a fatal — essential for a legacy codebase
+     * still being modernized.
+     */
+    private const FATAL = E_ERROR | E_PARSE | E_CORE_ERROR | E_CORE_WARNING
+        | E_COMPILE_ERROR | E_COMPILE_WARNING | E_USER_ERROR | E_RECOVERABLE_ERROR;
+
+    /**
+     * Fatal-class errors become ErrorException so they flow through one
+     * path. Non-fatal errors are logged and swallowed (no output, no halt).
+     * Respects the @-suppression operator and error_reporting().
      */
     public function handleError(int $severity, string $message, string $file, int $line): bool
     {
         if (!(error_reporting() & $severity)) {
             return false;
         }
-        throw new \ErrorException($message, 0, $severity, $file, $line);
+
+        if (($severity & self::FATAL) !== 0) {
+            throw new \ErrorException($message, 0, $severity, $file, $line);
+        }
+
+        error_log(sprintf('[%d] %s in %s:%d', $severity, $message, $file, $line));
+
+        return true;
     }
 
     public function handleException(\Throwable $e): void
