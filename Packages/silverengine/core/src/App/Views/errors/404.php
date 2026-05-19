@@ -1,45 +1,29 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>404</title>
-    <link rel="icon" href="<?php echo URL;?>system/libs/img/ico.png" type="image/png">
-    <style type="text/css">
-    body {
-        background-image: url(data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABoAAAAaCAYAAACpSkzOAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAxMC8yOS8xMiKqq3kAAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzVxteM2AAABHklEQVRIib2Vyw6EIAxFW5idr///Qx9sfG3pLEyJ3tAwi5EmBqRo7vHawiEEERHS6x7MTMxMVv6+z3tPMUYSkfTM/R0fEaG2bbMv+Gc4nZzn+dN4HAcREa3r+hi3bcuu68jLskhVIlW073tWaYlQ9+F9IpqmSfq+fwskhdO/AwmUTJXrOuaRQNeRkOd5lq7rXmS5InmERKoER/QMvUAPlZDHcZRhGN4CSeGY+aHMqgcks5RrHv/eeh455x5KrMq2yHQdibDO6ncG/KZWL7M8xDyS1/MIO0NJqdULLS81X6/X6aR0nqBSJcPeZnlZrzN477NKURn2Nus8sjzmEII0TfMiyxUuxphVWjpJkbx0btUnshRihVv70Bv8ItXq6Asoi/ZiCbU6YgAAAABJRU5ErkJggg==);
-        color: #484848;
-        -webkit-font-smoothing:antialiased;
-        font-weight: lighter;
-        text-rendering: optimizeLegibility;
-        font-size: 18px;
-        font-family: 'Roboto', sans-serif;
-
-    }
-    .error-template {
-        padding: 40px 15px;text-align: center;
-    }
-    .error-actions {
-        margin-top:15px;margin-bottom:15px;
-    }
-    .error-actions .btn {
-        margin-right:10px;
-    }
-</style>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <title>404 — Not Found</title>
+    <style>
+        /* Self-contained fallback: this view is used when the app has no
+           App/Views/errors/404 and must render without the build pipeline. */
+        :root { color-scheme: dark; }
+        body { margin:0; min-height:100vh; display:flex; flex-direction:column;
+               align-items:center; justify-content:center; gap:.75rem;
+               background:#020617; color:#e2e8f0; text-align:center;
+               font:16px/1.5 ui-sans-serif,system-ui,sans-serif; }
+        .code { font-size:5rem; font-weight:900; color:#334155; margin:0; }
+        h1 { font-size:1.4rem; font-weight:600; margin:0; }
+        p { color:#94a3b8; margin:0; }
+        a { margin-top:.5rem; padding:.5rem 1.25rem; border-radius:.5rem;
+            background:#4f46e5; color:#fff; text-decoration:none; }
+        a:hover { background:#6366f1; }
+    </style>
 </head>
 <body>
-<div class="container">
-    <div class="row">
-        <div class="col-md-12">
-            <div class="error-template">
-                <h1>
-                    Oops!</h1>
-                <h2>
-                    404 Page Not Found</h2>
-                <div class="error-details">
-                    Sorry, an error has occured, Requested page not found!
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
+    <p class="code">404</p>
+    <h1>Page not found</h1>
+    <p>The requested page could not be found.</p>
+    <a href="/">Back home</a>
 </body>
 </html>
