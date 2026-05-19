@@ -24,9 +24,10 @@ return [
         'default' => 'local',
         'local'   => [
             'service'       => true,
-            'driver'        => 'mysql',
+            'driver'        => 'sqlite',
+            'database'      => 'Database/db.sqlite',
             'hostname'      => 'localhost',
-            'username'      => 'root',
+            'username'      => '',
             'password'      => '',
             'basename'      => 'test1',
             'limit_request' => 25,

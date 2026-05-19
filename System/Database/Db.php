@@ -39,12 +39,13 @@ abstract class Db
     public static function connect($name, $dsn, $username = null, $password = null)
     {
         self::$dbs[$name] = function () use ($name, $dsn, $username, $password) {
-            return new PDO(
-                $dsn, $username, $password, [
-                PDO::ATTR_ERRMODE            => PDO::ERRMODE_EXCEPTION,
-                PDO::MYSQL_ATTR_INIT_COMMAND => "SET NAMES 'utf8'",
-                ]
-            );
+            $options = [PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION];
+
+            if (str_starts_with($dsn, 'mysql:') && defined('PDO::MYSQL_ATTR_INIT_COMMAND')) {
+                $options[PDO::MYSQL_ATTR_INIT_COMMAND] = "SET NAMES 'utf8'";
+            }
+
+            return new PDO($dsn, $username, $password, $options);
         };
     }
 
