@@ -16,7 +16,7 @@ use Silver\Core\Blueprints\RenderInterface;
 use Silver\Core\App;
 use Silver\Core\ErrorHandler;
 use Silver\Engine\Ghost\Template;
-use Silver\Exception;
+use Silver\Exception\Exception;
 use Silver\Helpers\String as Str;
 use Silver\Support\Git;
 
