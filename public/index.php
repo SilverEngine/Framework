@@ -47,9 +47,13 @@ chdir(ROOT);
 
 /*
 |--------------------------------------------------------------------------
-| Debug timer (only when APP_DEBUG)
+| Debug timer
 |--------------------------------------------------------------------------
+| Started here (right after autoload) so the full lifecycle is captured
+| from the very first boot phase. Collection is a handful of hrtime()
+| calls; the timeline is only ever rendered by the dev /debug page.
 */
+DebugTimer::start();
 DebugTimer::mark('autoload', 'boot');
 
 /*
@@ -60,13 +64,7 @@ DebugTimer::mark('autoload', 'boot');
 DebugTimer::begin('Env::construct', 'boot');
 Env::construct(ROOT);
 DebugTimer::end('Env::construct', 'boot');
-
-// Start profiler if debug mode
-if (Env::get('debug')) {
-    DebugTimer::start();
-    DebugTimer::mark('autoload', 'boot');
-    DebugTimer::mark('env loaded', 'boot');
-}
+DebugTimer::mark('env loaded', 'boot');
 
 /*
 |--------------------------------------------------------------------------
