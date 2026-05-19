@@ -156,9 +156,12 @@ all 4 Facades, ErrorException, NotFoundException
 - [x] `Config/Providers.php` — removed stale `Silver => System` mapping
 - [x] `Config/Routes.php` — updated system routes path
 - [x] Clean boot verified (zero warnings)
-- [ ] Run full test suite (`Tests/`) — manual
-- [ ] Update `Packages/silverengine/error-handler` to `php >=8.4` — optional
-- [ ] Tag `silverengine/core` v0.1.0 — when ready
+- [~] Run full test suite (`Tests/`) — **blocked**: zero-dependency stance,
+      no PHPUnit in vendor. Does not gate the tag.
+- [x] ~~Update `error-handler` to `php >=8.4`~~ — resolved by removal:
+      package absorbed into `silverengine/core`
+      (`Silver\ErrorHandler\Reporter`), second path repo dropped
+- [ ] Tag `silverengine/core` v0.1.0 — ready (boot verified, single package)
 
 ---
 
