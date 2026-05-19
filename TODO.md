@@ -192,7 +192,8 @@ all 4 Facades, ErrorException, NotFoundException
 - [x] `final` on leaf classes
 - [x] First-class callable syntax (`$this->method(...)`)
 - [x] `never` return type
-- [ ] Enums for finite value sets (HTTP methods, DB drivers)
+- [x] Enums for finite value sets — `Silver\Http\HttpMethod`,
+      `Silver\Database\DbDriver`
 - [ ] `array_find`, `array_any`, `array_all` (PHP 8.4+)
 - [ ] Property hooks where they simplify getters/setters
 - [ ] Remove remaining legacy phpdoc that duplicates native types

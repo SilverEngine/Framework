@@ -95,10 +95,7 @@ $database = Env::get('databases');
 if ($database && $database->on) {
     $local = $database->local;
 
-    $dsn = match ($local->driver) {
-        'sqlite' => 'sqlite:' . ROOT . $local->database,
-        default  => $local->driver . ':host=' . $local->hostname . ';dbname=' . $local->basename . ';charset=utf8',
-    };
+    $dsn = \Silver\Database\DbDriver::dsn($local->driver, ROOT, $local);
 
     \Silver\Database\Query::connect($local->driver, $dsn, $local->username, $local->password);
     \Silver\Database\Query::setConnection($local->driver);
