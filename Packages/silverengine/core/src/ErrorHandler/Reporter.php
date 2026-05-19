@@ -118,31 +118,55 @@ final class Reporter
         $trace = htmlspecialchars($e->getTraceAsString(), ENT_QUOTES);
         $snippet = $this->codeSnippet($e->getFile(), $e->getLine());
 
+        // Self-contained by design: this page renders when the app (and
+        // possibly the asset build) is broken, so it must not depend on
+        // Vite/Tailwind. Styling mirrors the Tailwind slate/rose palette.
         return <<<HTML
 <!doctype html>
 <html lang="en"><head><meta charset="utf-8"><title>{$title}</title>
 <style>
- body{font:14px/1.5 ui-monospace,Menlo,Consolas,monospace;background:#1d1f21;color:#c5c8c6;margin:0;padding:2rem}
- h1{color:#cc6666;font-size:1.2rem;margin:0 0 .25rem}
- .loc{color:#81a2be;margin-bottom:1.5rem}
- pre{background:#282a2e;padding:1rem;border-radius:6px;overflow:auto}
- .snip .cur{background:#3b1f1f;display:block}
+ :root{color-scheme:dark}
+ *{box-sizing:border-box}
+ body{font:14px/1.6 ui-sans-serif,system-ui,sans-serif;background:#020617;color:#e2e8f0;margin:0;padding:2.5rem}
+ .wrap{max-width:64rem;margin:0 auto}
+ .badge{display:inline-block;font:600 11px/1 ui-sans-serif;letter-spacing:.15em;text-transform:uppercase;color:#fb7185;background:rgba(244,63,94,.12);border:1px solid rgba(244,63,94,.35);padding:.4rem .6rem;border-radius:.4rem;margin-bottom:1rem}
+ h1{color:#fda4af;font-size:1.35rem;margin:0 0 .35rem}
+ .msg{color:#f1f5f9;margin:0 0 .25rem}
+ .loc{color:#7dd3fc;font:13px ui-monospace,Menlo,Consolas,monospace;margin-bottom:1.75rem}
+ h2{font-size:.8rem;text-transform:uppercase;letter-spacing:.12em;color:#a78bfa;margin:1.5rem 0 .5rem}
+ pre{font:13px/1.6 ui-monospace,Menlo,Consolas,monospace;background:#0f172a;border:1px solid #1e293b;padding:1rem;border-radius:.6rem;overflow:auto;margin:0}
+ .snip .cur{background:rgba(244,63,94,.18);display:block;border-radius:2px}
 </style></head><body>
-<h1>{$title}</h1>
-<div>{$msg}</div>
-<div class="loc">{$loc}</div>
-<h2 style="font-size:1rem;color:#b294bb">Source</h2>
-<pre class="snip">{$snippet}</pre>
-<h2 style="font-size:1rem;color:#b294bb">Stack trace</h2>
-<pre>{$trace}</pre>
+<div class="wrap">
+ <span class="badge">Unhandled exception</span>
+ <h1>{$title}</h1>
+ <p class="msg">{$msg}</p>
+ <div class="loc">{$loc}</div>
+ <h2>Source</h2>
+ <pre class="snip">{$snippet}</pre>
+ <h2>Stack trace</h2>
+ <pre>{$trace}</pre>
+</div>
 </body></html>
 HTML;
     }
 
     private function renderMinimalPage(): string
     {
-        return "<!doctype html><html><head><title>500</title></head>"
-            . "<body><h1>500 — Internal Server Error</h1></body></html>";
+        return <<<HTML
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><title>500 — Server Error</title>
+<style>
+ :root{color-scheme:dark}
+ body{margin:0;min-height:100vh;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:.6rem;background:#020617;color:#e2e8f0;font:16px/1.5 ui-sans-serif,system-ui,sans-serif;text-align:center}
+ p.code{font-size:5rem;font-weight:900;color:#3f3f46;margin:0}
+ h1{font-size:1.3rem;font-weight:600;margin:0}
+ span{color:#94a3b8}
+</style></head><body>
+<p class="code">500</p><h1>Internal Server Error</h1>
+<span>Something went wrong on our end.</span>
+</body></html>
+HTML;
     }
 
     private function codeSnippet(string $file, int $line, int $pad = 6): string
