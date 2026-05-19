@@ -39,10 +39,7 @@ trait Compiler
         try {
             array_unshift(self::$qstack, $this);
             $class = get_called_class();
-            $dialect = ucfirst(Db::driverName());
-            $pos = strrpos($class, '\\') ?: 0;
-
-            $new = substr_replace($class, '\\' . $dialect, $pos, 0);
+            $compileClass = Dialect::classFor($class, Db::driverName());
 
             // Remove current bindings
             // (Query can be reused)
@@ -50,9 +47,7 @@ trait Compiler
                 $this->clearBindings();
             }
 
-            $sql = class_exists($new)
-                 ? $new::compile($this)
-                 : $class::compile($this);
+            $sql = $compileClass::compile($this);
 
             // Add bindings to parent query
             if($this instanceof Query) {
