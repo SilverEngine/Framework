@@ -27,6 +27,8 @@ class CLI
 
             echo " - try use 'php silver help' \n";
             echo "\n ----- \n";
+            echo " - Start dev server: php silver serve [host:port] \n";
+            echo " ----- \n";
             echo " - Create CRUD resource: php silver g resource {name} \n";
             echo " - Create Controller: php silver g controller {name} \n";
             echo " - Create Model: php silver g model {name} \n";
@@ -62,6 +64,14 @@ class CLI
                 return $this->migrate();
                 break;
 
+            case "serve":
+                return $this->serve();
+                break;
+
+            case "help":
+                return $this->help();
+                break;
+
 
             default:
                 echo 'Comand not exits';
@@ -93,6 +103,62 @@ class CLI
     private function seed()
     {
 
+    }
+
+    /**
+     * Start PHP's built-in web server on the public/ docroot.
+     *
+     * Usage:
+     *   php silver serve                 -> http://127.0.0.1:8000
+     *   php silver serve 8080            -> http://127.0.0.1:8080
+     *   php silver serve 0.0.0.0:8080    -> http://0.0.0.0:8080
+     */
+    private function serve()
+    {
+        $bind = $this->args[2] ?? '127.0.0.1:8000';
+
+        // Bare port given -> bind to localhost on that port.
+        if (strpos($bind, ':') === false) {
+            $bind = '127.0.0.1:' . $bind;
+        }
+
+        $docroot = ROOT . 'public';
+
+        if (!is_dir($docroot)) {
+            echo "\n Document root not found: {$docroot}\n";
+            exit(1);
+        }
+
+        echo "\n SilverEngine dev server: http://{$bind}\n";
+        echo " Document root: {$docroot}\n";
+        echo " Press Ctrl+C to stop.\n\n";
+
+        $cmd = escapeshellarg(PHP_BINARY)
+            . ' -S ' . escapeshellarg($bind)
+            . ' -t ' . escapeshellarg($docroot);
+
+        passthru($cmd, $exitCode);
+        exit($exitCode);
+    }
+
+    /**
+     * Print the command reference.
+     */
+    private function help()
+    {
+        echo "\n SilverEngine framework - commands \n";
+        echo "\n ----- \n";
+        echo " - Start dev server: php silver serve [host:port] \n";
+        echo " - Run migrations:   php silver migrate \n";
+        echo " ----- \n";
+        echo " - Create CRUD resource: php silver g resource {name} \n";
+        echo " - Create Controller:    php silver g controller {name} \n";
+        echo " - Create Model:         php silver g model {name} \n";
+        echo " - Create View:          php silver g view {name} \n";
+        echo " - Create Facade:        php silver g facade {name} \n";
+        echo " - Create Helper:        php silver g helper {name} \n";
+        echo " ----- \n";
+        echo " - Delete CRUD resource: php silver d resource {name} \n\n";
     }
 
     private function make()
