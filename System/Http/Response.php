@@ -13,7 +13,7 @@
 namespace Silver\Http;
 
 use Silver\Core\AppInstanceTrait;
-use Silver\Core\Blueprints\Http\ResponseInterface;
+use Silver\Core\Contracts\Http\ResponseInterface;
 
 /**
  * Class Response
@@ -81,9 +81,9 @@ class Response implements ResponseInterface
      * @param $payload
      * @return string
      */
-    public function xml($payload)
+    public function xml($data)
     {
-        return ' $payload ';
+        return ' $data ';
     }
 
     /**
@@ -128,7 +128,7 @@ class Response implements ResponseInterface
     public function setBody($body)
     {
         if (!is_string($body)
-            && !($body instanceof \Silver\Core\Render)
+            && !($body instanceof \Silver\Core\Contracts\RenderInterface)
             && !(is_array($body) or is_object($body))
         ) {
             throw new \Exception("Unknown body type.");
@@ -190,7 +190,7 @@ class Response implements ResponseInterface
             case 'text/html':
                 if (is_string($body) || is_numeric($body)) {
                     echo $body;
-                } elseif ($body instanceof \Silver\Core\Blueprints\RenderInterface) {
+                } elseif ($body instanceof \Silver\Core\Contracts\RenderInterface) {
                     echo $body->render();
                 } elseif (is_array($body) or is_object($body)) {
                     print json_encode($body);
@@ -200,7 +200,7 @@ class Response implements ResponseInterface
                 }
                 break;
             case 'application/json':
-                if ($body instanceof \Silver\Core\Blueprints\RenderInterface) {
+                if ($body instanceof \Silver\Core\Contracts\RenderInterface) {
                     $body = $body->data();
                 }
                 print json_encode($body);

@@ -13,7 +13,7 @@
 namespace Silver\Http;
 
 use Silver\Core\Route;
-use Silver\Core\Blueprints\Http\RequestInterface;
+use Silver\Core\Contracts\Http\RequestInterface;
 use Silver\Core\AppInstanceTrait;
 
 /**
@@ -91,7 +91,7 @@ class Request implements RequestInterface
      * @expect a uri string or null
      * @return string|null
      */
-    public function getUri()
+    public function getUri(): ?string
     {
         return $this->uri;
     }
@@ -99,7 +99,7 @@ class Request implements RequestInterface
     /**
      * @return mixed|string
      */
-    public function method()
+    public function method(): string
     {
         $method = $this->param('_method', $_SERVER['REQUEST_METHOD']);
         $method = strtolower($method);
@@ -116,7 +116,7 @@ class Request implements RequestInterface
      *
      * @return array|false
      */
-    function header($key = false)
+    function header($key = false): array
     {
         /**
          *  if the http server is apache

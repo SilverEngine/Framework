@@ -12,14 +12,14 @@
 
 namespace Silver\App\Middlewares;
 
-use Silver\Core\Blueprints\MiddlewareInterface;
+use Silver\Core\Contracts\MiddlewareInterface;
 use Silver\Http\Request;
 use Silver\Http\Response;
 use Closure;
 
 class AccessLog implements MiddlewareInterface
 {
-    public function execute(Request $req, Response $res, Closure $next) 
+    public function execute(Request $req, Response $res, Closure $next): mixed
     {
         $path = ROOT . "Storage/Logs/" . date("Y-m-d") . "-access.log";
         $fp = fopen($path, 'a+');

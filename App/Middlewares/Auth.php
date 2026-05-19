@@ -14,7 +14,7 @@ namespace App\Middlewares;
 
 use App\Facades\Api;
 use Firebase\JWT\JWT;
-use Silver\Core\Blueprints\MiddlewareInterface;
+use Silver\Core\Contracts\MiddlewareInterface;
 use Silver\Core\Env;
 use Silver\Http\Request;
 use Silver\Http\Response;
@@ -31,7 +31,7 @@ class Auth implements MiddlewareInterface
         'public',
     ];
 
-    public function execute(Request $req, Response $res, Closure $next)
+    public function execute(Request $req, Response $res, Closure $next): mixed
     {
         if ($req->route() == null) {
             return $next();
