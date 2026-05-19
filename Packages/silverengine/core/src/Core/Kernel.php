@@ -7,6 +7,7 @@ use Silver\Http\Request;
 use Silver\Http\Response;
 use Silver\Exception\NotFoundException;
 use Silver\Support\DebugTimer;
+use Silver\Support\RequestRecorder;
 
 class Kernel
 {
@@ -159,6 +160,13 @@ class Kernel
         DebugTimer::mark('response sent', 'view');
 
         $this->finalizeServices($req, $res);
+
+        RequestRecorder::record(
+            $_SERVER['REQUEST_METHOD'] ?? 'GET',
+            parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/',
+            http_response_code() ?: 200,
+        );
+
         exit;
     }
 }

@@ -8,6 +8,7 @@ use Silver\Core\Env;
 use Silver\Core\Route;
 use Silver\Http\View;
 use Silver\Support\DebugTimer;
+use Silver\Support\RequestRecorder;
 
 class DebugController extends Controller
 {
@@ -15,18 +16,27 @@ class DebugController extends Controller
     {
         DebugTimer::mark('controller start', 'controller');
 
+        // A recorded request can be replayed into the Timeline tab so
+        // its full lifecycle (controller action, view render, response
+        // sent) is visible — phases the live /debug page cannot show.
+        $selected = isset($_GET['recording'])
+            ? RequestRecorder::find((string) $_GET['recording'])
+            : null;
+
         $data = [
-            'performance' => $this->performance(),
-            'environment' => $this->environment(),
-            'routes'      => $this->routes(),
-            'database'    => $this->database(),
-            'request'     => $this->request(),
-            'config'      => $this->config(),
-            'packages'    => $this->packages(),
-            'server'      => $this->server(),
-            'timeline'    => DebugTimer::timeline(),
-            'files'       => DebugTimer::files(),
-            'totalMs'     => DebugTimer::totalMs(),
+            'performance'   => $this->performance(),
+            'environment'   => $this->environment(),
+            'routes'        => $this->routes(),
+            'database'      => $this->database(),
+            'request'       => $this->request(),
+            'config'        => $this->config(),
+            'packages'      => $this->packages(),
+            'server'        => $this->server(),
+            'recordings'    => RequestRecorder::all(),
+            'recording'     => $selected,
+            'timeline'      => $selected['timeline'] ?? DebugTimer::timeline(),
+            'files'         => $selected['files'] ?? DebugTimer::files(),
+            'totalMs'       => $selected['total_ms'] ?? DebugTimer::totalMs(),
         ];
 
         DebugTimer::mark('controller end', 'controller');
