@@ -18,7 +18,7 @@
     "repositories": [
         {
             "type": "path",
-            "url": "Packages/silverengine/core"
+            "url": "packages/silverengine/core"
         }
     ],
     "require": {
@@ -28,9 +28,9 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "App/",
-            "Database\\": "Database/",
-            "System\\App\\": "Packages/silverengine/core/src/App/"
+            "App\\": "app/",
+            "Database\\": "database/",
+            "System\\App\\": "packages/silverengine/core/src/App/"
         }
     },
     "autoload-dev": {
