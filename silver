@@ -1,58 +1,22 @@
 #!/usr/bin/php
 <?php
-
-/**
- * SilverEngine  - PHP MVC framework
- *
- * @package   SilverEngine
- * @author    SilverEngine Team
- * @copyright 2015-2017
- * @license   MIT
- * @link      https://github.com/SilverEngine/Framework
- */
-
-namespace Silver;
+declare(strict_types=1);
 
 use Silver\Engine\CLI;
 
-/**
- * Defining framework root directory
- * and jump into it.
- */
 $CWD = str_replace('\\', '/', dirname(__FILE__));
-$CWD = str_replace('/System/Engine/CLI', '', $CWD);
-//ltrim($CWD);
 define('ROOT', $CWD . '/');
 define('DS', DIRECTORY_SEPARATOR);
+define('EXT', '.php');
 
-
-/**
- * @param $data
- * @param bool $param
- */
 if (!function_exists('dd')) {
-    function dd($data, $param = false)
+    function dd(mixed $data, bool $dump = false): never
     {
-        if ($param)
-            var_dump('<pre>', $data, '<pre>');
-        else
-            var_dump($data);
-
+        $dump ? var_dump('<pre>', $data, '<pre>') : var_dump($data);
         exit();
     }
 }
 
-/**
- * Defining php extension.
- */
-define('EXT', '.php');
-
-include_once(ROOT.'System/Core/Blueprints/RenderInterface'.EXT);
-include_once(ROOT.'System/Engine/Ghost/Template'.EXT);
-// include_once(ROOT. 'System//Core/AppInstanceTrait'.EXT);
-
-// include_once(ROOT.'System/Http/Request'.EXT);
-
-include_once('System/Engine/CLI/index.php');
+require_once ROOT . 'vendor/autoload.php';
 
 return new CLI($argv);

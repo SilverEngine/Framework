@@ -1,9 +1,0 @@
-User-Agent: *
-Disallow:
-
-/App/
-/Config/
-/Database/
-/Storage/
-/System/
-/Tests/
