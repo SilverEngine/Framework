@@ -3,44 +3,50 @@ declare(strict_types=1);
 
 namespace Silver\Core;
 
-class Route
+/**
+ * Route serves two roles on the same class:
+ *
+ *  - As the singleton resolved through the container (`App::instance()
+ *    ->instances()->make(Route::class)`), it is the route registry —
+ *    `get()` / `post()` / `group()` / `find()` / `getRoute()` etc.
+ *  - As a value object (constructed internally by `register()`), it
+ *    holds one route's method/path/action plus matched variables.
+ *
+ * Registry state (routes, routeIndex, prefix, jailStack, types) is only
+ * populated on the singleton; value-object instances created by
+ * `register()` ignore those fields.
+ */
+final class Route
 {
-    private string $method;
-    private string $route;
-    private mixed $action;
-    private array $jails;
-    private ?string $name;
-    private string $middleware;
-    private ?string $type;
+    // ---- Per-route value-object state -------------------------------
+    private string $method = '';
+    private string $route = '';
+    private mixed $action = null;
+    /** @var list<string> */
+    private array $jails = [];
+    private ?string $name = null;
+    private string $middleware = 'public';
+    private ?string $type = null;
+    /** @var array<string,mixed> */
     private array $variables = [];
 
-    private static array $jailStack = [];
-    private static string $prefix = '';
-    private static array $routes = [];
-    private static array $routeIndex = [];
+    // ---- Registry state (only used by the singleton) ----------------
+    /** @var list<self> */
+    private array $routes = [];
+    /** @var array<string,self> */
+    private array $routeIndex = [];
+    private string $prefix = '';
+    /** @var list<string> */
+    private array $jailStack = [];
 
-    private static array $types = [
+    /** @var array<string,string> */
+    private array $types = [
         'int'    => '/^[0-9]+$/',
         'string' => '/^[a-zA-Z]+/$',
         'hash'   => 'md5',
     ];
 
-    public function __construct(
-        string $method,
-        string $route,
-        mixed $action,
-        ?string $name = null,
-        string $middleware = 'public',
-        ?string $type = null,
-    ) {
-        $this->method = strtolower($method);
-        $this->route = $route;
-        $this->action = $action;
-        $this->jails = self::$jailStack;
-        $this->name = $name;
-        $this->middleware = $middleware;
-        $this->type = $type;
-    }
+    // ---- Value-object accessors -------------------------------------
 
     public function action(): mixed
     {
@@ -65,6 +71,17 @@ class Route
     public function method(): string
     {
         return $this->method;
+    }
+
+    public function route(): string
+    {
+        return $this->route;
+    }
+
+    /** @return array<string,mixed> */
+    public function variables(): array
+    {
+        return $this->variables;
     }
 
     public function url(array $vars = []): string
@@ -92,21 +109,6 @@ class Route
         return BASEPATH . '/' . implode('/', $url);
     }
 
-    public function variables(): array
-    {
-        return $this->variables;
-    }
-
-    public function route(): string
-    {
-        return $this->route;
-    }
-
-    public static function all(): array
-    {
-        return self::$routes;
-    }
-
     public function segment(int $index): mixed
     {
         $segments = explode('/', $this->route);
@@ -123,11 +125,14 @@ class Route
         return $seg;
     }
 
-    public function check(string $method, string $url): bool
+    public function check(string $method, string $url, array $types = []): bool
     {
         if ($this->method !== 'any' && $method !== $this->method) {
             return false;
         }
+
+        // Singleton owns the type rules; value objects receive them via check().
+        $typeRules = $types ?: $this->types;
 
         $route = explode('/', rtrim($this->route, '/'));
         $urlParts = explode('/', rtrim($url, '/'));
@@ -144,7 +149,7 @@ class Route
 
                 if (str_contains($varname, ':')) {
                     [$varname, $typeName] = explode(':', $varname);
-                    $rule = self::$types[$typeName] ?? throw new \Exception("Invalid route variable type $typeName.");
+                    $rule = $typeRules[$typeName] ?? throw new \Exception("Invalid route variable type $typeName.");
 
                     if (str_starts_with($rule, '/')) {
                         if (!preg_match($rule, $urlParts[0] ?? '')) {
@@ -194,35 +199,43 @@ class Route
         return true;
     }
 
-    public static function group(array $args, callable $fn): void
+    // ---- Registry surface (call on the singleton) -------------------
+
+    /** @return list<self> */
+    public function all(): array
+    {
+        return $this->routes;
+    }
+
+    public function group(array $args, callable $fn): void
     {
         if (isset($args['jail'])) {
-            self::$jailStack[] = $args['jail'];
+            $this->jailStack[] = $args['jail'];
         }
 
-        $old_prefix = self::$prefix;
-        self::$prefix .= '/' . ($args['prefix'] ?? '');
+        $oldPrefix = $this->prefix;
+        $this->prefix .= '/' . ($args['prefix'] ?? '');
 
         $fn();
 
-        self::$prefix = $old_prefix;
+        $this->prefix = $oldPrefix;
 
         if (isset($args['jail'])) {
-            array_pop(self::$jailStack);
+            array_pop($this->jailStack);
         }
     }
 
-    public static function find(string $requestUrl, string $requestMethod): ?self
+    public function find(string $requestUrl, string $requestMethod): ?self
     {
-        foreach (self::$routes as $route) {
-            if ($route->check($requestMethod, $requestUrl)) {
+        foreach ($this->routes as $route) {
+            if ($route->check($requestMethod, $requestUrl, $this->types)) {
                 return $route;
             }
         }
         return null;
     }
 
-    public static function register(
+    public function register(
         string $method,
         string $route,
         mixed $action,
@@ -230,37 +243,44 @@ class Route
         string $middleware = 'public',
         string $type = '',
     ): void {
-        $route = self::$prefix . $route;
+        $route = $this->prefix . $route;
         foreach (explode('|', $method) as $m) {
-            $r = new self($m, $route, $action, $name, $middleware, $type);
-            self::$routes[] = $r;
+            $r = new self();
+            $r->method = strtolower($m);
+            $r->route = $route;
+            $r->action = $action;
+            $r->jails = $this->jailStack;
+            $r->name = $name;
+            $r->middleware = $middleware;
+            $r->type = $type;
+            $this->routes[] = $r;
             if ($name !== null) {
-                self::$routeIndex[$name] = $r;
+                $this->routeIndex[$name] = $r;
             }
         }
     }
 
-    public static function get(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
+    public function get(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
     {
-        self::register('get', $route, $action, $name, $middleware, 'get');
+        $this->register('get', $route, $action, $name, $middleware, 'get');
     }
 
-    public static function post(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
+    public function post(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
     {
-        self::register('post', $route, $action, $name, $middleware, 'post');
+        $this->register('post', $route, $action, $name, $middleware, 'post');
     }
 
-    public static function put(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
+    public function put(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
     {
-        self::register('put', $route, $action, $name, $middleware, 'put');
+        $this->register('put', $route, $action, $name, $middleware, 'put');
     }
 
-    public static function delete(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
+    public function delete(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
     {
-        self::register('delete', $route, $action, $name, $middleware, 'delete');
+        $this->register('delete', $route, $action, $name, $middleware, 'delete');
     }
 
-    public static function resource(string $route, string $action, ?string $name = null, string $middleware = 'public'): void
+    public function resource(string $route, string $action, ?string $name = null, string $middleware = 'public'): void
     {
         if (($pos = strpos($action, '@')) !== false) {
             $action = substr($action, 0, $pos);
@@ -268,22 +288,35 @@ class Route
 
         $route = rtrim($route, '/');
 
-        self::register('get', $route, $action . '@get', $name, $middleware, 'resources');
-        self::register('post', $route, $action . '@post', $name, $middleware, 'resources');
+        $this->register('get', $route, $action . '@get', $name, $middleware, 'resources');
+        $this->register('post', $route, $action . '@post', $name, $middleware, 'resources');
 
         foreach (['get', 'put', 'patch', 'delete'] as $method) {
-            self::register($method, $route . '/{id}', $action . '@' . $method, $name, $middleware, 'resources');
+            $this->register($method, $route . '/{id}', $action . '@' . $method, $name, $middleware, 'resources');
         }
     }
 
-    public static function any(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
+    public function any(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
     {
-        self::register('any', $route, $action, $name, $middleware, 'any');
+        $this->register('any', $route, $action, $name, $middleware, 'any');
     }
 
-    public static function getRoute(string $name): self
+    public function getRoute(string $name): self
     {
-        return self::$routeIndex[$name] ?? throw new \Exception("Route $name not found.");
+        return $this->routeIndex[$name] ?? throw new \Exception("Route $name not found.");
+    }
+
+    /**
+     * Wipe the registered route table. Used by {@see Kernel::loadRoutes()}
+     * at the start of each request so persistent state in long-lived
+     * PHP processes doesn't accumulate across requests.
+     */
+    public function reset(): void
+    {
+        $this->routes = [];
+        $this->routeIndex = [];
+        $this->prefix = '';
+        $this->jailStack = [];
     }
 
     /**
@@ -292,19 +325,20 @@ class Route
      * (closures can't be cached) so the caller falls back to including
      * the route files — same policy as Laravel's route:cache.
      *
-     * @return list<array{0:string,1:string,2:string,3:?string,4:string,5:string}>|null
+     * @return list<array{0:string,1:string,2:string|array,3:?string,4:string,5:string}>|null
      */
-    public static function definitions(): ?array
+    public function definitions(): ?array
     {
         $defs = [];
-        foreach (self::$routes as $r) {
-            if (!is_string($r->action())) {
+        foreach ($this->routes as $r) {
+            $action = $r->action();
+            if ($action instanceof \Closure) {
                 return null;
             }
             $defs[] = [
                 $r->method(),
                 $r->route(),
-                $r->action(),
+                $action,
                 $r->name(),
                 $r->middleware(),
                 $r->type() ?? '',
@@ -314,13 +348,14 @@ class Route
     }
 
     /**
-     * Rebuild the route table from cached definitions (no route-file
-     * includes). @param list<array> $defs
+     * Rebuild the route table from cached definitions.
+     *
+     * @param list<array> $defs
      */
-    public static function loadDefinitions(array $defs): void
+    public function loadDefinitions(array $defs): void
     {
         foreach ($defs as $d) {
-            self::register($d[0], $d[1], $d[2], $d[3], $d[4], $d[5]);
+            $this->register($d[0], $d[1], $d[2], $d[3], $d[4], $d[5]);
         }
     }
 }

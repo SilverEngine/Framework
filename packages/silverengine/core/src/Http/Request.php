@@ -103,7 +103,8 @@ class Request implements RequestInterface
 
     public function route(): ?Route
     {
-        return Route::find($this->getUri() ?? '/', $this->method());
+        return app(Route::class)
+            ->find($this->getUri() ?? '/', $this->method());
     }
 
     /**

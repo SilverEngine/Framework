@@ -36,6 +36,9 @@ final class Container
     /** @var array<string,mixed> resolved singleton cache */
     private array $shared = [];
 
+    /** @var array<string, list<Closure>> abstract => list of decorators */
+    private array $extenders = [];
+
     // ---- Legacy Instances surface (unchanged semantics) ----------------
 
     public function register(object $instance, bool $force = false): object
@@ -89,6 +92,49 @@ final class Container
         return $object;
     }
 
+    /**
+     * Decorate every resolution of $abstract: $decorator receives the
+     * already-built instance plus the container and returns the
+     * replacement (typically a wrapper). Extenders run in registration
+     * order and compose — multiple extends() on the same abstract chain.
+     */
+    public function extend(string $abstract, Closure $decorator): void
+    {
+        $this->extenders[$abstract][] = $decorator;
+        // Bust the singleton cache so the next make() rebuilds and re-wraps.
+        unset($this->shared[$abstract]);
+    }
+
+    /**
+     * Register a `before` hook on $abstract::$method. Thin delegate to
+     * {@see Hook::before()} on the application's Hook singleton so users
+     * can wire everything through the container they already hold a
+     * reference to.
+     */
+    public function before(string $abstract, string $method, Closure $cb): void
+    {
+        $this->hook()->before($abstract, $method, $cb);
+    }
+
+    public function after(string $abstract, string $method, Closure $cb): void
+    {
+        $this->hook()->after($abstract, $method, $cb);
+    }
+
+    public function afterDeferred(string $abstract, string $method, Closure $cb): void
+    {
+        $this->hook()->afterDeferred($abstract, $method, $cb);
+    }
+
+    private ?Hook $hookRef = null;
+
+    private function hook(): Hook
+    {
+        // Resolve from the app singleton so a fresh `new Container()` in a
+        // test shares the same Hook the Hookable trait reads from.
+        return $this->hookRef ??= App::instance()->instances()->make(Hook::class);
+    }
+
     public function has(string $abstract): bool
     {
         return isset($this->bindings[$abstract])
@@ -114,9 +160,18 @@ final class Container
             $binding  = $this->bindings[$abstract];
             $concrete = $binding['concrete'];
 
-            $object = $concrete instanceof Closure
-                ? $concrete($this, $params)
-                : $this->make($concrete, $params);
+            if ($concrete instanceof Closure) {
+                $object = $concrete($this, $params);
+            } elseif ($concrete === $abstract) {
+                // singleton($abstract) with no explicit concrete — autowire
+                // directly via build() to avoid infinite recursion on the
+                // same binding.
+                $object = $this->build($abstract, $params);
+            } else {
+                $object = $this->make($concrete, $params);
+            }
+
+            $object = $this->applyExtenders($abstract, $object);
 
             if ($binding['shared']) {
                 $this->shared[$abstract] = $object;
@@ -129,7 +184,18 @@ final class Container
             return $this->container[$abstract];
         }
 
-        return $this->build($abstract, $params);
+        return $this->applyExtenders($abstract, $this->build($abstract, $params));
+    }
+
+    private function applyExtenders(string $abstract, mixed $instance): mixed
+    {
+        if (!is_object($instance) || !isset($this->extenders[$abstract])) {
+            return $instance;
+        }
+        foreach ($this->extenders[$abstract] as $decorator) {
+            $instance = $decorator($instance, $this);
+        }
+        return $instance;
     }
 
     /**

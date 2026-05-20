@@ -5,52 +5,56 @@ declare(strict_types=1);
 namespace Silver\Database;
 
 /**
- * Owns the nested-transaction logic extracted from the Db God class:
- * a per-connection depth counter with real BEGIN/COMMIT/ROLLBACK at
- * level 1 and SAVEPOINT LEVELn for deeper nesting.
+ * Owns the nested-transaction logic: a per-connection depth counter
+ * with real BEGIN/COMMIT/ROLLBACK at level 1 and SAVEPOINT LEVELn for
+ * deeper nesting.
  *
- * The counter is keyed by the active default connection name (via
- * {@see ConnectionManager::defaultName()}) exactly as the old
- * `Db::$tx_counter` was. Savepoint SQL is routed through `Db::exec()`
- * so the debug echo behaviour is preserved 1:1. `commit()` is
- * intentionally return-type-free — `run()` does `return self::commit()`
- * and the legacy contract returns null there.
+ * Resolved as a singleton through the container. The counter is keyed
+ * by the active default connection name (via
+ * {@see ConnectionManager::defaultName()}). Savepoint SQL is routed
+ * through `Db::exec()` so the debug echo behaviour is preserved 1:1.
+ * `commit()` is intentionally return-type-free — `run()` does
+ * `return $this->commit()` and the legacy contract returns null there.
  */
 final class TransactionManager
 {
     /** @var array<string,int> keyed by default connection name */
-    private static array $counter = [];
+    private array $counter = [];
 
-    public static function level(): int
+    public function __construct(
+        private readonly ConnectionManager $connections,
+    ) {}
+
+    public function level(): int
     {
-        $db = ConnectionManager::defaultName();
+        $db = $this->connections->defaultName();
 
-        if (!isset(self::$counter[$db])) {
-            self::$counter[$db] = 0;
+        if (!isset($this->counter[$db])) {
+            $this->counter[$db] = 0;
         }
 
-        return self::$counter[$db];
+        return $this->counter[$db];
     }
 
-    private static function set(int $num): int
+    private function set(int $num): int
     {
-        $db = ConnectionManager::defaultName();
+        $db = $this->connections->defaultName();
 
-        return self::$counter[$db] = $num;
+        return $this->counter[$db] = $num;
     }
 
-    private static function inc(int $delta = 1): int
+    private function inc(int $delta = 1): int
     {
-        $num = self::level();
-        self::set($num + $delta);
+        $num = $this->level();
+        $this->set($num + $delta);
 
         return $num + $delta;
     }
 
-    public static function begin(): void
+    public function begin(): void
     {
-        $conn = ConnectionManager::pdo();
-        $level = self::inc();
+        $conn = $this->connections->pdo();
+        $level = $this->inc();
 
         if ($level == 1) {
             $conn->beginTransaction();
@@ -60,10 +64,10 @@ final class TransactionManager
     }
 
     /** @throws \Exception */
-    public static function commit()
+    public function commit()
     {
-        $conn = ConnectionManager::pdo();
-        $level = self::inc(-1) + 1;
+        $conn = $this->connections->pdo();
+        $level = $this->inc(-1) + 1;
 
         if ($level < 1) {
             throw new \Exception("There is no active transaction.");
@@ -75,10 +79,10 @@ final class TransactionManager
     }
 
     /** @throws \Exception */
-    public static function rollBack(): void
+    public function rollBack(): void
     {
-        $conn = ConnectionManager::pdo();
-        $level = self::inc(-1) + 1;
+        $conn = $this->connections->pdo();
+        $level = $this->inc(-1) + 1;
 
         if ($level < 1) {
             throw new \Exception("There is no active transaction.");
@@ -94,15 +98,15 @@ final class TransactionManager
      * @return bool|void
      * @throws \Exception
      */
-    public static function run($cb, $suppress = false)
+    public function run($cb, $suppress = false)
     {
         try {
-            self::begin();
+            $this->begin();
             $cb();
 
-            return self::commit();
+            return $this->commit();
         } catch (\Exception $e) {
-            self::rollBack();
+            $this->rollBack();
             if ($suppress) {
                 return false;
             } else {

@@ -47,21 +47,23 @@ class OptimizeCacheTest extends TestCase
 
     public function testRouteDefinitionsRoundTrip(): void
     {
-        Route::get('/opt-test/list', 'Things@index', 'opt.list');
-        $defs = Route::definitions();
+        $router = new Route();
+        $router->get('/opt-test/list', 'Things@index', 'opt.list');
+        $defs = $router->definitions();
 
         $this->assertIsArray($defs);
         $found = array_filter($defs, static fn ($d) => $d[1] === '/opt-test/list');
         $this->assertNotEmpty($found);
 
-        Route::loadDefinitions([['get', '/opt-test/replay', 'X@y', 'opt.replay', 'public', 'get']]);
-        $this->assertSame('X@y', Route::find('/opt-test/replay', 'get')?->action());
+        $router->loadDefinitions([['get', '/opt-test/replay', 'X@y', 'opt.replay', 'public', 'get']]);
+        $this->assertSame('X@y', $router->find('/opt-test/replay', 'get')?->action());
     }
 
     public function testClosureRouteMakesDefinitionsUncacheable(): void
     {
-        Route::get('/opt-test/closure', fn () => 'hi', 'opt.closure');
-        $this->assertNull(Route::definitions());
+        $router = new Route();
+        $router->get('/opt-test/closure', fn () => 'hi', 'opt.closure');
+        $this->assertNull($router->definitions());
     }
 
     public function testOptimizeCommandTokens(): void

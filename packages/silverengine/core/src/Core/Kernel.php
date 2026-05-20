@@ -6,8 +6,6 @@ namespace Silver\Core;
 use Silver\Http\Request;
 use Silver\Http\Response;
 use Silver\Exception\NotFoundException;
-use Silver\Support\DebugTimer;
-use Silver\Support\RequestRecorder;
 
 class Kernel
 {
@@ -46,31 +44,50 @@ class Kernel
 
     public function loadRoutes(): void
     {
+        $router = app(Route::class);
+
+        // Reset so persistent processes (php -S, RoadRunner) pick up edits
+        // to route files between requests rather than serving stale state.
+        $router->reset();
+
         $cache = ROOT . 'storage/cache/routes.php';
         if (is_file($cache)) {
-            Route::loadDefinitions(require $cache);
+            $router->loadDefinitions(require $cache);
             return;
         }
 
-        foreach (Env::get('routes', []) as $route) {
-            include_once ROOT . $route . '.php';
+        clearstatcache(true);
+        foreach (Env::get('routes', []) as $routeFile) {
+            $path = ROOT . $routeFile . '.php';
+            // Even with opcache.enable_cli=0 the php -S dev server caches
+            // parsed files between requests in some builds. Explicit
+            // invalidate guarantees route files edited in-process (eg via
+            // /__silver/scaffold) are picked up on the next request.
+            if (function_exists('opcache_invalidate')) {
+                @opcache_invalidate($path, true);
+            }
+            // $route is available as the router singleton inside the
+            // included file — `$route->get(...)`, `$route->group(...)`.
+            (static function (string $path, Route $route): void {
+                include $path;
+            })($path, $router);
         }
     }
 
     public function handle(Request $request, Response $response): mixed
     {
-        DebugTimer::begin('route resolve', 'request');
+        dt()->begin('route resolve', 'request');
         $route = $request->route()
             ?? throw new NotFoundException('Route for ' . $request->getUri() . ' not found.');
-        DebugTimer::end('route resolve', 'request');
+        dt()->end('route resolve', 'request');
 
-        DebugTimer::begin('controller resolve', 'controller');
+        dt()->begin('controller resolve', 'controller');
         $callable = $this->findCallable($route);
-        DebugTimer::end('controller resolve', 'controller');
+        dt()->end('controller resolve', 'controller');
 
-        DebugTimer::begin('controller action', 'controller');
+        dt()->begin('controller action', 'controller');
         try {
-            return DI::call(
+            return app(DI::class)->call(
                 $callable,
                 array_merge(
                     $this->app->instances()->getAll(),
@@ -78,7 +95,7 @@ class Kernel
                 ),
             );
         } finally {
-            DebugTimer::end('controller action', 'controller');
+            dt()->end('controller action', 'controller');
         }
     }
 
@@ -89,7 +106,7 @@ class Kernel
             $cls = $mw::class;
             $label = substr($cls, strrpos($cls, '\\') + 1);
 
-            DebugTimer::begin($label, 'middleware');
+            dt()->begin($label, 'middleware');
             try {
                 return $mw->execute(
                     $req,
@@ -97,7 +114,7 @@ class Kernel
                     fn () => $this->executeMiddlewares($mws, $req, $res),
                 );
             } finally {
-                DebugTimer::end($label, 'middleware');
+                dt()->end($label, 'middleware');
             }
         }
 
@@ -108,11 +125,46 @@ class Kernel
     {
         $action = $route->action();
 
-        if (is_callable($action)) {
+        // Closures.
+        if ($action instanceof \Closure) {
             return $action;
         }
 
-        [$class, $method] = explode('@', $action);
+        // Array form: [FQCN::class, 'method'] — explicit method on a class.
+        if (is_array($action)) {
+            $fqcn   = $action[0] ?? null;
+            $method = $action[1] ?? '__invoke';
+
+            if (!is_string($fqcn) || !class_exists($fqcn)) {
+                throw new NotFoundException("Controller class not found: " . (string) $fqcn);
+            }
+
+            $controller = $this->app->instances()->make($fqcn);
+
+            if (!method_exists($controller, $method)) {
+                throw new NotFoundException("Action not found {$method} on {$fqcn}");
+            }
+
+            return [$controller, $method];
+        }
+
+        if (str_contains($action, '\\')) {
+            clearstatcache(true);
+        }
+        if (class_exists($action)) {
+            $controller = $this->app->instances()->make($action);
+            if (!method_exists($controller, '__invoke')) {
+                throw new NotFoundException("Invokable controller missing __invoke: {$action}");
+            }
+            return [$controller, '__invoke'];
+        }
+
+        // Short-name string form: 'Foo@bar' or 'Foo' (conventional location lookup).
+        if (str_contains($action, '@')) {
+            [$class, $method] = explode('@', $action);
+        } else {
+            [$class, $method] = [$action, '__invoke'];
+        }
 
         $locations = [
             [$this->app->path(), 'App\\'],
@@ -146,28 +198,42 @@ class Kernel
             $req = new Request(),
             $res = new Response(),
         );
-        DebugTimer::mark('request received', 'request');
+        dt()->mark('request received', 'request');
 
-        DebugTimer::begin('services', 'kernel');
+        dt()->begin('services', 'kernel');
         $this->loadServices($req, $res);
-        DebugTimer::end('services', 'kernel');
+        dt()->end('services', 'kernel');
 
-        DebugTimer::begin('middlewares + controller', 'kernel');
+        dt()->begin('middlewares + controller', 'kernel');
         $ret = $this->executeMiddlewares($this->middlewares, $req, $res);
-        DebugTimer::end('middlewares + controller', 'kernel');
+        dt()->end('middlewares + controller', 'kernel');
 
         if ($ret !== null) {
             $res->setBody($ret);
         }
 
-        DebugTimer::begin('view render', 'view');
+        dt()->begin('view render', 'view');
         $res->send();
-        DebugTimer::end('view render', 'view');
-        DebugTimer::mark('response sent', 'view');
+        dt()->end('view render', 'view');
+        dt()->mark('response sent', 'view');
+
+        // Flush PHP output so deferred work doesn't block the client.
+        if (function_exists('fastcgi_finish_request')) {
+            fastcgi_finish_request();
+        } elseif (function_exists('litespeed_finish_request')) {
+            litespeed_finish_request();
+        }
+
+        // Hooks registered via $c->afterDeferred(...) run here — after the
+        // response is on the wire — so logging / metrics / audit writes
+        // never add to perceived latency.
+        dt()->begin('deferred hooks', 'kernel');
+        app(Hook::class)->runDeferred();
+        dt()->end('deferred hooks', 'kernel');
 
         $this->finalizeServices($req, $res);
 
-        RequestRecorder::record(
+        recorder()->record(
             $_SERVER['REQUEST_METHOD'] ?? 'GET',
             parse_url($_SERVER['REQUEST_URI'] ?? '/', PHP_URL_PATH) ?: '/',
             http_response_code() ?: 200,

@@ -12,10 +12,9 @@
 
 namespace App\Routes;
 
-use Silver\Core\Route;
-
-Route::group(['prefix' => 'api'], function(){
-  Route::get('/', function(){
-    return 'Welcome to the api';
-  });
+/** @var \Silver\Core\Route $route */
+$route->group(['prefix' => 'api'], function () use ($route) {
+    $route->get('/', function () {
+        return 'Welcome to the api';
+    });
 });
