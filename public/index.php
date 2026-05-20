@@ -1,81 +1,122 @@
 <?php
+declare(strict_types=1);
 
-/**
- * SilverEngine  - PHP MVC framework
- *
- * @package   SilverEngine
- * @author    SilverEngine Team
- * @copyright 2015-2017
- * @license   MIT
- * @link      https://github.com/SilverEngine/Framework
- */
+define('APP_START', hrtime(true));
 
-
-/**
- * require initialisation file
- */
 use Silver\ErrorHandler\Reporter;
 use Silver\Core\Kernel;
+use Silver\Core\Env;
+use Silver\Support\DebugTimer;
 
-require_once '../System/Core/init.php';
+/*
+|--------------------------------------------------------------------------
+| Bootstrap constants
+|--------------------------------------------------------------------------
+*/
+error_reporting(E_ALL);
+ini_set('display_errors', 'On');
 
-if (!is_dir('../vendor')) {
+if (session_status() === PHP_SESSION_NONE) {
+    session_start();
+}
+
+$PREFIX = preg_replace('{/index.php$}', '', str_replace('\\', '/', $_SERVER['SCRIPT_NAME']));
+$HOST = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '')
+    . '://' . $_SERVER['SERVER_NAME']
+    . ($_SERVER['SERVER_PORT'] != 80 ? ':' . $_SERVER['SERVER_PORT'] : '');
+
+define('DS', DIRECTORY_SEPARATOR);
+define('BASEPATH', $PREFIX);
+define('URL', $HOST . $PREFIX);
+define('CURRENT_URL', $HOST . $_SERVER['REQUEST_URI']);
+define('ROOT', dirname(__DIR__) . DS);
+define('EXT', '.php');
+
+/*
+|--------------------------------------------------------------------------
+| Autoloader
+|--------------------------------------------------------------------------
+*/
+if (!is_dir(ROOT . 'vendor')) {
     exit('Vendor folder missing. Run: composer install');
 }
 
-/**
- * psr-4 autoloading
- */
-require_once '../vendor/autoload.php';
+require_once ROOT . 'vendor/autoload.php';
 
-
-/**
- * switch to root directory
- */
 chdir(ROOT);
 
+/*
+|--------------------------------------------------------------------------
+| Debug timer
+|--------------------------------------------------------------------------
+| Started here (right after autoload) so the full lifecycle is captured
+| from the very first boot phase. Collection is a handful of hrtime()
+| calls; the timeline is only ever rendered by the dev /debug page.
+*/
+DebugTimer::start();
+DebugTimer::mark('autoload', 'boot');
+
+/*
+|--------------------------------------------------------------------------
+| Environment (.env)
+|--------------------------------------------------------------------------
+*/
+DebugTimer::begin('Env::construct', 'boot');
+Env::construct(ROOT);
+DebugTimer::end('Env::construct', 'boot');
+DebugTimer::mark('env loaded', 'boot');
+
+/*
+|--------------------------------------------------------------------------
+| Error handling
+|--------------------------------------------------------------------------
+*/
+DebugTimer::begin('error handlers', 'boot');
 if (class_exists(Reporter::class)) {
-    $errorHandler = new Reporter();
-    $errorHandler->on();
+    (new Reporter())->on();
 }
-// new ssd;
-// exit();
 
-/**
- * Load kernel
- */
+Silver\Core\ErrorHandler::setFilter(E_ALL);
+set_error_handler(Silver\Core\ErrorHandler::handle_error(...), E_ALL);
+set_exception_handler(Silver\Core\ErrorHandler::handle_ex(...));
+register_shutdown_function(Silver\Core\ErrorHandler::handle_fatal(...));
+DebugTimer::end('error handlers', 'boot');
 
+/*
+|--------------------------------------------------------------------------
+| Database
+|--------------------------------------------------------------------------
+*/
+DebugTimer::begin('database connect', 'boot');
+$database = Env::get('databases');
+
+if ($database && $database->on) {
+    $local = $database->local;
+
+    $dsn = \Silver\Database\DbDriver::dsn($local->driver, ROOT, $local);
+
+    \Silver\Database\Query::connect($local->driver, $dsn, $local->username, $local->password);
+    \Silver\Database\Query::setConnection($local->driver);
+}
+DebugTimer::end('database connect', 'boot');
+
+/*
+|--------------------------------------------------------------------------
+| Run
+|--------------------------------------------------------------------------
+*/
 $kernel = new Kernel();
 
-
-/**
- * Load database config
- */
-
-// FIXME: on ORM somewhere;
-$database = \Silver\Core\Env::get('databases');
-
-
-if ($database->on == true) {
-
-    if ($database->local->driver === 'sqlite') {
-        $dsn = 'sqlite:' . ROOT . $database->local->database;
-    } else {
-        $dsn = $database->local->driver
-            . ':host=' . $database->local->hostname
-            . ';dbname=' . $database->local->basename
-            . ';charset=utf8';
-    }
-
-    \Silver\Database\Query::connect($database->local->driver, $dsn, $database->local->username, $database->local->password);
-    \Silver\Database\Query::setConnection($database->local->driver);
-}
-
+DebugTimer::begin('load routes', 'kernel');
 $kernel->loadRoutes();
+DebugTimer::end('load routes', 'kernel');
+
+DebugTimer::begin('load middlewares', 'kernel');
 $kernel->loadMiddlewares();
-/**
- * - Load middlewares
- * - Load service run inside the run
- * -
- */
+DebugTimer::end('load middlewares', 'kernel');
+
+define('APP_BOOT_MS', (hrtime(true) - APP_START) / 1e6);
+header('X-Boot-Time: ' . number_format(APP_BOOT_MS, 2) . 'ms');
+
+DebugTimer::mark('kernel.run', 'kernel');
 $kernel->run();

@@ -1,5 +1,6 @@
 {
     "name": "silverengine/framework",
+    "description": "SilverEngine — a lightweight, dependency-light PHP 8.4 MVC framework.",
     "type": "project",
     "license": "MIT",
     "authors": [
@@ -10,25 +11,37 @@
     ],
     "minimum-stability": "dev",
     "prefer-stable": true,
+    "config": {
+        "optimize-autoloader": true,
+        "sort-packages": true
+    },
     "repositories": [
         {
             "type": "path",
-            "url": "Packages/silverengine/error-handler"
+            "url": "packages/silverengine/core"
         }
     ],
     "require": {
-        "php": ">=8.1",
-        "silverengine/error-handler": "@dev"
+        "php": ">=8.4",
+        "silverengine/core": "@dev",
+        "nejcc/php-datatypes": "^1.0"
     },
     "autoload": {
         "psr-4": {
-            "App\\": "App/",
-            "Silver\\": "System/",
-            "Database\\": "Database/"
+            "App\\": "app/",
+            "Database\\": "database/",
+            "System\\App\\": "packages/silverengine/core/src/App/"
         }
     },
     "autoload-dev": {
         "psr-4": {}
     },
-    "require-dev": {}
+    "require-dev": {
+        "phpunit/phpunit": "^12"
+    },
+    "scripts": {
+        "dev": "npm run dev:all",
+        "serve": "php silver serve",
+        "test": "phpunit"
+    }
 }

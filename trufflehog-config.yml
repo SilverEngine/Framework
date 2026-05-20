@@ -1,0 +1,25 @@
+# TruffleHog configuration for CodeRabbit secret scanning
+# https://docs.trufflesecurity.com/configuration-file-reference
+
+detectors:
+  - name: PrivateKey
+  - name: AWS
+  - name: Slack
+  - name: GitHub
+  - name: GitLab
+  - name: Stripe
+  - name: Twilio
+  - name: SendGrid
+  - name: Mailgun
+
+# Paths to exclude from scanning
+exclude_paths:
+  - vendor/
+  - node_modules/
+  - Storage/Caches/
+  - Storage/Logs/
+  - "*.min.js"
+  - "*.min.css"
+
+# Only verify detections (reduces false positives)
+only_verified: false
