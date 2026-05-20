@@ -3,6 +3,7 @@
 namespace Tests\Unit\Framework\Core;
 
 use PHPUnit\Framework\TestCase;
+use Silver\Core\App;
 use Silver\Core\Env;
 use Silver\Core\ErrorHandler;
 use Silver\Exception\Exception as SilverException;
@@ -36,7 +37,7 @@ class ErrorPageTest extends TestCase
         $w->setFile($orig->getFile());
         $w->setLine($orig->getLine());
 
-        return ErrorHandler::render($w)->render();
+        return app(ErrorHandler::class)->render($w)->render();
     }
 
     public function testDebugPageIsRichAndSelfContained(): void
@@ -73,7 +74,7 @@ class ErrorPageTest extends TestCase
         $w->setFile($orig->getFile());
         $w->setLine($orig->getLine());
 
-        return ErrorHandler::apiErrorBody($w, $status);
+        return app(ErrorHandler::class)->apiErrorBody($w, $status);
     }
 
     public function testApiErrorBodyProductionIsMinimal(): void

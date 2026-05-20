@@ -25,6 +25,18 @@ abstract class Db
 
     private $fetch_style = PDO::FETCH_OBJ;
 
+    /** Resolve the ConnectionManager singleton through the app container. */
+    private static function cm(): ConnectionManager
+    {
+        return app(ConnectionManager::class);
+    }
+
+    /** Resolve the TransactionManager singleton through the app container. */
+    private static function tm(): TransactionManager
+    {
+        return app(TransactionManager::class);
+    }
+
     abstract public function toSql();
 
     // Optional virtual methods, used by ->first()
@@ -39,7 +51,7 @@ abstract class Db
 
     public static function connect($name, $dsn, $username = null, $password = null): void
     {
-        ConnectionManager::connect($name, $dsn, $username, $password);
+        self::cm()->connect($name, $dsn, $username, $password);
     }
 
     /** @param bool $enabled */
@@ -69,23 +81,23 @@ abstract class Db
     /** @throws \Exception */
     public static function setConnection($name): void
     {
-        ConnectionManager::setDefault($name);
+        self::cm()->setDefault($name);
     }
 
     public static function withConnection($name, $cb): void
     {
-        ConnectionManager::withConnection($name, $cb);
+        self::cm()->withConnection($name, $cb);
     }
 
     public static function connections(): array
     {
-        return ConnectionManager::names();
+        return self::cm()->names();
     }
 
     /** @throws \Exception */
     public static function connection($name = null): PDO
     {
-        return ConnectionManager::pdo($name);
+        return self::cm()->pdo($name);
     }
 
     /**
@@ -94,7 +106,7 @@ abstract class Db
      */
     public static function quote($value)
     {
-        return ConnectionManager::quote($value);
+        return self::cm()->quote($value);
     }
 
     public static function exec($sql): int|false
@@ -103,14 +115,14 @@ abstract class Db
         if (self::$global_debug) {
             echo "SQL-EXEC: $sql\n";
         }
-        return ConnectionManager::exec($sql);
+        return self::cm()->exec($sql);
     }
 
     /** @param array $bindings */
     public static function query($sql, $bindings = []): static
     {
         $q = new static;
-        $q->query = ConnectionManager::raw($sql, $bindings);
+        $q->query = self::cm()->raw($sql, $bindings);
         return $q;
     }
 
@@ -127,13 +139,13 @@ abstract class Db
             }
         }
 
-        $this->query = ConnectionManager::raw($sql, $bindings);
+        $this->query = self::cm()->raw($sql, $bindings);
         return $this;
     }
 
     public static function lastInsertId(): string|false
     {
-        return ConnectionManager::lastInsertId();
+        return self::cm()->lastInsertId();
     }
 
     // What should we do?
@@ -299,25 +311,25 @@ abstract class Db
      */
     public static function getTxCounter(): int
     {
-        return TransactionManager::level();
+        return self::tm()->level();
     }
 
     // Transactions
     public static function beginTransaction(): void
     {
-        TransactionManager::begin();
+        self::tm()->begin();
     }
 
     /** @throws \Exception */
     public static function commit()
     {
-        TransactionManager::commit();
+        self::tm()->commit();
     }
 
     /** @throws \Exception */
     public static function rollBack(): void
     {
-        TransactionManager::rollBack();
+        self::tm()->rollBack();
     }
 
     /**
@@ -327,11 +339,11 @@ abstract class Db
      */
     public static function transaction($cb, $suppress = false)
     {
-        return TransactionManager::run($cb, $suppress);
+        return self::tm()->run($cb, $suppress);
     }
 
     public static function driverName()
     {
-        return ConnectionManager::driverName();
+        return self::cm()->driverName();
     }
 }

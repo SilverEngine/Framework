@@ -62,4 +62,27 @@ final class Wisp
     {
         return new WispResponse($component, $props);
     }
+
+    /**
+     * Emit the Inertia root element. Called from the compiled Ghost shell
+     * at execute time (see Template::parseWisp), so the per-request page
+     * object is read fresh from the template's local scope.
+     *
+     * @param array<string,mixed> $page
+     */
+    public static function el(array $page): string
+    {
+        $json = htmlspecialchars(
+            (string) json_encode($page, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
+            ENT_QUOTES,
+            'UTF-8',
+        );
+        // Curly braces aren't escaped by htmlspecialchars; encode them so a
+        // payload containing "{{" can't ever be mis-read as a template
+        // directive if the surrounding string is recompiled. Browsers
+        // entity-decode data-* before exposing them to JS.
+        $json = strtr($json, ['{' => '&#123;', '}' => '&#125;']);
+
+        return '<div id="app" data-page="' . $json . '"></div>';
+    }
 }

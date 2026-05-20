@@ -8,11 +8,17 @@ use ReflectionFunction;
 use ReflectionMethod;
 use ReflectionNamedType;
 
+/**
+ * Argument injector for callables — resolves a function/method's
+ * parameters from a name- or type-keyed array. Resolved as a singleton
+ * through the container; used by {@see Kernel} to invoke controller
+ * actions with the matched route variables.
+ */
 final class DI
 {
-    public static function call(callable|array $callable, array $vars = []): mixed
+    public function call(callable|array $callable, array $vars = []): mixed
     {
-        $vars = self::prepareVars($vars);
+        $vars = $this->prepareVars($vars);
 
         if (is_array($callable)) {
             [$obj, $method] = $callable;
@@ -47,7 +53,7 @@ final class DI
         return $callable(...$args);
     }
 
-    private static function prepareVars(array $vars): array
+    private function prepareVars(array $vars): array
     {
         $prepared = [];
         foreach ($vars as $key => $value) {

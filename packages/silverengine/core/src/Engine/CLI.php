@@ -50,12 +50,17 @@ class CLI
         $cacheDir = ROOT . 'storage/cache/';
         @mkdir($cacheDir, 0775, true);
 
-        // Route cache: include the route files to populate Route, then
-        // dump flat definitions — unless a Closure route forbids it.
-        foreach (Env::get('routes', []) as $route) {
-            include_once ROOT . $route . '.php';
+        // Route cache: include the route files to populate the router,
+        // then dump flat definitions — unless a Closure route forbids it.
+        $router = app(Route::class);
+        $router->reset();
+        $loadRouteFile = static function (string $path, Route $route): void {
+            include_once $path;
+        };
+        foreach (Env::get('routes', []) as $routeFile) {
+            $loadRouteFile(ROOT . $routeFile . '.php', $router);
         }
-        $defs = Route::definitions();
+        $defs = $router->definitions();
         if ($defs === null) {
             $this->error('Route cache skipped: a route uses a Closure action (not cacheable).');
         } else {
@@ -99,6 +104,7 @@ class CLI
                 $removed++;
             }
         }
+        $removed += \Silver\Engine\Ghost\Compiler::clear();
         return $removed;
     }
 
@@ -318,7 +324,7 @@ class CLI
 
         if ($add) {
             fwrite($fh, "\n// Route for {$name} controller.\n");
-            fwrite($fh, "Route::get('/" . lcfirst($name) . "', '{$name}@get', '" . lcfirst($name) . "', 'public');\n");
+            fwrite($fh, "\$route->get('/" . lcfirst($name) . "', '{$name}@get', '" . lcfirst($name) . "', 'public');\n");
             $this->success('Route created!');
         }
 

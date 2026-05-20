@@ -19,15 +19,20 @@ use Silver\Core\Env;
  * a `recorder.ignore` path-prefix filter and a `recorder.limit` ring
  * buffer. All filesystem work is best-effort: the response is already
  * sent, so the recorder must never raise.
+ *
+ * Resolved as a singleton through the container; reached via the
+ * global `recorder()` helper at call sites.
  */
 final class RequestRecorder
 {
-    public static function dir(): string
+    public function __construct(private readonly DebugTimer $timer) {}
+
+    public function dir(): string
     {
         return (defined('ROOT') ? ROOT : '') . 'storage/debug/recordings/';
     }
 
-    public static function record(string $method, string $path, int $status): void
+    public function record(string $method, string $path, int $status): void
     {
         try {
             if (!Env::get('debug') || !Env::get('recorder.enabled', true)) {
@@ -40,25 +45,25 @@ final class RequestRecorder
                 }
             }
 
-            $dir = self::dir();
+            $dir = $this->dir();
             if (!is_dir($dir) && !@mkdir($dir, 0775, true) && !is_dir($dir)) {
                 return;
             }
 
             $id = sprintf('%013d-%s', (int) (microtime(true) * 1000), bin2hex(random_bytes(3)));
 
-            $files = DebugTimer::files();
+            $files = $this->timer->files();
             $payload = [
                 'id'          => $id,
                 'at'          => date('Y-m-d H:i:s'),
                 'method'      => $method,
                 'path'        => $path,
                 'status'      => $status,
-                'total_ms'    => DebugTimer::totalMs(),
+                'total_ms'    => $this->timer->totalMs(),
                 'mem_peak_kb' => round(memory_get_peak_usage(true) / 1024, 1),
                 'files_count' => count($files),
                 'files'       => $files,
-                'timeline'    => DebugTimer::timeline(),
+                'timeline'    => $this->timer->timeline(),
             ];
 
             @file_put_contents(
@@ -67,17 +72,17 @@ final class RequestRecorder
                 LOCK_EX,
             );
 
-            self::prune((int) Env::get('recorder.limit', 50));
+            $this->prune((int) Env::get('recorder.limit', 50));
         } catch (\Throwable) {
             // best-effort: never disrupt a request that already responded
         }
     }
 
     /** Newest-first list of recording summaries (no timeline payload). */
-    public static function all(): array
+    public function all(): array
     {
         $out = [];
-        foreach (self::sortedFiles() as $file) {
+        foreach ($this->sortedFiles() as $file) {
             $data = json_decode((string) @file_get_contents($file), true);
             if (!is_array($data)) {
                 continue;
@@ -88,12 +93,12 @@ final class RequestRecorder
         return array_reverse($out);
     }
 
-    public static function find(string $id): ?array
+    public function find(string $id): ?array
     {
         if (!preg_match('/^[0-9a-f-]+$/', $id)) {
             return null;
         }
-        $path = self::dir() . $id . '.json';
+        $path = $this->dir() . $id . '.json';
         if (!is_file($path)) {
             return null;
         }
@@ -102,16 +107,16 @@ final class RequestRecorder
     }
 
     /** @return list<string> ascending (oldest first) by sortable id */
-    private static function sortedFiles(): array
+    private function sortedFiles(): array
     {
-        $files = glob(self::dir() . '*.json') ?: [];
+        $files = glob($this->dir() . '*.json') ?: [];
         sort($files);
         return $files;
     }
 
-    private static function prune(int $limit): void
+    private function prune(int $limit): void
     {
-        $files = self::sortedFiles();
+        $files = $this->sortedFiles();
         $excess = count($files) - max(1, $limit);
         for ($i = 0; $i < $excess; $i++) {
             @unlink($files[$i]);

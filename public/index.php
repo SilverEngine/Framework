@@ -6,7 +6,6 @@ define('APP_START', hrtime(true));
 use Silver\ErrorHandler\Reporter;
 use Silver\Core\Kernel;
 use Silver\Core\Env;
-use Silver\Support\DebugTimer;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,41 +52,42 @@ chdir(ROOT);
 | from the very first boot phase. Collection is a handful of hrtime()
 | calls; the timeline is only ever rendered by the dev /debug page.
 */
-DebugTimer::start();
-DebugTimer::mark('autoload', 'boot');
+dt()->start();
+dt()->mark('autoload', 'boot');
 
 /*
 |--------------------------------------------------------------------------
 | Environment (.env)
 |--------------------------------------------------------------------------
 */
-DebugTimer::begin('Env::construct', 'boot');
+dt()->begin('Env::construct', 'boot');
 Env::construct(ROOT);
-DebugTimer::end('Env::construct', 'boot');
-DebugTimer::mark('env loaded', 'boot');
+dt()->end('Env::construct', 'boot');
+dt()->mark('env loaded', 'boot');
 
 /*
 |--------------------------------------------------------------------------
 | Error handling
 |--------------------------------------------------------------------------
 */
-DebugTimer::begin('error handlers', 'boot');
+dt()->begin('error handlers', 'boot');
 if (class_exists(Reporter::class)) {
     (new Reporter())->on();
 }
 
-Silver\Core\ErrorHandler::setFilter(E_ALL);
-set_error_handler(Silver\Core\ErrorHandler::handle_error(...), E_ALL);
-set_exception_handler(Silver\Core\ErrorHandler::handle_ex(...));
-register_shutdown_function(Silver\Core\ErrorHandler::handle_fatal(...));
-DebugTimer::end('error handlers', 'boot');
+$errorHandler = Silver\Core\App::instance()->instances()->make(Silver\Core\ErrorHandler::class);
+$errorHandler->setFilter(E_ALL);
+set_error_handler($errorHandler->handle_error(...), E_ALL);
+set_exception_handler($errorHandler->handle_ex(...));
+register_shutdown_function($errorHandler->handle_fatal(...));
+dt()->end('error handlers', 'boot');
 
 /*
 |--------------------------------------------------------------------------
 | Database
 |--------------------------------------------------------------------------
 */
-DebugTimer::begin('database connect', 'boot');
+dt()->begin('database connect', 'boot');
 $database = Env::get('databases');
 
 if ($database && $database->on) {
@@ -98,7 +98,7 @@ if ($database && $database->on) {
     \Silver\Database\Query::connect($local->driver, $dsn, $local->username, $local->password);
     \Silver\Database\Query::setConnection($local->driver);
 }
-DebugTimer::end('database connect', 'boot');
+dt()->end('database connect', 'boot');
 
 /*
 |--------------------------------------------------------------------------
@@ -107,16 +107,16 @@ DebugTimer::end('database connect', 'boot');
 */
 $kernel = new Kernel();
 
-DebugTimer::begin('load routes', 'kernel');
+dt()->begin('load routes', 'kernel');
 $kernel->loadRoutes();
-DebugTimer::end('load routes', 'kernel');
+dt()->end('load routes', 'kernel');
 
-DebugTimer::begin('load middlewares', 'kernel');
+dt()->begin('load middlewares', 'kernel');
 $kernel->loadMiddlewares();
-DebugTimer::end('load middlewares', 'kernel');
+dt()->end('load middlewares', 'kernel');
 
 define('APP_BOOT_MS', (hrtime(true) - APP_START) / 1e6);
 header('X-Boot-Time: ' . number_format(APP_BOOT_MS, 2) . 'ms');
 
-DebugTimer::mark('kernel.run', 'kernel');
+dt()->mark('kernel.run', 'kernel');
 $kernel->run();

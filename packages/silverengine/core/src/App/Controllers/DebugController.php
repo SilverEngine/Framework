@@ -7,20 +7,20 @@ use Silver\Core\Controller;
 use Silver\Core\Env;
 use Silver\Core\Route;
 use Silver\Http\View;
-use Silver\Support\DebugTimer;
-use Silver\Support\RequestRecorder;
 
 class DebugController extends Controller
 {
+    public function __construct(private readonly Route $router) {}
+
     public function index(): View|array
     {
-        DebugTimer::mark('controller start', 'controller');
+        dt()->mark('controller start', 'controller');
 
         // A recorded request can be replayed into the Timeline tab so
         // its full lifecycle (controller action, view render, response
         // sent) is visible — phases the live /debug page cannot show.
         $selected = isset($_GET['recording'])
-            ? RequestRecorder::find((string) $_GET['recording'])
+            ? recorder()->find((string) $_GET['recording'])
             : null;
 
         $data = [
@@ -32,22 +32,65 @@ class DebugController extends Controller
             'config'        => $this->config(),
             'packages'      => $this->packages(),
             'server'        => $this->server(),
-            'recordings'    => RequestRecorder::all(),
+            'recordings'    => recorder()->all(),
             'recording'     => $selected,
-            'timeline'      => $selected['timeline'] ?? DebugTimer::timeline(),
-            'files'         => $selected['files'] ?? DebugTimer::files(),
-            'totalMs'       => $selected['total_ms'] ?? DebugTimer::totalMs(),
+            'timeline'      => $selected['timeline'] ?? dt()->timeline(),
+            'files'         => $selected['files'] ?? dt()->files(),
+            'totalMs'       => $selected['total_ms'] ?? dt()->totalMs(),
         ];
 
-        DebugTimer::mark('controller end', 'controller');
+        dt()->mark('controller end', 'controller');
 
-        if (($_GET['output'] ?? '') === 'json') {
-            header('Content-Type: application/json');
-            echo json_encode($data, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        // ?output=json (or ?format=json) returns the page as JSON. When a
+        // ?tab=... is also supplied, only that tab's slice is returned.
+        $wantsJson = ($_GET['output'] ?? $_GET['format'] ?? '') === 'json';
+        if ($wantsJson) {
+            $tab = (string) ($_GET['tab'] ?? '');
+            $payload = $tab !== '' ? $this->sliceForTab($tab, $data) : $data;
+
+            header('Content-Type: application/json; charset=utf-8');
+            echo json_encode(
+                $payload,
+                JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE,
+            );
             exit;
         }
 
         return View::make('debug.index', $data);
+    }
+
+    /**
+     * Map a tab name to the subset of the debug payload that tab renders.
+     * Returns the whole payload as a fallback so unknown tabs still produce
+     * a useful JSON response (rather than an empty object).
+     *
+     * @param array<string,mixed> $data
+     * @return array<string,mixed>
+     */
+    private function sliceForTab(string $tab, array $data): array
+    {
+        return match ($tab) {
+            'overview'   => [
+                'performance' => $data['performance'] ?? null,
+                'environment' => $data['environment'] ?? null,
+                'request'     => $data['request']     ?? null,
+                'database'    => $data['database']    ?? null,
+            ],
+            'timeline'   => [
+                'recording' => $data['recording'] ?? null,
+                'total_ms'  => $data['totalMs']   ?? null,
+                'files'     => $data['files']     ?? [],
+                'timeline'  => $data['timeline']  ?? [],
+            ],
+            'recordings' => ['recordings' => $data['recordings'] ?? []],
+            'routes'     => ['routes'     => $data['routes']     ?? []],
+            'request'    => ['request'    => $data['request']    ?? []],
+            'database'   => ['database'   => $data['database']   ?? []],
+            'config'     => ['config'     => $data['config']     ?? []],
+            'packages'   => ['packages'   => $data['packages']   ?? []],
+            'server'     => ['server'     => $data['server']     ?? []],
+            default      => $data,
+        };
     }
 
     private function performance(): array
@@ -83,7 +126,7 @@ class DebugController extends Controller
     private function routes(): array
     {
         $routes = [];
-        foreach (Route::all() as $route) {
+        foreach ($this->router->all() as $route) {
             $action = $route->action();
             $routes[] = [
                 'method'     => strtoupper($route->method()),

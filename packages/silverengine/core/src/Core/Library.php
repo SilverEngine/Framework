@@ -3,8 +3,43 @@ declare(strict_types=1);
 
 use Silver\Helpers\URL;
 use Silver\Helpers\HTMLElement as El;
+use Silver\Core\App;
+use Silver\Core\Container;
 use Silver\Core\Route;
 use Silver\Http\View;
+
+if (!function_exists('dt')) {
+    /** Shorthand for the {@see \Silver\Support\DebugTimer} singleton. */
+    function dt(): \Silver\Support\DebugTimer
+    {
+        return App::instance()->instances()->make(\Silver\Support\DebugTimer::class);
+    }
+}
+
+if (!function_exists('recorder')) {
+    /** Shorthand for the {@see \Silver\Support\RequestRecorder} singleton. */
+    function recorder(): \Silver\Support\RequestRecorder
+    {
+        return App::instance()->instances()->make(\Silver\Support\RequestRecorder::class);
+    }
+}
+
+if (!function_exists('app')) {
+    /**
+     * Shorthand for `App::instance()->instances()->make($abstract)`.
+     * With no argument, returns the container itself. With a class
+     * string, resolves and returns the singleton.
+     *
+     * @template T of object
+     * @param class-string<T>|null $abstract
+     * @return ($abstract is null ? Container : T)
+     */
+    function app(?string $abstract = null): mixed
+    {
+        $container = App::instance()->instances();
+        return $abstract === null ? $container : $container->make($abstract);
+    }
+}
 
 if (!function_exists('dd')) {
     function dd(mixed $data, bool $dump = false): never
@@ -103,7 +138,7 @@ if (!function_exists('wisp')) {
 if (!function_exists('route')) {
     function route(string $name, array $args = []): string
     {
-        return Route::getRoute($name)->url($args);
+        return app(Route::class)->getRoute($name)->url($args);
     }
 }
 
