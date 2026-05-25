@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace Silver\Core;
 
-use Dotenv\Dotenv;
 use stdClass;
 
 final class Env
@@ -27,13 +26,13 @@ final class Env
         if (is_file($cache)) {
             $cached = require $cache;
             self::$name    = $cached['name'];
-            self::$envData = json_decode(json_encode($cached['config']));
+            self::$envData = self::arrayToObject($cached['config']);
             return;
         }
 
         [$name, $config] = self::build($root);
         self::$name    = $name;
-        self::$envData = json_decode(json_encode($config));
+        self::$envData = self::arrayToObject($config);
     }
 
     /**
@@ -44,8 +43,11 @@ final class Env
      */
     private static function build(string $root): array
     {
-        $dotenv = Dotenv::createImmutable(rtrim($root, '/'));
-        $dotenv->safeLoad();
+        // Native .env parser — avoids loading the 29 phpdotenv vendor files
+        // on every uncached boot. Same semantics as Dotenv::safeLoad() for
+        // the .env shapes we use (KEY=value, optional quotes, # comments,
+        // empty values). No nested expansion, no multi-line values.
+        self::loadEnvFile(rtrim($root, '/') . '/.env');
 
         $name = $_ENV['APP_ENV'] ?? 'local';
 
@@ -66,7 +68,7 @@ final class Env
 
         [$name, $config] = self::build($root);
         self::$name    = $name;
-        self::$envData = json_decode(json_encode($config));
+        self::$envData = self::arrayToObject($config);
 
         $path = self::cachePath($root);
         @mkdir(dirname($path), 0775, true);
@@ -186,6 +188,109 @@ final class Env
     private static function isAssoc(array $a): bool
     {
         return $a !== [] && array_keys($a) !== range(0, count($a) - 1);
+    }
+
+    /**
+     * Recursively convert nested associative arrays into stdClass while
+     * preserving lists as arrays. Same shape as `json_decode(json_encode($x))`
+     * but ~5-10x faster — no string serialization round-trip. Called once at
+     * boot to materialise the config tree consumed via `Env::get()`'s
+     * object-property traversal.
+     */
+    private static function arrayToObject(mixed $value): mixed
+    {
+        if (!is_array($value)) {
+            return $value;
+        }
+        if ($value === [] || array_is_list($value)) {
+            $out = [];
+            foreach ($value as $v) {
+                $out[] = self::arrayToObject($v);
+            }
+            return $out;
+        }
+        $obj = new stdClass();
+        foreach ($value as $k => $v) {
+            $obj->{$k} = self::arrayToObject($v);
+        }
+        return $obj;
+    }
+
+    /**
+     * Minimal native .env loader. Replaces vlucas/phpdotenv on the boot
+     * path. Populates $_ENV / $_SERVER / putenv() the same way phpdotenv
+     * "immutable" mode does — never overwrites an existing entry.
+     *
+     * Supported syntax:
+     *   - KEY=value                  (bare value, trimmed)
+     *   - KEY="value with spaces"    (double quotes — \n \t \" \\ escapes)
+     *   - KEY='raw value'            (single quotes — no escape interp)
+     *   - export KEY=value           (export prefix stripped)
+     *   - # full-line comment
+     *   - KEY=value # inline comment (unquoted only; quoted values keep #)
+     *
+     * Not supported (spike): ${VAR} expansion, multi-line values.
+     */
+    private static function loadEnvFile(string $path): void
+    {
+        if (!is_file($path)) {
+            return;
+        }
+        $contents = @file_get_contents($path);
+        if ($contents === false || $contents === '') {
+            return;
+        }
+
+        foreach (preg_split('/\R/', $contents) ?: [] as $line) {
+            $line = trim($line);
+            if ($line === '' || $line[0] === '#') {
+                continue;
+            }
+            if (str_starts_with($line, 'export ')) {
+                $line = ltrim(substr($line, 7));
+            }
+
+            $eq = strpos($line, '=');
+            if ($eq === false) {
+                continue;
+            }
+            $key = rtrim(substr($line, 0, $eq));
+            if (!preg_match('/^[A-Za-z_][A-Za-z0-9_.]*$/', $key)) {
+                continue;
+            }
+            $raw = ltrim(substr($line, $eq + 1));
+
+            // Quoted value
+            if ($raw !== '' && ($raw[0] === '"' || $raw[0] === "'")) {
+                $quote = $raw[0];
+                $len = strlen($raw);
+                $i = 1;
+                if ($quote === '"') {
+                    while ($i < $len) {
+                        if ($raw[$i] === '\\' && $i + 1 < $len) { $i += 2; continue; }
+                        if ($raw[$i] === '"') break;
+                        $i++;
+                    }
+                } else {
+                    while ($i < $len && $raw[$i] !== "'") { $i++; }
+                }
+                $body = substr($raw, 1, $i - 1);
+                $value = $quote === '"'
+                    ? strtr($body, ['\\n' => "\n", '\\t' => "\t", '\\"' => '"', '\\\\' => '\\'])
+                    : $body;
+            } else {
+                // Unquoted — strip optional " #..." inline comment, then trim.
+                if (($hash = strpos($raw, ' #')) !== false) {
+                    $raw = substr($raw, 0, $hash);
+                }
+                $value = rtrim($raw);
+            }
+
+            // Immutable: existing values win, matching phpdotenv->safeLoad().
+            if (!array_key_exists($key, $_ENV))    { $_ENV[$key]    = $value; }
+            if (!array_key_exists($key, $_SERVER)) { $_SERVER[$key] = $value; }
+            if (getenv($key) === false)            { putenv("{$key}={$value}"); }
+        }
     }
 
     private static function applyEnvOverrides(array &$config): void

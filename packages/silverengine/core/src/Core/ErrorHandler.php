@@ -9,33 +9,39 @@ use Silver\Exception\ErrorException;
 use Silver\Exception\Exception;
 use Silver\Http\View;
 
+/**
+ * Renders error pages and JSON error bodies, and exposes a filter the
+ * View layer toggles when rendering templates. Resolved as a singleton
+ * through the container so the filter setting is shared across the
+ * request.
+ */
 final class ErrorHandler
 {
-    private static int $filter = E_ALL;
+    private int $filter = E_ALL;
 
-    public static function setFilter(int $filter): void
+    public function setFilter(int $filter): void
     {
-        self::$filter = $filter;
+        $this->filter = $filter;
     }
 
-    public static function getFilter(): int
+    public function getFilter(): int
     {
-        return self::$filter;
+        return $this->filter;
     }
 
-    public static function withFilter(int $filter, callable $cb): mixed
+    public function withFilter(int $filter, callable $cb): mixed
     {
-        $old = self::getFilter();
-        self::setFilter($filter);
+        $old = $this->getFilter();
+        $this->setFilter($filter);
         $rv = $cb();
-        self::setFilter($old);
+        $this->setFilter($old);
         return $rv;
     }
 
-    public static function handle_error(int $code, string $message, string $file, int $line): void
+    public function handle_error(int $code, string $message, string $file, int $line): void
     {
-        self::resetCWD();
-        if ($code & self::$filter) {
+        $this->resetCWD();
+        if ($code & $this->filter) {
             $ex = new ErrorException($message, $code);
             $ex->setFile($file);
             $ex->setLine($line);
@@ -43,31 +49,38 @@ final class ErrorHandler
         }
     }
 
-    public static function handle_fatal(): void
+    public function handle_fatal(): void
     {
-        self::resetCWD();
-        if ($fatal = error_get_last()) {
-            $ex = new Exception($fatal['message']);
-            $ex->setFile($fatal['file']);
-            $ex->setLine($fatal['line']);
-            self::handle_ex($ex);
+        $this->resetCWD();
+        $fatal = error_get_last();
+        if ($fatal === null) {
+            return;
         }
+        $fatalMask = E_ERROR | E_PARSE | E_CORE_ERROR | E_CORE_WARNING
+            | E_COMPILE_ERROR | E_COMPILE_WARNING | E_USER_ERROR;
+        if (($fatal['type'] & $fatalMask) === 0) {
+            return;
+        }
+        $ex = new Exception($fatal['message']);
+        $ex->setFile($fatal['file']);
+        $ex->setLine($fatal['line']);
+        $this->handle_ex($ex);
     }
 
-    public static function handle_ex(\Throwable $ex): void
+    public function handle_ex(\Throwable $ex): void
     {
-        self::resetCWD();
+        $this->resetCWD();
         if ($ex instanceof Exception) {
-            self::render($ex, true);
+            $this->render($ex, true);
         } else {
             $wrapped = new Exception($ex->getMessage(), (int) $ex->getCode());
             $wrapped->setFile($ex->getFile());
             $wrapped->setLine($ex->getLine());
-            self::render($wrapped, true);
+            $this->render($wrapped, true);
         }
     }
 
-    private static function codeAround(Exception $ex, int $around = 3): string
+    private function codeAround(Exception $ex, int $around = 3): string
     {
         $file = $ex->getFile();
         $line = $ex->getLine();
@@ -85,7 +98,7 @@ final class ErrorHandler
      *
      * @return list<array{where:string,file:string,line:int|string}>
      */
-    private static function normalizeFrames(\Throwable $e): array
+    private function normalizeFrames(\Throwable $e): array
     {
         $frames = [];
         foreach ($e->getTrace() as $f) {
@@ -105,7 +118,7 @@ final class ErrorHandler
      *
      * @return array<string,mixed>
      */
-    private static function requestContext(): array
+    private function requestContext(): array
     {
         try {
             $route = Request::route();
@@ -138,25 +151,25 @@ final class ErrorHandler
      *
      * @return array<string,mixed>
      */
-    public static function apiErrorBody(Exception $e, int $status): array
+    public function apiErrorBody(Exception $e, int $status): array
     {
         $body = [
             'status'  => $status,
             'message' => $e->getMessage() ?: 'Error',
         ];
 
-        if (self::isDebug()) {
+        if ($this->isDebug()) {
             $orig = $e->getPrevious() ?? $e;
             $body['exception'] = $orig::class;
             $body['file']      = $e->getFile();
             $body['line']      = $e->getLine();
-            $body['trace']     = self::normalizeFrames($orig);
+            $body['trace']     = $this->normalizeFrames($orig);
         }
 
         return $body;
     }
 
-    public static function render(Exception $e, bool $finalize = false): mixed
+    public function render(Exception $e, bool $finalize = false): mixed
     {
         $view = null;
 
@@ -172,19 +185,22 @@ final class ErrorHandler
                 }
 
                 $flags = JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE
-                    | (self::isDebug() ? JSON_PRETTY_PRINT : 0);
+                    | ($this->isDebug() ? JSON_PRETTY_PRINT : 0);
 
-                echo json_encode(['error' => self::apiErrorBody($e, $status)], $flags);
+                echo json_encode(['error' => $this->apiErrorBody($e, $status)], $flags);
                 exit();
             } catch (\Throwable $e2) {
-                self::finalize("Fatal error: " . $e2->getMessage());
+                $this->finalize("Fatal error: " . $e2->getMessage());
             }
         } else {
             try {
                 if ($e instanceof NotFoundException) {
                     $view = View::make('errors.404')
                         ->with('message', $e->getMessage())
-                        ->with('debug', self::isDebug());
+                        ->with('debug', $this->isDebug())
+                        ->with('uri', $_SERVER['REQUEST_URI'] ?? '/')
+                        ->with('is_local', \Silver\Core\Env::name() === 'local')
+                        ->with('suggested', \Silver\Support\Scaffolder::suggestName($_SERVER['REQUEST_URI'] ?? ''));
                 } else {
                     $orig = $e->getPrevious() ?? $e;
                     $view = View::make('errors.500')
@@ -192,26 +208,26 @@ final class ErrorHandler
                         ->with('class', $orig::class)
                         ->with('file', $e->getFile())
                         ->with('line', $e->getLine())
-                        ->with('code_around', self::codeAround($e))
-                        ->with('frames', self::normalizeFrames($orig))
-                        ->with('request', self::requestContext())
-                        ->with('debug', self::isDebug());
+                        ->with('code_around', $this->codeAround($e))
+                        ->with('frames', $this->normalizeFrames($orig))
+                        ->with('request', $this->requestContext())
+                        ->with('debug', $this->isDebug());
                 }
 
                 if ($finalize) {
-                    self::finalize($view);
+                    $this->finalize($view);
                 } else {
                     return $view;
                 }
             } catch (\Throwable $e2) {
-                self::finalize("Fatal error: " . $e2->getMessage());
+                $this->finalize("Fatal error: " . $e2->getMessage());
             }
         }
 
         return null;
     }
 
-    private static function finalize(mixed $content): never
+    private function finalize(mixed $content): never
     {
         http_response_code(500);
 
@@ -223,12 +239,12 @@ final class ErrorHandler
         exit;
     }
 
-    private static function isDebug(): bool
+    private function isDebug(): bool
     {
         return (bool) Env::get('debug', false);
     }
 
-    private static function resetCWD(): void
+    private function resetCWD(): void
     {
         if (defined('ROOT')) {
             chdir(ROOT);

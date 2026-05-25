@@ -133,7 +133,7 @@ class View implements RenderInterface
 
     public function render(): string
     {
-        return ErrorHandler::withFilter(
+        return app(ErrorHandler::class)->withFilter(
             E_ALL ^ E_NOTICE,
             function (): string {
                 $name = str_replace('.', '/', $this->template);

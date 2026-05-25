@@ -14,6 +14,33 @@ class App implements InstanceInterface
     public function __construct()
     {
         $this->instances = new Container();
+        $this->bindFrameworkDefaults();
+    }
+
+    /**
+     * Wire the framework's built-in services. Each binding is a singleton
+     * and an interface → concrete pair, so user code can rebind or
+     * decorate (`$c->bind(...)` / `$c->extend(...)`) without forking.
+     */
+    private function bindFrameworkDefaults(): void
+    {
+        $this->instances->singleton(
+            \Silver\FileSystem\FileSystem::class,
+            \Silver\FileSystem\LocalFileSystem::class,
+        );
+
+        // Route, Config, Hook are stateful framework services resolved as
+        // singletons so every caller (router, kernel, controllers, route
+        // files) sees the same instance instead of the old static state.
+        $this->instances->singleton(Route::class);
+        $this->instances->singleton(Config::class);
+        $this->instances->singleton(Hook::class);
+        $this->instances->singleton(DI::class);
+        $this->instances->singleton(\Silver\Database\ConnectionManager::class);
+        $this->instances->singleton(\Silver\Database\TransactionManager::class);
+        $this->instances->singleton(ErrorHandler::class);
+        $this->instances->singleton(\Silver\Support\DebugTimer::class);
+        $this->instances->singleton(\Silver\Support\RequestRecorder::class);
     }
 
     public function instances(): Container

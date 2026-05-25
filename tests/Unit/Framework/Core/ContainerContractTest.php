@@ -64,7 +64,7 @@ class ContainerContractTest extends TestCase
 
     public function testDiCallClosureInjectsBuiltinByNameAndUsesDefault(): void
     {
-        $out = DI::call(
+        $out = app(DI::class)->call(
             fn (string $name, int $n = 7): string => "$name:$n",
             ['name' => 'lex'],
         );
@@ -74,7 +74,7 @@ class ContainerContractTest extends TestCase
     public function testDiCallInjectsObjectByTypeFqn(): void
     {
         $dep = new CcDep();
-        $out = DI::call(
+        $out = app(DI::class)->call(
             fn (CcDep $d): string => $d->tag,
             [CcDep::class => $dep],
         );
@@ -84,7 +84,7 @@ class ContainerContractTest extends TestCase
     public function testDiCallThrowsOnUnresolvableRequiredParam(): void
     {
         $this->expectException(\Throwable::class);
-        DI::call(fn (string $missing): string => $missing, []);
+        app(DI::class)->call(fn (string $missing): string => $missing, []);
     }
 
     public function testDiCallArrayCallableMethodInjection(): void
@@ -95,7 +95,7 @@ class ContainerContractTest extends TestCase
                 return "hi $who";
             }
         };
-        $this->assertSame('hi sam', DI::call([$obj, 'greet'], ['who' => 'sam']));
+        $this->assertSame('hi sam', app(DI::class)->call([$obj, 'greet'], ['who' => 'sam']));
     }
 
     public function testFacadeIsLazySingletonProxy(): void

@@ -12,13 +12,15 @@ use Closure;
 
 final class ErrorHandler implements MiddlewareInterface
 {
+    public function __construct(private readonly Handler $handler) {}
+
     public function execute(Request $req, Response $res, Closure $next): mixed
     {
         try {
             return $next();
         } catch (NotFoundException $e) {
             $res->setCode(404);
-            return Handler::render($e);
+            return $this->handler->render($e);
         } catch (\Throwable $e) {
             $res->setCode(500);
             // Keep the original throwable as `previous` so the error
@@ -27,7 +29,7 @@ final class ErrorHandler implements MiddlewareInterface
             $wrapped = new \Silver\Exception\Exception($e->getMessage(), (int) $e->getCode(), $e);
             $wrapped->setFile($e->getFile());
             $wrapped->setLine($e->getLine());
-            return Handler::render($wrapped);
+            return $this->handler->render($wrapped);
         }
     }
 }

@@ -467,7 +467,12 @@ document.querySelectorAll('.tab').forEach(tab => {
     tab.addEventListener('click', () => {
         const name = tab.dataset.tab;
         switchTab(name);
-        history.replaceState(null, '', '?tab=' + name);
+        // Preserve any other query params (e.g. ?recording=...) when
+        // updating the URL — the previous version replaced the whole
+        // querystring and dropped the recording id.
+        const next = new URLSearchParams(location.search);
+        next.set('tab', name);
+        history.replaceState(null, '', '?' + next.toString());
     });
 });
 

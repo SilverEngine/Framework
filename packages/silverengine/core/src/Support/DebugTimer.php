@@ -3,40 +3,42 @@ declare(strict_types=1);
 
 namespace Silver\Support;
 
+/**
+ * Per-request timeline recorder. Resolved as a singleton through the
+ * container; reached most often via the global `dt()` helper so call
+ * sites stay compact (`dt()->begin(...)`, `dt()->mark(...)`).
+ *
+ * Methods are no-ops until {@see self::start()} has been called, so the
+ * timer can be wired into hot paths and only switched on by the boot
+ * code that wants the data.
+ */
 final class DebugTimer
 {
-    private static ?self $instance = null;
-    private int $origin;
+    private bool $enabled = false;
+    private int $origin = 0;
     private array $events = [];
     private array $openSpans = [];
 
-    private function __construct()
+    public function start(): void
     {
+        if ($this->enabled) {
+            return;
+        }
+        $this->enabled = true;
         $this->origin = defined('APP_START') ? APP_START : hrtime(true);
     }
 
-    public static function instance(): self
+    public function enabled(): bool
     {
-        return self::$instance ??= new self();
+        return $this->enabled;
     }
 
-    public static function enabled(): bool
+    public function mark(string $label, ?string $category = null): void
     {
-        return self::$instance !== null;
-    }
-
-    public static function start(): void
-    {
-        self::instance();
-    }
-
-    public static function mark(string $label, ?string $category = null): void
-    {
-        if (!self::$instance) {
+        if (!$this->enabled) {
             return;
         }
-
-        self::$instance->events[] = [
+        $this->events[] = [
             'type'     => 'mark',
             'label'    => $label,
             'category' => $category ?? 'app',
@@ -44,31 +46,27 @@ final class DebugTimer
         ];
     }
 
-    public static function begin(string $label, ?string $category = null): void
+    public function begin(string $label, ?string $category = null): void
     {
-        if (!self::$instance) {
+        if (!$this->enabled) {
             return;
         }
-
         $key = $category . '::' . $label;
-        self::$instance->openSpans[$key] = hrtime(true);
+        $this->openSpans[$key] = hrtime(true);
     }
 
-    public static function end(string $label, ?string $category = null): void
+    public function end(string $label, ?string $category = null): void
     {
-        if (!self::$instance) {
+        if (!$this->enabled) {
             return;
         }
-
         $key = $category . '::' . $label;
-        $start = self::$instance->openSpans[$key] ?? null;
+        $start = $this->openSpans[$key] ?? null;
         if ($start === null) {
             return;
         }
-
-        unset(self::$instance->openSpans[$key]);
-
-        self::$instance->events[] = [
+        unset($this->openSpans[$key]);
+        $this->events[] = [
             'type'     => 'span',
             'label'    => $label,
             'category' => $category ?? 'app',
@@ -77,16 +75,14 @@ final class DebugTimer
         ];
     }
 
-    public static function timeline(): array
+    public function timeline(): array
     {
-        if (!self::$instance) {
+        if (!$this->enabled) {
             return [];
         }
-
-        $origin = self::$instance->origin;
+        $origin = $this->origin;
         $timeline = [];
-
-        foreach (self::$instance->events as $e) {
+        foreach ($this->events as $e) {
             if ($e['type'] === 'mark') {
                 $timeline[] = [
                     'type'     => 'mark',
@@ -105,16 +101,14 @@ final class DebugTimer
                 ];
             }
         }
-
         return $timeline;
     }
 
-    public static function files(): array
+    public function files(): array
     {
         $files = get_included_files();
         $root = defined('ROOT') ? ROOT : '';
         $result = [];
-
         foreach ($files as $file) {
             $relative = str_starts_with($file, $root) ? substr($file, strlen($root)) : $file;
             $size = is_file($file) ? filesize($file) : 0;
@@ -123,15 +117,14 @@ final class DebugTimer
                 'size' => $size,
             ];
         }
-
         return $result;
     }
 
-    public static function totalMs(): float
+    public function totalMs(): float
     {
-        if (!self::$instance) {
+        if (!$this->enabled) {
             return 0.0;
         }
-        return (hrtime(true) - self::$instance->origin) / 1e6;
+        return (hrtime(true) - $this->origin) / 1e6;
     }
 }

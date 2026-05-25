@@ -38,7 +38,48 @@ class Template implements RenderInterface
             throw new \Exception("File not found {$this->file}");
         }
 
-        $render = file_get_contents($this->file);
+        // Always track the current source in any enclosing compile frame so
+        // a parent's cache invalidates when this template changes.
+        Compiler::track($this->file);
+
+        $cacheFile = Compiler::pathFor($this->file);
+
+        // Fast path: cache is fresh — skip the regex pipeline entirely.
+        if (Compiler::isFresh($cacheFile, $this->file)) {
+            // Bubble transitively-tracked deps into the parent frame so this
+            // template's deps stick to whatever cache the parent ends up
+            // writing.
+            Compiler::trackMany(Compiler::depsFrom($cacheFile) ?? []);
+            return $this->execute($cacheFile);
+        }
+
+        // Compile and write.
+        Compiler::startFrame();
+        try {
+            Compiler::track($this->file);
+            $compiled = $this->compile();
+            $deps = Compiler::endFrame();
+            Compiler::write($cacheFile, $this->file, $deps, $compiled);
+        } catch (\Throwable $e) {
+            Compiler::endFrame();
+            throw $e;
+        }
+
+        if ($this->debug) {
+            echo file_get_contents($cacheFile);
+            exit;
+        }
+
+        return $this->execute($cacheFile);
+    }
+
+    /**
+     * Run the compile pipeline against the source file and return the
+     * compiled PHP-template string (without the cache file header).
+     */
+    private function compile(): string
+    {
+        $render = (string) file_get_contents($this->file);
 
         $render = $this->parseDebug($render);
         $render = $this->parseComments($render);
@@ -65,24 +106,25 @@ class Template implements RenderInterface
             $render = $this->parseMaster($render);
         }
 
-        foreach ($this->data as $key => $value) {
-            $$key = $value;
-        }
-
-        if ($this->debug) {
-            echo $render;
-            exit;
-        }
-
-        try {
-            ob_start();
-            eval('?>' . $render);
-            $render = ob_get_contents();
-        } finally {
-            ob_get_clean();
-        }
-
         return $render;
+    }
+
+    /**
+     * Include the cached compiled file in an output buffer with the
+     * template data exposed as local vars. Opcache picks up the file
+     * the same as any other PHP source — no eval() at request time.
+     */
+    private function execute(string $cacheFile): string
+    {
+        ob_start();
+        try {
+            extract($this->data, EXTR_SKIP);
+            include $cacheFile;
+            return (string) ob_get_clean();
+        } catch (\Throwable $e) {
+            ob_end_clean();
+            throw $e;
+        }
     }
 
     private function parseDebug(string $body): string
@@ -99,24 +141,29 @@ class Template implements RenderInterface
 
     private function parseVars(string $body): string
     {
-        // Raw output {{{ }}}
+        // Raw output {{{ }}} — caller's responsibility to ensure the value is
+        // already safe HTML. Note: no @ silencing — undefined vars/notices now
+        // surface (E_NOTICE is filtered globally by View::render).
         $body = preg_replace_callback(
             '/{{{([^}]*)}}}/s',
-            fn(array $m) => '<?php echo @' . trim($m[1]) . ';?>',
+            fn(array $m) => '<?php echo ' . trim($m[1]) . ';?>',
             $body,
         );
 
-        // Vue/Blade skip @{{ }}
+        // Vue/Blade skip @{{ }} — escape the expression text into a marker so
+        // subsequent passes ignore it; parseVarsSkip restores it verbatim.
         $body = preg_replace_callback(
             '/@{{([^}]*)}}/s',
-            fn(array $m) => '{@{@' . htmlentities(trim($m[1])) . '@}@}',
+            fn(array $m) => '{@{@' . htmlspecialchars(trim($m[1]), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8') . '@}@}',
             $body,
         );
 
-        // Escaped output {{ }}
+        // Escaped output {{ }} — htmlspecialchars with ENT_QUOTES is the
+        // OWASP-correct escape for HTML body/attribute context. SUBSTITUTE
+        // keeps invalid UTF-8 sequences from blowing up the output.
         $body = preg_replace_callback(
             '/{{([^}]*)}}/s',
-            fn(array $m) => '<?php echo @htmlentities(' . trim($m[1]) . '); ?>',
+            fn(array $m) => '<?php echo htmlspecialchars((string)(' . trim($m[1]) . ' ?? ""), ENT_QUOTES | ENT_SUBSTITUTE, "UTF-8"); ?>',
             $body,
         );
 
@@ -127,7 +174,7 @@ class Template implements RenderInterface
     {
         return preg_replace_callback(
             '/{@{@([^}]*)@}@}/s',
-            fn(array $m) => '{{ ' . htmlentities(trim($m[1])) . ' }}',
+            fn(array $m) => '{{ ' . htmlspecialchars_decode(trim($m[1]), ENT_QUOTES) . ' }}',
             $body,
         );
     }
@@ -216,41 +263,40 @@ class Template implements RenderInterface
         return $this->processLines($body, "/{{ asset\('(.*)'\) }}/s", fn(string $path) => URL . '/assets/' . $path);
     }
 
-    /** {{ vite() }} -> dev-server HMR tags, or hashed manifest tags in prod. */
+    /**
+     * {{ vite() }} -> a runtime call to Vite::tags(). Deferred (rather than
+     * inlined) so a fresh `npm run build` is picked up without invalidating
+     * the compiled template cache.
+     */
     protected function parseVite(string $body): string
     {
-        return preg_replace_callback(
+        return preg_replace(
             '/{{ vite\(\) }}/',
-            fn(): string => Vite::tags(),
+            '<?php echo \\Silver\\Engine\\Ghost\\Vite::tags(); ?>',
             $body,
         );
     }
 
-    /** {{ viteCss() }} -> JS-free Tailwind stylesheet for server-rendered pages. */
+    /** {{ viteCss() }} -> runtime Vite::cssTags(). Same rationale as parseVite. */
     protected function parseViteCss(string $body): string
     {
-        return preg_replace_callback(
+        return preg_replace(
             '/{{ viteCss\(\) }}/',
-            fn(): string => Vite::cssTags(),
+            '<?php echo \\Silver\\Engine\\Ghost\\Vite::cssTags(); ?>',
             $body,
         );
     }
 
-    /** {{ wisp() }} -> the Inertia root element with the page object baked in. */
+    /**
+     * {{ wisp() }} -> runtime emission of the Inertia root element. The
+     * page object varies per request, so the call is deferred and reads
+     * the `_wisp_page` template data at execute time.
+     */
     protected function parseWisp(string $body): string
     {
-        return preg_replace_callback(
+        return preg_replace(
             '/{{ wisp\(\) }}/',
-            function (): string {
-                $page = $this->data['_wisp_page'] ?? [];
-                $json = htmlspecialchars(
-                    (string) json_encode($page, JSON_UNESCAPED_SLASHES | JSON_UNESCAPED_UNICODE),
-                    ENT_QUOTES,
-                    'UTF-8',
-                );
-
-                return '<div id="app" data-page="' . $json . '"></div>';
-            },
+            '<?php echo \\Silver\\Engine\\Ghost\\Wisp::el($_wisp_page ?? []); ?>',
             $body,
         );
     }
@@ -352,8 +398,8 @@ class Template implements RenderInterface
 
     protected function getRoute(string $routeName, array $vars = []): string
     {
-        $route = Route::getRoute($routeName);
-        return $route->url($vars);
+        $router = app(Route::class);
+        return $router->getRoute($routeName)->url($vars);
     }
 
     /**

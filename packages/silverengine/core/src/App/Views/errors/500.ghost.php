@@ -5,55 +5,55 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <title>{{ $debug ? $class : '500 — Server Error' }}</title>
     <style>
-        /* Self-contained by design: the error page must render even when
-           the app, the asset build or the database is broken — it never
-           depends on Vite/Tailwind. Palette mirrors the slate/rose theme. */
-        :root { color-scheme: dark }
+        /* Self-contained by design: this view must render even when the
+           app, the asset build or the database is broken. Never depends
+           on Vite/Tailwind. Minimal monochrome to match the rest. */
+        :root { color-scheme: light }
         * { box-sizing: border-box }
-        body { margin:0; padding:2.5rem 1.25rem; background:#020617; color:#e2e8f0;
-               font:14px/1.6 ui-sans-serif,system-ui,-apple-system,sans-serif }
-        .wrap { max-width:60rem; margin:0 auto }
-        .center { min-height:80vh; display:flex; flex-direction:column;
-                  align-items:center; justify-content:center; gap:.6rem; text-align:center }
-        .code { font-size:5rem; font-weight:900; color:#3f3f46; margin:0; line-height:1 }
-        .badge { display:inline-block; font:600 11px/1 ui-sans-serif; letter-spacing:.15em;
-                 text-transform:uppercase; color:#fb7185; background:rgba(244,63,94,.12);
-                 border:1px solid rgba(244,63,94,.35); padding:.4rem .6rem;
-                 border-radius:.4rem; margin-bottom:1rem }
-        h1 { color:#fda4af; font-size:1.35rem; margin:0 0 .35rem }
-        .msg { color:#f1f5f9; margin:0 0 .25rem; font-size:1rem }
-        .loc { color:#7dd3fc; font:13px ui-monospace,Menlo,Consolas,monospace; margin-bottom:1.5rem }
-        h2 { font-size:.78rem; text-transform:uppercase; letter-spacing:.12em;
-             color:#a78bfa; margin:1.75rem 0 .5rem }
-        pre { font:13px/1.6 ui-monospace,Menlo,Consolas,monospace; background:#0f172a;
-              border:1px solid #1e293b; padding:1rem; border-radius:.6rem;
-              overflow:auto; margin:0 }
-        table.req { width:100%; border-collapse:collapse; font-size:13px;
-                    background:#0f172a; border:1px solid #1e293b; border-radius:.6rem; overflow:hidden }
-        table.req td { padding:.5rem .75rem; border-top:1px solid #1e293b; vertical-align:top }
-        table.req td:first-child { color:#94a3b8; width:9rem; text-transform:uppercase;
-                                   font-size:11px; letter-spacing:.08em }
+        html, body { margin:0; padding:0 }
+        body { background:#fff; color:#18181b; font:15px/1.55 ui-sans-serif,system-ui,
+               -apple-system,"Segoe UI",Roboto,"Helvetica Neue",Arial,sans-serif;
+               -webkit-font-smoothing:antialiased }
+        .wrap { max-width:54rem; margin:0 auto; padding:4rem 1.5rem 5rem }
+        .eyebrow { font-size:12px; letter-spacing:.12em; text-transform:uppercase; color:#dc2626; margin:0 0 1rem }
+        h1 { font-size:1.8rem; font-weight:500; letter-spacing:-.01em; margin:0 0 .35rem; line-height:1.15 }
+        p.msg { color:#27272a; font-size:1.05rem; margin:0 0 .35rem }
+        .loc { color:#71717a; font:13px ui-monospace,Menlo,Consolas,monospace; margin:0 0 2rem }
+        h2 { font-size:12px; text-transform:uppercase; letter-spacing:.12em; color:#a1a1aa; margin:2rem 0 .6rem; font-weight:600 }
+        pre { font:13px/1.55 ui-monospace,Menlo,Consolas,monospace; background:#fafafa;
+              border:1px solid #e4e4e7; padding:.85rem 1rem; border-radius:4px;
+              overflow:auto; margin:0; color:#27272a }
+        table.req { width:100%; border-collapse:collapse; font-size:13.5px;
+                    background:#fafafa; border:1px solid #e4e4e7; border-radius:4px; overflow:hidden }
+        table.req td { padding:.5rem .85rem; border-top:1px solid #e4e4e7; vertical-align:top }
+        table.req td:first-child { color:#a1a1aa; width:7.5rem; font-size:11.5px;
+                                   text-transform:uppercase; letter-spacing:.08em }
         table.req tr:first-child td { border-top:0 }
-        .frames { background:#0f172a; border:1px solid #1e293b; border-radius:.6rem }
+        .frames { background:#fafafa; border:1px solid #e4e4e7; border-radius:4px }
         .frame { display:flex; justify-content:space-between; gap:1rem;
-                 padding:.55rem .9rem; border-top:1px solid #1e293b; font-size:13px }
+                 padding:.5rem .85rem; border-top:1px solid #e4e4e7; font-size:13px }
         .frame:first-child { border-top:0 }
-        .frame .where { color:#e2e8f0; font:13px ui-monospace,monospace; word-break:break-all }
-        .frame .at { color:#64748b; font:12px ui-monospace,monospace; white-space:nowrap }
-        a.home { margin-top:.75rem; display:inline-block; padding:.55rem 1.25rem;
-                 border-radius:.5rem; background:#4f46e5; color:#fff; text-decoration:none }
-        a.home:hover { background:#6366f1 }
-        .muted { color:#94a3b8; max-width:32rem }
+        .frame .where { color:#27272a; font:13px ui-monospace,monospace; word-break:break-all }
+        .frame .at { color:#a1a1aa; font:12.5px ui-monospace,monospace; white-space:nowrap }
+        /* Production view */
+        .center { min-height:100vh; display:flex; flex-direction:column;
+                  align-items:center; justify-content:center; gap:.75rem; padding:2rem; text-align:center }
+        .code { font-size:5rem; font-weight:600; color:#e4e4e7; margin:0; line-height:1; letter-spacing:-.02em }
+        .center h1 { font-size:1.35rem }
+        .center p { color:#71717a; max-width:24rem; margin:.25rem 0 1.25rem }
+        a.home { font-size:14px; font-weight:500; color:#18181b; text-decoration:none;
+                 border-bottom:1px solid #18181b; padding-bottom:1px }
+        a.home:hover { color:#71717a; border-color:#d4d4d8 }
     </style>
 </head>
 <body>
 
 #if($debug)
     <div class="wrap">
-        <span class="badge">Unhandled exception</span>
+        <p class="eyebrow">Unhandled exception</p>
         <h1>{{ $class }}</h1>
         <p class="msg">{{ $message }}</p>
-        <div class="loc">{{ $file }}:{{ $line }}</div>
+        <p class="loc">{{ $file }}:{{ $line }}</p>
 
         <h2>Request</h2>
         <table class="req">
@@ -89,7 +89,7 @@
     <div class="center">
         <p class="code">500</p>
         <h1>Server error</h1>
-        <p class="muted">Something went wrong on our end. Please try again later.</p>
+        <p>Something went wrong on our end. Please try again later.</p>
         <a class="home" href="/">Back home</a>
     </div>
 #endif

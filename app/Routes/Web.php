@@ -1,19 +1,12 @@
 <?php
 
-/**
- * SilverEngine  - PHP MVC framework
- *
- * @package   SilverEngine
- * @author    SilverEngine Team
- * @copyright 2015-2017
- * @license   MIT
- * @link      https://github.com/SilverEngine/Framework
- */
+declare(strict_types=1);
 
 namespace App\Routes;
 
-use Silver\Core\Route;
+use App\Controllers\WelcomeController;
+use App\Controllers\WispDemoController;
 
-Route::get('/', 'Welcome@welcome', 'home', 'public');
-Route::get('/demo', 'Welcome@demo', 'home', 'public');
-Route::get('/wisp-demo', 'Welcome@wisp', 'wisp.demo', 'public');
+/** @var \Silver\Core\Route $route */
+$route->get('/', WelcomeController::class, 'home', 'public');
+$route->get('/wisp-demo', WispDemoController::class, 'wisp.demo', 'public');
