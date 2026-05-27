@@ -19,7 +19,6 @@ use \PDO;
  */
 abstract class Db
 {
-    private static $global_debug = false;
     private $debug = null;
     private $query = null;
 
@@ -57,7 +56,7 @@ abstract class Db
     /** @param bool $enabled */
     public static function debugMode($enabled = true): void
     {
-        self::$global_debug = $enabled;
+        self::cm()->setDebug((bool) $enabled);
     }
 
     /** @param bool $enabled */
@@ -68,14 +67,16 @@ abstract class Db
         return $this;
     }
 
-    /** @return bool|null */
+    /** @return bool */
     public function isDebug()
     {
-        if (isset($this) && $this instanceof Db && $this->debug !== null) {
-            return $this->debug;
+        // Per-query override wins; falls back to the global flag held on
+        // the ConnectionManager singleton.
+        if ($this->debug !== null) {
+            return (bool) $this->debug;
         }
 
-        return self::$global_debug;
+        return self::cm()->isDebug();
     }
 
     /** @throws \Exception */
@@ -111,11 +112,11 @@ abstract class Db
 
     public static function exec($sql): int|false
     {
-        // FIXME: Log::debug('')
-        if (self::$global_debug) {
+        $cm = self::cm();
+        if ($cm->isDebug()) {
             echo "SQL-EXEC: $sql\n";
         }
-        return self::cm()->exec($sql);
+        return $cm->exec($sql);
     }
 
     /** @param array $bindings */
