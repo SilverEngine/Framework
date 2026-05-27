@@ -47,6 +47,7 @@
         }
         * { box-sizing: border-box }
         html, body { margin: 0; padding: 0 }
+        html { scroll-behavior: smooth }
         body { background: var(--bg); color: var(--fg);
                font: 14px/1.55 ui-sans-serif, system-ui, -apple-system,
                      "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -56,6 +57,31 @@
         .mono { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace }
 
         .wrap { max-width: 76rem; margin: 0 auto; padding: 2rem 1.5rem 4rem }
+
+        /* Top utility bar — quick jump to each section, stays in view */
+        .toc { position: sticky; top: 0; z-index: 10;
+               background: color-mix(in srgb, var(--bg) 92%, transparent);
+               backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
+               border-bottom: 1px solid var(--border-soft);
+               margin: -2rem -1.5rem 0; padding: .65rem 1.5rem }
+        .toc-inner { max-width: 76rem; margin: 0 auto; display: flex;
+                     gap: 1.25rem; align-items: center; font-size: 12px;
+                     overflow-x: auto; white-space: nowrap }
+        .toc .badge { font: 600 10px/1 ui-monospace, monospace;
+                      color: white; background: var(--accent);
+                      padding: .3rem .5rem; border-radius: .25rem;
+                      letter-spacing: .08em }
+        .toc a { color: var(--muted); padding: .1rem 0;
+                 border-bottom: 1px solid transparent;
+                 transition: color .12s, border-color .12s }
+        .toc a:hover { color: var(--fg); border-bottom-color: var(--muted-2);
+                       text-decoration: none }
+        .toc .spacer { flex: 1 }
+        .toc .file-pill { color: var(--muted); font: 11.5px ui-monospace, monospace;
+                          background: var(--card); border: 1px solid var(--border);
+                          padding: .25rem .5rem; border-radius: .25rem;
+                          max-width: 24rem; overflow: hidden;
+                          text-overflow: ellipsis }
 
         /* Header */
         header { display: flex; align-items: flex-start; justify-content: space-between;
@@ -85,13 +111,15 @@
                 background: var(--card); color: var(--muted) }
         .pill b { color: var(--fg); font-weight: 600 }
 
-        /* Sections */
-        section { margin: 2.25rem 0 }
+        /* Sections — generous breathing room, anchorable */
+        section { margin: 2.5rem 0; scroll-margin-top: 4rem }
         h2 { font-size: 11px; text-transform: uppercase; letter-spacing: .15em;
-             color: var(--muted); margin: 0 0 .75rem; font-weight: 600;
-             display: flex; align-items: baseline; justify-content: space-between }
+             color: var(--muted); margin: 0 0 .85rem; font-weight: 600;
+             display: flex; align-items: baseline; justify-content: space-between;
+             gap: 1rem }
         h2 .meta { font-weight: 400; letter-spacing: 0; text-transform: none;
-                   color: var(--muted-2); font-size: 11px }
+                   color: var(--muted-2); font-size: 11.5px; display: inline-flex;
+                   align-items: center; gap: .5rem }
 
         /* Source viewer */
         .src { border: 1px solid var(--border); border-radius: .65rem;
@@ -272,6 +300,8 @@
                    gap: .65rem; align-items: center; padding: .45rem .85rem;
                    border-top: 1px solid var(--border-soft); font-family: ui-monospace, monospace }
         .rec-row:first-child { border-top: 0 }
+        .rec-row:hover { background: var(--code-bg) }
+        .rec-row a { color: inherit; display: contents }
         .rec-row .when    { color: var(--muted-2); font-size: 11px }
         .rec-row .method  { color: var(--muted); font-weight: 600; font-size: 10.5px }
         .rec-row .path    { color: var(--fg); overflow: hidden; text-overflow: ellipsis;
@@ -299,6 +329,25 @@
 
 #if($debug)
     <div class="wrap">
+        <nav class="toc">
+            <div class="toc-inner">
+                <span class="badge">500</span>
+                #if(count($solutions))
+                    <a href="#hints">Suggestions</a>
+                #endif
+                <a href="#source">Source</a>
+                <a href="#stack">Stack</a>
+                <a href="#request">Request</a>
+                #if(count($recordings))
+                    <a href="#recent">Recent</a>
+                #endif
+                <span class="spacer"></span>
+                <span class="file-pill" title="{{ $rel_file ?? $file }}:{{ $line }}">
+                    {{ $rel_file ?? $file }}:{{ $line }}
+                </span>
+            </div>
+        </nav>
+
         <header>
             <div style="min-width:0; flex:1">
                 <span class="err-eyebrow"><span class="pulse"></span>Unhandled exception</span>
@@ -336,7 +385,7 @@
         <textarea id="ai-prompt-source" hidden aria-hidden="true">{{ $ai_prompt }}</textarea>
 
         #if(count($solutions))
-            <section>
+            <section id="hints">
                 <h2>Suggestions</h2>
                 <div class="hints">
                     #foreach($solutions as $hint)
@@ -362,7 +411,7 @@
             </section>
         #endif
 
-        <section>
+        <section id="source">
             <h2>
                 Source
                 <span class="meta">{{ $rel_file ?? $file }} · line {{ $line }}</span>
@@ -407,12 +456,12 @@
             #endif
         </section>
 
-        <section>
+        <section id="stack">
             <h2>
                 Stack trace
                 <span class="meta">
                     {{ count($frames) }} frames
-                    <button class="copy-btn" data-copy-trace style="margin-left:.5rem">copy trace</button>
+                    <button class="copy-btn" data-copy-trace>copy trace</button>
                 </span>
             </h2>
             <input id="show-vendor" type="checkbox">
@@ -452,7 +501,7 @@
             </div>
         </section>
 
-        <section>
+        <section id="request">
             <div class="grid">
                 <div>
                     <h2>Request</h2>
@@ -483,19 +532,21 @@
         </section>
 
         #if(count($recordings))
-            <section>
+            <section id="recent">
                 <h2>
                     Recent requests
                     <span class="meta">last {{ count($recordings) }} via /debug recordings</span>
                 </h2>
                 <div class="recordings">
                     #foreach($recordings as $r)
-                        <div class="rec-row">
-                            <span class="when">{{ $r['at'] }}</span>
-                            <span class="method">{{ $r['method'] }}</span>
-                            <span class="path">{{ $r['path'] }}</span>
-                            <span class="status s{{ (int) ($r['status'] / 100) }}">{{ $r['status'] }}</span>
-                            <span class="ms">{{ $r['total_ms'] }} ms</span>
+                        <div class="rec-row" title="Open in /debug">
+                            <a href="/debug?tab=recordings&id={{ $r['id'] }}">
+                                <span class="when">{{ $r['at'] }}</span>
+                                <span class="method">{{ $r['method'] }}</span>
+                                <span class="path">{{ $r['path'] }}</span>
+                                <span class="status s{{ (int) ($r['status'] / 100) }}">{{ $r['status'] }}</span>
+                                <span class="ms">{{ $r['total_ms'] }} ms</span>
+                            </a>
                         </div>
                     #endforeach
                 </div>
