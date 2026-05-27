@@ -63,7 +63,7 @@
                background: color-mix(in srgb, var(--bg) 92%, transparent);
                backdrop-filter: blur(6px); -webkit-backdrop-filter: blur(6px);
                border-bottom: 1px solid var(--border-soft);
-               margin: -2rem -1.5rem 0; padding: .65rem 1.5rem }
+               margin: -2rem -1.5rem 2.5rem; padding: .65rem 1.5rem }
         .toc-inner { max-width: 76rem; margin: 0 auto; display: flex;
                      gap: 1.25rem; align-items: center; font-size: 12px;
                      overflow-x: auto; white-space: nowrap }
