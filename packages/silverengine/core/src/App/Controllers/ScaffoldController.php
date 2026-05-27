@@ -7,6 +7,7 @@ use Silver\Core\Controller;
 use Silver\Core\Env;
 use Silver\Exception\NotFoundException;
 use Silver\Http\Request;
+use Silver\Http\Response;
 use Silver\Support\Scaffolder;
 
 /**
@@ -16,7 +17,7 @@ use Silver\Support\Scaffolder;
  */
 final class ScaffoldController extends Controller
 {
-    public function __invoke(Request $request): mixed
+    public function __invoke(Request $request, Response $response): mixed
     {
         if (Env::name() !== 'local' || !Env::get('debug')) {
             throw new NotFoundException('Not found.');
@@ -33,7 +34,7 @@ final class ScaffoldController extends Controller
         $url    = (string) $request->input('url');
 
         if ($name === '' && $url === '') {
-            return $this->json(['ok' => false, 'error' => 'name is required'], 422);
+            return $response->json(['ok' => false, 'error' => 'name is required'], 422);
         }
 
         try {
@@ -45,34 +46,28 @@ final class ScaffoldController extends Controller
                 } else {
                     $scaffolder->remove($type, $name);
                 }
-                header('Location: /');
-                http_response_code(303);
-                return '';
+                return $this->redirect($response, '/');
             }
 
             // Legacy URL-based scaffold (404 page flow).
             if ($type === 'page' && $url !== '' && $name !== '') {
                 $result = $scaffolder->scaffold($url, $name);
-                header('Location: ' . $result['url']);
-                http_response_code(303);
-                return '';
+                return $this->redirect($response, $result['url']);
             }
 
             $result = $scaffolder->create($type, $name);
         } catch (\Throwable $e) {
-            return $this->json(['ok' => false, 'error' => $e->getMessage()], 422);
+            return $response->json(['ok' => false, 'error' => $e->getMessage()], 422);
         }
 
         // For page: jump to the new page. For class types: back home.
-        header('Location: ' . ($result['url'] ?? '/'));
-        http_response_code(303);
-        return '';
+        return $this->redirect($response, $result['url'] ?? '/');
     }
 
-    private function json(array $body, int $status): string
+    private function redirect(Response $response, string $location): string
     {
-        http_response_code($status);
-        header('Content-Type: application/json');
-        return (string) json_encode($body, JSON_UNESCAPED_SLASHES);
+        $response->setCode(303);
+        $response->setHeader('Location', $location);
+        return '';
     }
 }

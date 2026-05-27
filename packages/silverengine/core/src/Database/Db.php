@@ -231,7 +231,7 @@ abstract class Db
     {
         if (is_object($style)) {
             $this->selectForModel(get_class($style));
-        } else if (is_string($style) && class_exists($style)) {
+        } else if (is_class($style)) {
             $this->selectForModel($style);
         }
     }
@@ -242,7 +242,7 @@ abstract class Db
             $this->query->setFetchMode(PDO::FETCH_ASSOC);
         } else if (is_object($style)) {
             $this->query->setFetchMode(PDO::FETCH_INTO, $style);
-        } else if (is_string($style) && class_exists($style)) {
+        } else if (is_class($style)) {
             $this->query->setFetchMode(PDO::FETCH_CLASS, $style);
         } else if(is_string($style)) {
             $this->query->setFetchMode(PDO::FETCH_ASSOC);
@@ -265,7 +265,7 @@ abstract class Db
             return $r;
         } else if (is_object($style)) {
             return $style;
-        } else if (is_string($style) && class_exists($style)) {
+        } else if (is_class($style)) {
             return $result;
         } else if (is_string($style)) {
             return $result[$style];
@@ -282,7 +282,7 @@ abstract class Db
             $this->execute(true);
         }
 
-        if (is_string($pdo_fetch_style) && class_exists($pdo_fetch_style)) {
+        if (is_class($pdo_fetch_style)) {
             $this->query->setFetchMode(PDO::FETCH_CLASS, $pdo_fetch_style);
         } else {
             $this->query->setFetchMode($pdo_fetch_style);
@@ -296,7 +296,7 @@ abstract class Db
     {
         $this->execute(true);
 
-        if (is_string($pdo_fetch_style) && class_exists($pdo_fetch_style)) {
+        if (is_class($pdo_fetch_style)) {
             $this->query->setFetchMode(PDO::FETCH_CLASS, $pdo_fetch_style);
         } else {
             $this->query->setFetchMode($pdo_fetch_style);

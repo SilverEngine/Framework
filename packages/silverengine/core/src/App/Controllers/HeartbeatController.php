@@ -30,16 +30,15 @@ final class HeartbeatController extends Controller
     {
         $report = (new Heartbeat())->run();
         $code = $report['status'] === 'down' ? 503 : 200;
-        $response->setCode($code);
         $response->setHeader('Cache-Control', 'no-store');
 
         if ($this->wantsHtml($request)) {
+            $response->setCode($code);
             $response->setHeader('Content-Type', 'text/html; charset=utf-8');
             return $this->renderView($report);
         }
 
-        $response->setHeader('Content-Type', 'application/json; charset=utf-8');
-        return (string) json_encode($report, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
+        return $response->json($report, $code, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
     private function wantsHtml(Request $request): bool

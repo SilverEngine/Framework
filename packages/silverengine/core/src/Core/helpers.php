@@ -19,3 +19,16 @@ if (!function_exists('env')) {
         };
     }
 }
+
+if (!function_exists('is_class')) {
+    /**
+     * True when `$value` is a string naming an existing (autoloadable)
+     * class. Centralises the `is_string($x) && class_exists($x)` idiom
+     * that shows up everywhere config-driven class names are validated
+     * (middleware lists, fetch-style hints, provider configs, etc.).
+     */
+    function is_class(mixed $value): bool
+    {
+        return is_string($value) && class_exists($value);
+    }
+}

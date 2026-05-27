@@ -4,8 +4,8 @@ namespace Tests\Unit\Framework\Core;
 
 use PHPUnit\Framework\TestCase;
 use Silver\Core\App;
+use Silver\Core\Container;
 use Silver\Core\DI;
-use Silver\Core\Instances;
 use Silver\Support\Facade;
 
 class CcDep
@@ -38,7 +38,7 @@ class ContainerContractTest extends TestCase
 {
     public function testInstancesRegisterGetAndDuplicateThrow(): void
     {
-        $i = new Instances();
+        $i = new Container();
         $dep = new CcDep();
 
         $this->assertSame($dep, $i->register($dep));
@@ -52,7 +52,7 @@ class ContainerContractTest extends TestCase
 
     public function testInstancesForceOverwriteAndNamed(): void
     {
-        $i = new Instances();
+        $i = new Container();
         $a = new CcDep();
         $b = new CcDep();
 

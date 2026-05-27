@@ -22,17 +22,6 @@ class Response implements ResponseInterface
         $this->headers[$key] = $value;
     }
 
-    public function json(string $payload): mixed
-    {
-        header('Content-type: Application/json');
-        return json_decode($payload);
-    }
-
-    public function xml(string $data): string
-    {
-        return " $data ";
-    }
-
     public function getHeader(string $key, mixed $default = null): mixed
     {
         return $this->headers[$key] ?? $default;
@@ -51,6 +40,29 @@ class Response implements ResponseInterface
     public function setCookie(string $name, string $value, int $expiration): void
     {
         $this->cookies[$name] = [$value, $expiration];
+    }
+
+    /**
+     * Configure the response as JSON and return the encoded body.
+     *
+     * Centralises the three-step ritual (set code → set Content-Type →
+     * json_encode) so controllers don't each re-derive it. The encoded
+     * string is returned so callers can `return $response->json(...)`
+     * directly from `__invoke()`. Already-encoded strings pass through
+     * verbatim — letting controllers hand-craft pretty JSON without it
+     * getting double-encoded.
+     *
+     * @param int $flags  json_encode flags (defaults match what every
+     *                    existing call site was already using)
+     */
+    public function json(
+        mixed $body,
+        int $code = 200,
+        int $flags = JSON_UNESCAPED_SLASHES,
+    ): string {
+        $this->setCode($code);
+        $this->setHeader('Content-Type', 'application/json; charset=utf-8');
+        return is_string($body) ? $body : (string) json_encode($body, $flags);
     }
 
     public function setBody(mixed $body): void
