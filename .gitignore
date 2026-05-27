@@ -13,4 +13,5 @@ storage/cache/
 .vscode
 docs/
 .claude/
+.playwright-mcp/
 CLAUDE.md
