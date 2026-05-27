@@ -71,14 +71,4 @@ final class Validator
             ? "$key does not match KEY"
             : false;
     }
-
-    private static function checkExist(mixed $value, string $model): string|false
-    {
-        return false;
-    }
-
-    private static function checkUnique(mixed $value): string|false
-    {
-        return false;
-    }
 }
