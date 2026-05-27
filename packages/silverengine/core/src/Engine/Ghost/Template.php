@@ -140,9 +140,17 @@ class Template implements RenderInterface
 
     private function parseVars(string $body): string
     {
-        // Raw output {{{ }}} — caller's responsibility to ensure the value is
-        // already safe HTML. Note: no @ silencing — undefined vars/notices now
-        // surface (E_NOTICE is filtered globally by View::render).
+        // Raw output, Laravel-style: {!! $html !!} — emits the expression
+        // verbatim, caller is responsible for safety. Run BEFORE {{{ }}}
+        // and {{ }} so the `!!` markers can't be misread as braces.
+        $body = preg_replace_callback(
+            '/{!!\s*(.+?)\s*!!}/s',
+            fn(array $m) => '<?php echo ' . trim($m[1]) . ';?>',
+            $body,
+        );
+
+        // Raw output, Mustache-style: {{{ $html }}} — identical semantics
+        // to {!! !!}, kept for backwards compatibility.
         $body = preg_replace_callback(
             '/{{{([^}]*)}}}/s',
             fn(array $m) => '<?php echo ' . trim($m[1]) . ';?>',

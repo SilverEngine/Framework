@@ -81,11 +81,12 @@ final class ErrorHandler
     }
 
     /**
-     * Lines around a file:line position. Returns a list of
-     * [n, text, isHit] tuples so the view can lay them out as a table
-     * with the error line highlighted instead of receiving a flat blob.
+     * Lines around a file:line position. Each row carries both the raw
+     * line text and a syntax-highlighted HTML rendering of it (for PHP
+     * sources). The view consumes `html` via `{!! !!}` for the hit line
+     * and surrounding context.
      *
-     * @return list<array{n:int,text:string,hit:bool}>
+     * @return list<array{n:int,text:string,html:string,hit:bool}>
      */
     private function codeAroundLines(string $file, int $line, int $pad = 10): array
     {
@@ -98,9 +99,254 @@ final class ErrorHandler
         }
         $start = max(0, $line - 1 - $pad);
         $end   = min(count($lines) - 1, $line - 1 + $pad);
-        $out   = [];
+        return $this->buildSourceRows($lines, $start, $end, $line, $file);
+    }
+
+    /**
+     * Full file (capped at MAX_FULL_LINES) as the same row shape as
+     * {@see codeAroundLines()} — used by the "view full file" disclosure
+     * in the error page. Large files (vendor blobs, generated classes)
+     * are truncated so the page stays renderable.
+     *
+     * @return array{rows:list<array<string,mixed>>,total:int,truncated:bool}
+     */
+    private const MAX_FULL_LINES = 1000;
+
+    private function codeFullFile(string $file, int $line): array
+    {
+        if (!is_file($file) || !is_readable($file)) {
+            return ['rows' => [], 'total' => 0, 'truncated' => false];
+        }
+        $lines = @file($file, FILE_IGNORE_NEW_LINES);
+        if ($lines === false) {
+            return ['rows' => [], 'total' => 0, 'truncated' => false];
+        }
+        $total = count($lines);
+        $end = min($total - 1, self::MAX_FULL_LINES - 1);
+        return [
+            'rows'      => $this->buildSourceRows($lines, 0, $end, $line, $file),
+            'total'     => $total,
+            'truncated' => $total > self::MAX_FULL_LINES,
+        ];
+    }
+
+    /**
+     * Shared builder behind codeAroundLines + codeFullFile. Tokenises
+     * the source once and emits per-line rows for the requested range.
+     *
+     * @param  list<string> $lines
+     * @return list<array{n:int,text:string,html:string,hit:bool}>
+     */
+    private function buildSourceRows(array $lines, int $start, int $end, int $hitLine, string $file): array
+    {
+        $isPhp = str_ends_with(strtolower($file), '.php');
+        $highlightedLines = $isPhp ? $this->highlightPhpByLine($lines) : null;
+
+        $out = [];
         for ($i = $start; $i <= $end; $i++) {
-            $out[] = ['n' => $i + 1, 'text' => $lines[$i], 'hit' => ($i + 1) === $line];
+            $raw = $lines[$i] ?? '';
+            $out[] = [
+                'n'    => $i + 1,
+                'text' => $raw,
+                'html' => $highlightedLines[$i] ?? htmlspecialchars($raw, ENT_QUOTES | ENT_SUBSTITUTE),
+                'hit'  => ($i + 1) === $hitLine,
+            ];
+        }
+        return $out;
+    }
+
+    /**
+     * Tokenise a PHP source file (line array) and return per-line HTML
+     * with tokens wrapped in <span class="t-XYZ"> spans. Uses native
+     * `token_get_all` — no external dependency, opcache-friendly.
+     *
+     * @param  list<string> $lines source split by lines (without \n)
+     * @return list<string> per-line HTML
+     */
+    private function highlightPhpByLine(array $lines): array
+    {
+        // Reconstruct with explicit \n so token offsets line up.
+        $src = implode("\n", $lines);
+
+        try {
+            $tokens = @token_get_all($src);
+        } catch (\Throwable) {
+            // Tokenisation can throw on broken PHP — fall back to
+            // plain-text rendering rather than masking the real error.
+            return array_map(
+                static fn (string $l): string => htmlspecialchars($l, ENT_QUOTES | ENT_SUBSTITUTE),
+                $lines,
+            );
+        }
+
+        $html = '';
+        foreach ($tokens as $tok) {
+            if (is_array($tok)) {
+                [$id, $text] = $tok;
+                $cls = self::tokenClass($id, $text);
+                $esc = htmlspecialchars($text, ENT_QUOTES | ENT_SUBSTITUTE);
+                $html .= $cls !== ''
+                    ? '<span class="t-' . $cls . '">' . $esc . '</span>'
+                    : $esc;
+            } else {
+                // Punctuation: ( ) { } ; , . etc.
+                $html .= '<span class="t-pun">' . htmlspecialchars($tok, ENT_QUOTES) . '</span>';
+            }
+        }
+
+        // Split the reconstructed highlighted source back to lines.
+        return explode("\n", $html);
+    }
+
+    /** Map a PHP token id to a short CSS class suffix (used as `t-XYZ`). */
+    private static function tokenClass(int $id, string $text): string
+    {
+        // Keywords + structural — sorted by frequency.
+        static $keyword = null;
+        if ($keyword === null) {
+            $keyword = array_flip([
+                T_FUNCTION, T_CLASS, T_INTERFACE, T_TRAIT, T_ENUM, T_NAMESPACE,
+                T_USE, T_NEW, T_RETURN, T_IF, T_ELSE, T_ELSEIF, T_FOR, T_FOREACH,
+                T_WHILE, T_DO, T_SWITCH, T_CASE, T_DEFAULT, T_BREAK, T_CONTINUE,
+                T_TRY, T_CATCH, T_FINALLY, T_THROW, T_PUBLIC, T_PRIVATE, T_PROTECTED,
+                T_STATIC, T_ABSTRACT, T_FINAL, T_READONLY, T_CONST, T_ECHO, T_PRINT,
+                T_INSTANCEOF, T_INSTEADOF, T_AS, T_EXTENDS, T_IMPLEMENTS, T_FN,
+                T_MATCH, T_YIELD, T_GLOBAL, T_REQUIRE, T_REQUIRE_ONCE,
+                T_INCLUDE, T_INCLUDE_ONCE, T_DECLARE, T_ENDDECLARE,
+            ]);
+        }
+        if (isset($keyword[$id]))                          return 'kw';
+        if ($id === T_VARIABLE)                            return 'var';
+        if ($id === T_CONSTANT_ENCAPSED_STRING)            return 'str';
+        if ($id === T_ENCAPSED_AND_WHITESPACE)             return 'str';
+        if ($id === T_INLINE_HTML)                         return 'html';
+        if ($id === T_COMMENT)                             return 'cm';
+        if ($id === T_DOC_COMMENT)                         return 'doc';
+        if ($id === T_LNUMBER || $id === T_DNUMBER)        return 'num';
+        if ($id === T_OPEN_TAG || $id === T_CLOSE_TAG)     return 'tag';
+        if ($id === T_STRING)                              return 'id';
+        if ($id === T_NAME_FULLY_QUALIFIED
+            || $id === T_NAME_QUALIFIED
+            || $id === T_NAME_RELATIVE)                    return 'id';
+        if ($id === T_WHITESPACE)                          return '';
+        return '';
+    }
+
+    /**
+     * Pattern-matched hint for the user. Returns a list of [title, body]
+     * suggestions for common exception classes / message patterns —
+     * 'Class not found' suggests dump-autoload, ParseError points at the
+     * line, PDOException prompts a DB-config check. Empty list when we
+     * don't recognise the shape.
+     *
+     * @return list<array{title:string,body:string}>
+     */
+    private function suggestSolutions(\Throwable $e): array
+    {
+        $class   = $e::class;
+        $message = $e->getMessage();
+        $hints   = [];
+
+        if ($e instanceof \ParseError) {
+            $hints[] = [
+                'title' => 'PHP parse error',
+                'body'  => 'The interpreter could not parse '
+                    . basename($e->getFile()) . '. The arrow below points at the offending token; '
+                    . 'check the line above for an unbalanced bracket, missing semicolon, or stray character.',
+            ];
+        }
+
+        if ($e instanceof \TypeError) {
+            $hints[] = [
+                'title' => 'Type mismatch',
+                'body'  => 'A value reached a typed declaration that disagreed with it. '
+                    . 'Look at the call site immediately below the throw line — the argument '
+                    . 'or return value there is what disagrees with the type hint.',
+            ];
+        }
+
+        if ($e instanceof \Error && str_contains($message, 'Class ') && str_contains($message, ' not found')) {
+            $hints[] = [
+                'title' => 'Class autoload failure',
+                'body'  => 'PHP could not autoload that class. Common causes: '
+                    . 'the file is namespaced wrong, the case-sensitive filename does not match the class, '
+                    . 'or the composer classmap is stale — try <code>composer dump-autoload -o</code>.',
+            ];
+        }
+
+        if ($e instanceof \PDOException || str_contains($message, 'SQLSTATE')) {
+            $hints[] = [
+                'title' => 'Database error',
+                'body'  => 'A PDO statement failed. Check <code>.env</code> for the right DB_* values, '
+                    . 'verify the connection at <a href="/heartbeat">/heartbeat</a>, and confirm the '
+                    . 'migration that owns this table has been run.',
+            ];
+        }
+
+        if ($e instanceof \Silver\Exception\NotFoundException
+            || str_contains($message, 'Route for')
+            || str_contains($message, 'Controller not found')) {
+            $hints[] = [
+                'title' => 'Route or controller not found',
+                'body'  => 'No route matches the URL, or the controller class could not be resolved. '
+                    . 'Check <code>app/Routes/Web.php</code>, then run <code>php silver optimize:clear</code> '
+                    . 'if the route was added recently.',
+            ];
+        }
+
+        if (str_contains($message, 'undefined function') || str_contains($message, 'Call to undefined function')) {
+            $hints[] = [
+                'title' => 'Undefined function',
+                'body'  => 'PHP could not resolve a global function call. Check the namespace, '
+                    . 'the spelling, and whether the function lives in a file that is autoloaded.',
+            ];
+        }
+
+        if (str_contains($message, 'unable to open database file')) {
+            $hints[] = [
+                'title' => 'SQLite path mismatch',
+                'body'  => 'SQLite could not open the file at <code>DB_DATABASE</code>. The directory '
+                    . 'may not exist, or the case in the path does not match the actual filesystem '
+                    . '(Linux is case-sensitive).',
+            ];
+        }
+
+        return $hints;
+    }
+
+    /**
+     * Last N recordings from `storage/debug/recordings/` for the
+     * 'recent requests' panel — file paths sorted by mtime (newest
+     * first). Each entry: id, at, method, path, status, total_ms.
+     *
+     * @return list<array<string,mixed>>
+     */
+    private function recentRecordings(int $limit = 5): array
+    {
+        $dir = (defined('ROOT') ? \ROOT : '') . 'storage/debug/recordings';
+        if (!is_dir($dir)) {
+            return [];
+        }
+        $files = glob($dir . '/*.json') ?: [];
+        if ($files === []) {
+            return [];
+        }
+        // Filenames start with epoch_ms — sortable lexicographically.
+        rsort($files);
+        $out = [];
+        foreach (array_slice($files, 0, $limit) as $path) {
+            $raw = @file_get_contents($path);
+            if ($raw === false) continue;
+            $data = json_decode($raw, true);
+            if (!is_array($data)) continue;
+            $out[] = [
+                'id'       => (string) ($data['id'] ?? ''),
+                'at'       => (string) ($data['at'] ?? ''),
+                'method'   => (string) ($data['method'] ?? '—'),
+                'path'     => (string) ($data['path'] ?? '—'),
+                'status'   => (int)    ($data['status'] ?? 0),
+                'total_ms' => round((float) ($data['total_ms'] ?? 0), 2),
+            ];
         }
         return $out;
     }
@@ -201,6 +447,69 @@ final class ErrorHandler
             ];
         }
         return $frames;
+    }
+
+    /**
+     * Build a single plain-text block summarising the error in a form
+     * an LLM (ChatGPT / Claude / etc.) can answer questions about. The
+     * "Copy AI prompt" button in the error page copies this verbatim so
+     * the user just has to paste and ask.
+     *
+     * Includes the exception class + message, the surrounding source
+     * lines with the hit row arrow-pointed, the app-side stack frames
+     * (vendor + internal noise stripped for signal), and the env block.
+     */
+    private function aiPrompt(\Throwable $e, string $relFile): string
+    {
+        $lines = [];
+        $lines[] = "Help me debug this PHP error. What's wrong and how do I fix it?";
+        $lines[] = '';
+        $lines[] = '## Error';
+        $lines[] = $e::class . ': ' . $e->getMessage();
+        $lines[] = 'at ' . $relFile . ':' . $e->getLine();
+
+        // Source snippet around the hit — keep it tight (5 either side)
+        // so the prompt stays compact.
+        $snippet = $this->codeAroundLines($e->getFile(), (int) $e->getLine(), 5);
+        if ($snippet !== []) {
+            $lines[] = '';
+            $lines[] = '## Source';
+            $lines[] = '```php';
+            foreach ($snippet as $row) {
+                $arrow  = $row['hit'] ? '> ' : '  ';
+                $lines[] = $arrow . str_pad((string) $row['n'], 4, ' ', STR_PAD_LEFT)
+                    . ' | ' . $row['text'];
+            }
+            $lines[] = '```';
+        }
+
+        // App + framework frames only — the LLM doesn't need 12 frames
+        // of Composer\ClassLoader noise.
+        $appFrames = array_values(array_filter(
+            $this->normalizeFrames($e),
+            static fn (array $f): bool =>
+                ($f['kind'] ?? '') === 'app' || ($f['kind'] ?? '') === 'framework',
+        ));
+        if ($appFrames !== []) {
+            $lines[] = '';
+            $lines[] = '## Stack (app + framework only)';
+            foreach (array_slice($appFrames, 0, 12) as $f) {
+                $lines[] = sprintf(
+                    '- %s   at %s%s',
+                    $f['where'],
+                    $f['rel'],
+                    $f['line'] !== '' ? ':' . $f['line'] : '',
+                );
+            }
+        }
+
+        $lines[] = '';
+        $lines[] = '## Environment';
+        $lines[] = 'PHP ' . PHP_VERSION
+            . ', env=' . \Silver\Core\Env::name()
+            . ', debug=' . ((bool) \Silver\Core\Env::get('debug') ? 'on' : 'off');
+
+        return implode("\n", $lines);
     }
 
     /**
@@ -324,6 +633,7 @@ final class ErrorHandler
                             ? substr($e->getFile(), strlen(\ROOT)) : $e->getFile())
                         ->with('line', $e->getLine())
                         ->with('source', $this->codeAroundLines($e->getFile(), (int) $e->getLine(), 10))
+                        ->with('full_source', $this->codeFullFile($e->getFile(), (int) $e->getLine()))
                         ->with('source_ide', $this->ideLink($e->getFile(), (int) $e->getLine()))
                         ->with('frames', $this->normalizeFrames($orig))
                         ->with('previous', $this->previousChain($orig))
@@ -336,6 +646,14 @@ final class ErrorHandler
                                 && @opcache_get_status(false)['opcache_enabled'] === true,
                             'mem_peak' => round(memory_get_peak_usage(true) / 1048576, 2),
                         ])
+                        ->with('solutions', $this->suggestSolutions($orig))
+                        ->with('recordings', $this->recentRecordings(5))
+                        ->with('ai_prompt', $this->aiPrompt(
+                            $orig,
+                            defined('ROOT') && str_starts_with($e->getFile(), \ROOT)
+                                ? substr($e->getFile(), strlen(\ROOT))
+                                : $e->getFile(),
+                        ))
                         ->with('debug', $this->isDebug());
                 }
 
