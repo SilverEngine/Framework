@@ -139,9 +139,15 @@
                         column-gap: 0; padding: 0; border-left: 3px solid transparent }
         .src-lines li .n { color: var(--muted-2); text-align: right;
                            padding: .05rem .85rem .05rem 0; user-select: none;
-                           font-size: 12px }
+                           font-size: 12px;
+                           /* Stay put when the .c content scrolls horizontally */
+                           position: sticky; left: 0;
+                           background: var(--code-bg) }
         .src-lines li .c { padding: .05rem .85rem;
-                           white-space: pre; overflow-x: auto; color: var(--fg) }
+                           white-space: pre; color: var(--fg) }
+        /* Single horizontal scrollbar for the whole block instead of one per
+           line — the parent scrolls, the sticky number stays in place. */
+        .src-lines { overflow-x: auto }
         .src-lines li.hit { background: var(--hit-bg); border-left-color: var(--hit-rail) }
         .src-lines li.hit .n { color: var(--accent); font-weight: 600 }
         .src-lines li.hit .c { color: var(--fg) }
@@ -201,10 +207,24 @@
         table.kv td:first-child { color: var(--muted); width: 8rem; font-size: 11px;
                                   text-transform: uppercase; letter-spacing: .08em }
 
-        /* Previous exception chain */
+        /* Previous exception chain — visual guide line down the left edge */
+        .chain { position: relative; padding-left: 1.25rem }
+        .chain::before {
+            content: ''; position: absolute; left: .35rem; top: .6rem; bottom: .6rem;
+            width: 1px; background: linear-gradient(to bottom,
+                var(--accent) 0%, color-mix(in srgb, var(--accent) 30%, transparent) 100%);
+        }
         .prev { padding: .65rem .85rem; border: 1px solid var(--border);
-                background: var(--card); border-radius: .5rem; margin-bottom: .35rem;
-                font-size: 13px }
+                background: var(--card); border-radius: .5rem; margin-bottom: .5rem;
+                font-size: 13px; position: relative }
+        .prev::before {
+            content: ''; position: absolute; left: -1.2rem; top: 1rem;
+            width: .9rem; height: 1px; background: var(--accent); opacity: .6;
+        }
+        .prev::after {
+            content: ''; position: absolute; left: -.55rem; top: .85rem;
+            width: .35rem; height: .35rem; border-radius: 50%; background: var(--accent);
+        }
         .prev .pclass { font-weight: 600; color: var(--accent) }
         .prev .pmsg { color: var(--fg); margin-top: .1rem }
         .prev .ploc { color: var(--muted); font: 12px ui-monospace, monospace;
@@ -311,6 +331,29 @@
         .rec-row .status.s4 { color: #f59e0b } .rec-row .status.s5 { color: #dc2626 }
         .rec-row .ms      { color: var(--muted-2); font-size: 11px; text-align: right }
 
+        /* Active TOC link (driven by the scroll-spy script below) */
+        .toc a.active { color: var(--fg); border-bottom-color: var(--accent) }
+
+        /* Mobile / narrow */
+        @media (max-width: 720px) {
+            .wrap { padding: 1.5rem 1rem 3rem }
+            .toc { margin-left: -1rem; margin-right: -1rem; padding: .55rem 1rem }
+            .toc-inner { gap: .85rem; font-size: 12.5px }
+            .toc .file-pill { display: none }   /* path repeats in the header */
+
+            header { flex-direction: column; gap: 1rem;
+                     padding-bottom: 1.25rem; margin-bottom: 1.25rem }
+            .meta-pills { max-width: none; justify-content: flex-start }
+            h1.err-class { font-size: 1.4rem }
+            .action-row { gap: .3rem }
+            .copy-btn { padding: .4rem .55rem; font-size: 11.5px }
+
+            /* Stack frames: drop the wide grid in favour of a stack */
+            .trace summary { grid-template-columns: auto 1fr; row-gap: .25rem }
+            .trace summary .at { grid-column: 1 / -1; text-align: left;
+                                 padding-left: 5rem }
+        }
+
         /* Production view */
         .center { min-height: 100vh; display: flex; flex-direction: column;
                   align-items: center; justify-content: center; gap: .75rem;
@@ -329,17 +372,17 @@
 
 #if($debug)
     <div class="wrap">
-        <nav class="toc">
+        <nav class="toc" aria-label="Error page sections">
             <div class="toc-inner">
-                <span class="badge">500</span>
+                <span class="badge" aria-hidden="true">500</span>
                 #if(count($solutions))
-                    <a href="#hints">Suggestions</a>
+                    <a href="#hints" data-section="hints">Suggestions</a>
                 #endif
-                <a href="#source">Source</a>
-                <a href="#stack">Stack</a>
-                <a href="#request">Request</a>
+                <a href="#source" data-section="source">Source</a>
+                <a href="#stack"  data-section="stack">Stack</a>
+                <a href="#request" data-section="request">Request</a>
                 #if(count($recordings))
-                    <a href="#recent">Recent</a>
+                    <a href="#recent" data-section="recent">Recent</a>
                 #endif
                 <span class="spacer"></span>
                 <span class="file-pill" title="{{ $rel_file ?? $file }}:{{ $line }}">
@@ -401,13 +444,15 @@
         #if(count($previous))
             <section>
                 <h2>Caused by</h2>
-                #foreach($previous as $p)
-                    <div class="prev">
-                        <span class="pclass">{{ $p['class'] }}</span>
-                        <div class="pmsg">{{ $p['message'] }}</div>
-                        <div class="ploc">{{ $p['file'] }}:{{ $p['line'] }}</div>
-                    </div>
-                #endforeach
+                <div class="chain">
+                    #foreach($previous as $p)
+                        <div class="prev">
+                            <span class="pclass">{{ $p['class'] }}</span>
+                            <div class="pmsg">{{ $p['message'] }}</div>
+                            <div class="ploc">{{ $p['file'] }}:{{ $p['line'] }}</div>
+                        </div>
+                    #endforeach
+                </div>
             </section>
         #endif
 
@@ -426,7 +471,7 @@
                 <ol class="src-lines">
                     #foreach($source as $row)
                         <li class="{{ $row['hit'] ? 'hit' : '' }}">
-                            <span class="n">{{ $row['n'] }}</span><span class="c">{!! $row['html'] !!}</span>
+                            <span class="n" aria-hidden="true">{{ $row['n'] }}</span><span class="c">{!! $row['html'] !!}</span>
                         </li>
                     #endforeach
                 </ol>
@@ -447,7 +492,7 @@
                         <ol class="src-lines">
                             #foreach($full_source['rows'] as $row)
                                 <li id="L{{ $row['n'] }}" class="{{ $row['hit'] ? 'hit' : '' }}">
-                                    <span class="n">{{ $row['n'] }}</span><span class="c">{!! $row['html'] !!}</span>
+                                    <span class="n" aria-hidden="true">{{ $row['n'] }}</span><span class="c">{!! $row['html'] !!}</span>
                                 </li>
                             #endforeach
                         </ol>
@@ -467,7 +512,7 @@
             <input id="show-vendor" type="checkbox">
             <div class="trace">
                 #foreach($frames as $f)
-                    <details class="kind-{{ $f['kind'] }}">
+                    <details class="kind-{{ $f['kind'] }}" {{ $f['is_first_app'] ? 'open' : '' }}>
                         <summary>
                             <span class="kind {{ $f['kind'] }}">{{ $f['kind'] }}</span>
                             <span class="where">{{ $f['where'] }}</span>
@@ -484,7 +529,7 @@
                                 <ol class="src-lines">
                                     #foreach($f['snippet'] as $row)
                                         <li class="{{ $row['hit'] ? 'hit' : '' }}">
-                                            <span class="n">{{ $row['n'] }}</span><span class="c">{!! $row['html'] !!}</span>
+                                            <span class="n" aria-hidden="true">{{ $row['n'] }}</span><span class="c">{!! $row['html'] !!}</span>
                                         </li>
                                     #endforeach
                                 </ol>
@@ -540,7 +585,7 @@
                 <div class="recordings">
                     #foreach($recordings as $r)
                         <div class="rec-row" title="Open in /debug">
-                            <a href="/debug?tab=recordings&id={{ $r['id'] }}">
+                            <a href="/debug?tab=recordings#{{ $r['id'] }}" title="Open the recordings tab">
                                 <span class="when">{{ $r['at'] }}</span>
                                 <span class="method">{{ $r['method'] }}</span>
                                 <span class="path">{{ $r['path'] }}</span>
@@ -555,6 +600,31 @@
     </div>
 
     <script>
+    // Scroll-spy: highlight the TOC link whose section is currently in
+    // view. CSS-only :target only handles clicks, not freeform scroll —
+    // hence this ~15 lines of IntersectionObserver. Page works fine if
+    // the script never runs.
+    (function () {
+        var links = document.querySelectorAll('.toc a[data-section]');
+        if (!links.length || typeof IntersectionObserver !== 'function') return;
+        var map = {};
+        links.forEach(function (a) { map[a.dataset.section] = a; });
+        var io = new IntersectionObserver(function (entries) {
+            entries.forEach(function (e) {
+                var link = map[e.target.id];
+                if (!link) return;
+                if (e.isIntersecting) {
+                    links.forEach(function (a) { a.classList.remove('active'); });
+                    link.classList.add('active');
+                }
+            });
+        }, { rootMargin: '-40% 0px -55% 0px', threshold: 0 });
+        Object.keys(map).forEach(function (id) {
+            var s = document.getElementById(id);
+            if (s) io.observe(s);
+        });
+    })();
+
     // Minimal, dependency-free clipboard. Page renders fine without it.
     document.addEventListener('click', function (e) {
         var btn = e.target.closest('.copy-btn');

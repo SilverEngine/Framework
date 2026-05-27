@@ -425,23 +425,34 @@ final class ErrorHandler
     {
         $root = defined('ROOT') ? \ROOT : '';
         $frames = [];
+        $firstAppMarked = false;
         foreach ($e->getTrace() as $f) {
             $where = ($f['class'] ?? '') . ($f['type'] ?? '') . ($f['function'] ?? '') . '()';
             $file  = $f['file'] ?? '[internal]';
             $line  = $f['line'] ?? '';
             $rel   = $root !== '' && is_string($file) && str_starts_with($file, $root)
                 ? substr($file, strlen($root)) : $file;
+            $kind  = $this->frameKind($file);
+
+            // The first app-kind frame gets auto-opened by the view —
+            // it's almost always what the dev wants to see first.
+            $isFirstApp = false;
+            if (!$firstAppMarked && $kind === 'app') {
+                $isFirstApp     = true;
+                $firstAppMarked = true;
+            }
 
             $frames[] = [
-                'where'   => $where === '()' ? '{main}' : $where,
-                'file'    => $file,
-                'rel'     => $rel,
-                'line'    => $line,
-                'kind'    => $this->frameKind($file),
-                'ide'     => is_string($file) && $line !== ''
+                'where'         => $where === '()' ? '{main}' : $where,
+                'file'          => $file,
+                'rel'           => $rel,
+                'line'          => $line,
+                'kind'          => $kind,
+                'is_first_app'  => $isFirstApp,
+                'ide'           => is_string($file) && $line !== ''
                     ? $this->ideLink($file, (int) $line)
                     : null,
-                'snippet' => is_string($file) && is_int($line) && $line > 0
+                'snippet'       => is_string($file) && is_int($line) && $line > 0
                     ? $this->codeAroundLines($file, $line, 3)
                     : [],
             ];
@@ -503,11 +514,23 @@ final class ErrorHandler
             }
         }
 
+        // Request context (what URL/route was hit, with secrets redacted).
+        $req = $this->requestContext();
+        $lines[] = '';
+        $lines[] = '## Request';
+        $lines[] = sprintf(
+            '%s %s   route=%s',
+            strtoupper((string) ($req['method'] ?? '-')),
+            (string) ($req['uri'] ?? '-'),
+            (string) ($req['route'] ?? '—'),
+        );
+
         $lines[] = '';
         $lines[] = '## Environment';
         $lines[] = 'PHP ' . PHP_VERSION
             . ', env=' . \Silver\Core\Env::name()
             . ', debug=' . ((bool) \Silver\Core\Env::get('debug') ? 'on' : 'off');
+        $lines[] = 'Live framework status available at /heartbeat (JSON: GET /heartbeat?view=json).';
 
         return implode("\n", $lines);
     }
@@ -549,8 +572,10 @@ final class ErrorHandler
                 'method' => Request::method(),
                 'uri'    => Request::getUri() ?? ($_SERVER['REQUEST_URI'] ?? ''),
                 'route'  => $route?->name() ?? '—',
-                'query'  => $_GET,
-                'input'  => Request::method() === 'get' ? [] : Request::all(),
+                'query'  => $this->redactSensitive($_GET),
+                'input'  => $this->redactSensitive(
+                    Request::method() === 'get' ? [] : Request::all(),
+                ),
                 'ip'     => $_SERVER['REMOTE_ADDR'] ?? '—',
             ];
         } catch (\Throwable) {
@@ -558,11 +583,35 @@ final class ErrorHandler
                 'method' => $_SERVER['REQUEST_METHOD'] ?? '—',
                 'uri'    => $_SERVER['REQUEST_URI'] ?? '—',
                 'route'  => '—',
-                'query'  => $_GET,
+                'query'  => $this->redactSensitive($_GET),
                 'input'  => [],
                 'ip'     => $_SERVER['REMOTE_ADDR'] ?? '—',
             ];
         }
+    }
+
+    /**
+     * Walk an array and replace values for likely-secret keys with a
+     * placeholder so the error page does not leak credentials when a
+     * login form (or similar) throws. Recursive; preserves structure.
+     *
+     * @param  array<string,mixed> $data
+     * @return array<string,mixed>
+     */
+    private function redactSensitive(array $data): array
+    {
+        static $pattern = '/(?:password|passwd|pwd|secret|token|api[-_]?key|authorization|bearer|session|cookie|csrf|otp|pin)/i';
+
+        foreach ($data as $key => $value) {
+            if (is_array($value)) {
+                $data[$key] = $this->redactSensitive($value);
+                continue;
+            }
+            if (is_string($key) && preg_match($pattern, $key)) {
+                $data[$key] = '[REDACTED]';
+            }
+        }
+        return $data;
     }
 
     /**
