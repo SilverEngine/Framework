@@ -311,14 +311,27 @@ final class Scaffolder
     }
 
     /**
-     * Suggest a controller name from a URL path. `/foo/bar-baz` -> `FooBarBaz`.
-     * Path params (`{id}`) are dropped. Defaults to "Page" when empty.
+     * Studly-case a string for use as a PHP class name.
+     *
+     *   /foo/bar-baz  →  FooBarBaz       (URL slug from the web scaffolder)
+     *   user_post     →  UserPost        (snake_case)
+     *   smokeTest     →  SmokeTest       (camelCase — internal boundary preserved)
+     *   SmokeModel    →  SmokeModel      (already studly — preserved, NOT flattened
+     *                                     to "Smokemodel" the way the previous
+     *                                     strtolower-then-ucfirst pipeline did)
+     *
+     * Defaults to "Page" when the input has no alphanumeric content.
      */
-    public static function suggestName(string $urlPath): string
+    public static function suggestName(string $input): string
     {
-        $parts = preg_split('/[^A-Za-z0-9]+/', $urlPath) ?: [];
+        // Split on non-alphanumerics AND at the lowercase→uppercase boundary so
+        // existing internal capitals survive the round-trip.
+        $parts = preg_split('/[^A-Za-z0-9]+|(?<=[a-z])(?=[A-Z])|(?<=[A-Z])(?=[A-Z][a-z])/', $input) ?: [];
         $parts = array_filter($parts, static fn (string $p): bool => $p !== '');
-        $name = implode('', array_map('ucfirst', array_map('strtolower', $parts)));
+        $name = implode('', array_map(
+            static fn (string $p): string => ucfirst(strtolower($p)),
+            $parts,
+        ));
         return $name === '' ? 'Page' : $name;
     }
 

@@ -91,4 +91,35 @@ final class ScaffolderTypesTest extends TestCase
         $this->expectException(\RuntimeException::class);
         $this->scaffolder->create('definitely-not-a-type', 'X');
     }
+
+    // -- suggestName() studly-case behaviour ---------------------------
+
+    public function testSuggestNamePreservesInternalCapitals(): void
+    {
+        // Used to flatten to 'Smokemodel'. After fix, internal capitals
+        // survive — CLI users typing `g model SmokeModel` get SmokeModel.php
+        // and not Smokemodel.php.
+        $this->assertSame('SmokeModel', Scaffolder::suggestName('SmokeModel'));
+        $this->assertSame('UserController', Scaffolder::suggestName('UserController'));
+    }
+
+    public function testSuggestNameStudlyCasesSnakeAndKebab(): void
+    {
+        $this->assertSame('UserPost', Scaffolder::suggestName('user_post'));
+        $this->assertSame('FooBarBaz', Scaffolder::suggestName('foo-bar-baz'));
+        $this->assertSame('FooBarBaz', Scaffolder::suggestName('/foo/bar-baz'));
+    }
+
+    public function testSuggestNameCamelCaseBecomesStudly(): void
+    {
+        $this->assertSame('SmokeTest', Scaffolder::suggestName('smokeTest'));
+        $this->assertSame('MyService', Scaffolder::suggestName('myService'));
+    }
+
+    public function testSuggestNameDefaultsToPageOnEmptyInput(): void
+    {
+        $this->assertSame('Page', Scaffolder::suggestName(''));
+        $this->assertSame('Page', Scaffolder::suggestName('///'));
+        $this->assertSame('Page', Scaffolder::suggestName('-_-'));
+    }
 }
