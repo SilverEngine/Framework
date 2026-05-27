@@ -85,7 +85,7 @@
 
         /* Header */
         header { display: flex; align-items: flex-start; justify-content: space-between;
-                 gap: 2rem; padding-bottom: 2rem; margin-bottom: 3.5rem;
+                 gap: 2rem; padding-bottom: 1.5rem; margin-bottom: 1.5rem;
                  border-bottom: 1px solid var(--border-soft) }
         .err-eyebrow { display: inline-flex; align-items: center; gap: .5rem;
                        font: 600 11px/1 ui-sans-serif; letter-spacing: .12em;
