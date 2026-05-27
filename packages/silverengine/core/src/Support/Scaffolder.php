@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Silver\Support;
 
 use RuntimeException;
-use Silver\Core\Env;
 use Silver\Engine\Ghost\Compiler;
 use Silver\FileSystem\FileSystem;
 
@@ -19,6 +18,7 @@ final class Scaffolder
     public const TYPES = [
         'page', 'controller', 'model', 'service', 'repository',
         'resource', 'middleware', 'provider', 'observer', 'dto', 'vo',
+        'view', 'helper', 'facade',
     ];
 
     /** Composite types expand into multiple primitives. */
@@ -39,7 +39,6 @@ final class Scaffolder
      */
     public function create(string $type, string $name): array
     {
-        $this->guardEnv();
         $type = strtolower(trim($type));
         $name = self::sanitiseName($name);
 
@@ -84,7 +83,6 @@ final class Scaffolder
      */
     public function remove(string $type, string $name): array
     {
-        $this->guardEnv();
         $type = strtolower(trim($type));
         $name = self::sanitiseName($name);
 
@@ -180,6 +178,21 @@ final class Scaffolder
                 'app/ValueObjects/' . $name . '.php',
                 $this->voStub($name),
             ],
+            'view' => [
+                $root . 'app/Resources/views/' . strtolower($name) . '.ghost.tpl',
+                'app/Resources/views/' . strtolower($name) . '.ghost.tpl',
+                $this->viewStub($name),
+            ],
+            'helper' => [
+                $root . 'app/Helpers/' . $name . '.php',
+                'app/Helpers/' . $name . '.php',
+                $this->helperStub($name),
+            ],
+            'facade' => [
+                $root . 'app/Facades/' . $name . '.php',
+                'app/Facades/' . $name . '.php',
+                $this->facadeStub($name),
+            ],
             default => throw new RuntimeException("No plan for type '{$type}'."),
         };
     }
@@ -189,7 +202,6 @@ final class Scaffolder
      */
     public function scaffold(string $url, string $name): array
     {
-        $this->guardEnv();
 
         $name = self::sanitiseName($name);
         $url  = '/' . ltrim($url, '/');
@@ -238,7 +250,6 @@ final class Scaffolder
      */
     public function unscaffold(string $url): array
     {
-        $this->guardEnv();
 
         $url = '/' . ltrim($url, '/');
         $root = \ROOT;
@@ -317,15 +328,6 @@ final class Scaffolder
         return preg_match('/^[A-Z][A-Za-z0-9]*$/', $candidate)
             ? $candidate
             : throw new RuntimeException("Invalid scaffold name: '{$raw}'.");
-    }
-
-    private function guardEnv(): void
-    {
-        if (Env::name() !== 'local' || !Env::get('debug')) {
-            throw new RuntimeException(
-                'Scaffolder requires APP_ENV=local and APP_DEBUG=true.',
-            );
-        }
     }
 
     private function controllerStub(string $name): string
@@ -617,5 +619,58 @@ VUE;
 
         $this->fs->write($path, $src);
         return true;
+    }
+
+    private function viewStub(string $name): string
+    {
+        $title = $name;
+        return <<<TPL
+            {{ extends('layouts.master') }}
+
+            #set[content]
+                <h1>{$title}</h1>
+                <p>Welcome to <b>{$title}</b>. Edit this file under
+                <code>app/Resources/views/</code>.</p>
+            #end
+
+            TPL;
+    }
+
+    private function helperStub(string $name): string
+    {
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\\Helpers;
+
+final class {$name}
+{
+}
+
+PHP;
+    }
+
+    private function facadeStub(string $name): string
+    {
+        return <<<PHP
+<?php
+
+declare(strict_types=1);
+
+namespace App\\Facades;
+
+use Silver\\Support\\Facade;
+
+final class {$name} extends Facade
+{
+    protected static function getClass(): string
+    {
+        return \\App\\Services\\{$name}Service::class;
+    }
+}
+
+PHP;
     }
 }
