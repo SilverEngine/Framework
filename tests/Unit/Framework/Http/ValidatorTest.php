@@ -5,123 +5,154 @@ declare(strict_types=1);
 namespace Tests\Unit\Framework\Http;
 
 use PHPUnit\Framework\TestCase;
+use Silver\Core\Bootstrap\Facades\Validator as ValidatorFacade;
 use Silver\Http\Validator;
 
 /**
- * Locks in the rule surface that actually works (min / max / required /
- * match). The previously-shipped `unique` and `exist` stubs silently
- * passed every value — that lying behavior was deleted; consumers using
- * those rule names will now fail loud (method-not-found), which is the
- * correct outcome for an unimplemented rule.
+ * Locks in the instance-based Validator surface (no more shared static
+ * state). Two `check()` calls in the same request produce two independent
+ * results — the bug class that the old `static $errors` made possible
+ * cannot exist any more.
+ *
+ * Both call styles are tested:
+ *   - direct instance (`(new Validator)->check(...)`) — what controllers
+ *     using DI will see
+ *   - facade (`ValidatorFacade::check(...)`) — the static-style entry
+ *     point preserved for ergonomics, container-resolved underneath
  */
 final class ValidatorTest extends TestCase
 {
+    private Validator $v;
+
+    protected function setUp(): void
+    {
+        $this->v = new Validator();
+    }
+
     // -- required ----------------------------------------------------
 
     public function testRequiredFailsOnEmptyString(): void
     {
-        $errors = Validator::check(['email' => ''], ['email' => 'required']);
-        $this->assertNotEmpty($errors);
-        $this->assertStringContainsString('email is required', $errors[0]);
+        $r = $this->v->check(['email' => ''], ['email' => 'required']);
+        $this->assertTrue($r->fails());
+        $this->assertStringContainsString('email is required', $r->forField('email')[0]);
     }
 
     public function testRequiredFailsOnMissingKey(): void
     {
-        $errors = Validator::check([], ['email' => 'required']);
-        $this->assertNotEmpty($errors);
+        $this->assertTrue($this->v->check([], ['email' => 'required'])->fails());
     }
 
     public function testRequiredPassesOnNonEmptyValue(): void
     {
-        $errors = Validator::check(['email' => 'a@b.c'], ['email' => 'required']);
-        $this->assertSame([], $errors);
-        $this->assertTrue(Validator::pass());
+        $this->assertTrue($this->v->check(['email' => 'a@b.c'], ['email' => 'required'])->passes());
     }
 
     // -- min / max ---------------------------------------------------
 
     public function testMinFailsBelowThreshold(): void
     {
-        $errors = Validator::check(['pw' => 'abc'], ['pw' => 'min:8']);
-        $this->assertNotEmpty($errors);
-        $this->assertStringContainsString('at least 8 characters', $errors[0]);
+        $r = $this->v->check(['pw' => 'abc'], ['pw' => 'min:8']);
+        $this->assertTrue($r->fails());
+        $this->assertStringContainsString('at least 8 characters', $r->forField('pw')[0]);
     }
 
     public function testMinPassesAtAndAboveThreshold(): void
     {
-        $this->assertSame([], Validator::check(['pw' => '12345678'], ['pw' => 'min:8']));
-        $this->assertSame([], Validator::check(['pw' => '123456789'], ['pw' => 'min:8']));
+        $this->assertTrue($this->v->check(['pw' => '12345678'], ['pw' => 'min:8'])->passes());
+        $this->assertTrue($this->v->check(['pw' => '123456789'], ['pw' => 'min:8'])->passes());
     }
 
     public function testMaxFailsAboveThreshold(): void
     {
-        $errors = Validator::check(['handle' => 'way_too_long_handle'], ['handle' => 'max:10']);
-        $this->assertNotEmpty($errors);
-        $this->assertStringContainsString('less than 10 characters', $errors[0]);
+        $r = $this->v->check(['handle' => 'way_too_long_handle'], ['handle' => 'max:10']);
+        $this->assertTrue($r->fails());
+        $this->assertStringContainsString('less than 10 characters', $r->forField('handle')[0]);
     }
 
     public function testMaxPassesAtAndBelowThreshold(): void
     {
-        $this->assertSame([], Validator::check(['handle' => '1234567890'], ['handle' => 'max:10']));
-        $this->assertSame([], Validator::check(['handle' => 'short'], ['handle' => 'max:10']));
+        $this->assertTrue($this->v->check(['handle' => '1234567890'], ['handle' => 'max:10'])->passes());
+        $this->assertTrue($this->v->check(['handle' => 'short'], ['handle' => 'max:10'])->passes());
     }
 
     // -- match -------------------------------------------------------
 
     public function testMatchFailsWhenValuesDiffer(): void
     {
-        $errors = Validator::check(
+        $r = $this->v->check(
             ['password' => 'abc', 'password_confirm' => 'xyz'],
             ['password_confirm' => 'match:password'],
         );
-        $this->assertNotEmpty($errors);
-        $this->assertStringContainsString('does not match', $errors[0]);
+        $this->assertTrue($r->fails());
+        $this->assertStringContainsString('does not match', $r->forField('password_confirm')[0]);
     }
 
     public function testMatchPassesWhenValuesAreEqual(): void
     {
-        $errors = Validator::check(
+        $r = $this->v->check(
             ['password' => 'abc', 'password_confirm' => 'abc'],
             ['password_confirm' => 'match:password'],
         );
-        $this->assertSame([], $errors);
+        $this->assertTrue($r->passes());
     }
 
-    // -- chained rules -----------------------------------------------
+    // -- chained rules + result API ----------------------------------
 
     public function testChainedRulesAllRun(): void
     {
-        // Both rules should fail and produce two errors for the same field.
-        $errors = Validator::check(['pw' => ''], ['pw' => 'required|min:8']);
-        $this->assertCount(2, $errors);
+        $r = $this->v->check(['pw' => ''], ['pw' => 'required|min:8']);
+        $this->assertCount(2, $r->forField('pw'));
+        $this->assertCount(2, $r->all());
     }
 
-    public function testGetReturnsErrorsForKey(): void
+    public function testForFieldReturnsEmptyListForUnknownField(): void
     {
-        Validator::check(['pw' => ''], ['pw' => 'required|min:8']);
-        $this->assertCount(2, Validator::get('pw'));
-        $this->assertSame([], Validator::get('nonexistent'));
+        $r = $this->v->check(['pw' => ''], ['pw' => 'required']);
+        $this->assertSame([], $r->forField('nonexistent'));
+        $this->assertFalse($r->hasField('nonexistent'));
+        $this->assertTrue($r->hasField('pw'));
     }
 
-    public function testPassReturnsTrueAfterCleanValidation(): void
+    public function testToArrayExposesFullErrorMap(): void
     {
-        Validator::check(['name' => 'Lex'], ['name' => 'required|min:2']);
-        $this->assertTrue(Validator::pass());
+        $r = $this->v->check(
+            ['email' => '', 'pw' => 'a'],
+            ['email' => 'required', 'pw' => 'min:8'],
+        );
+        $map = $r->toArray();
+        $this->assertArrayHasKey('email', $map);
+        $this->assertArrayHasKey('pw', $map);
     }
 
-    public function testPassReturnsFalseAfterFailedValidation(): void
+    // -- the bug-class fix this refactor is about --------------------
+
+    public function testTwoSequentialChecksDoNotClobberEachOther(): void
     {
-        Validator::check(['name' => ''], ['name' => 'required']);
-        $this->assertFalse(Validator::pass());
+        $first  = $this->v->check(['email' => ''], ['email' => 'required']);
+        $second = $this->v->check(['email' => 'a@b.c'], ['email' => 'required']);
+
+        // Used to fail in the static implementation — the second check
+        // would reset `static $errors` and the first result would lose
+        // its state. With ValidationResult holding its own data, the
+        // two results live independently.
+        $this->assertTrue($first->fails());
+        $this->assertTrue($second->passes());
     }
 
     // -- contract: unimplemented rules fail loud ---------------------
 
     public function testUnimplementedRuleFailsLoudly(): void
     {
-        // Used to silently pass — now blows up so dev notices the rule
-        // they typed isn't real.
         $this->expectException(\Throwable::class);
-        Validator::check(['email' => 'x@y'], ['email' => 'unique']);
+        $this->v->check(['email' => 'x@y'], ['email' => 'unique']);
+    }
+
+    // -- facade smoke ------------------------------------------------
+
+    public function testFacadeDelegatesToContainerResolvedInstance(): void
+    {
+        $r = ValidatorFacade::check(['name' => 'Lex'], ['name' => 'required|min:2']);
+        $this->assertTrue($r->passes());
     }
 }
