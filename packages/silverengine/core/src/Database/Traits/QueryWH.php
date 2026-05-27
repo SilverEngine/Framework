@@ -4,10 +4,11 @@ declare(strict_types=1);
 namespace Silver\Database\Traits;
 
 use Silver\Database\Parts\Filter;
+use Silver\Database\Parts\Paren;
 use Silver\Database\Parts\Parts;
-use Silver\Database\Parts\Raw;
 use Silver\Database\Parts\Value;
 use Silver\Database\Parts\Literal;
+use Silver\Database\Query;
 
 trait QueryWH
 {
@@ -81,7 +82,7 @@ trait QueryWH
     private function prepareOperatorValue($operator, $value) 
     {
         if($value === null) {
-            if($operator instanceof \Query || is_array($operator)) {
+            if($operator instanceof Query || is_array($operator)) {
                 return ['IN', $operator];
             }
             if(is_bool($operator)) {
@@ -96,36 +97,50 @@ trait QueryWH
         }
     }
 
-    private function havingParen($cb, $how = 'and', $not = false) 
+    private function havingParen($cb, $how = 'and', $not = false)
     {
-        return $this->parent('having', $cb, $how, $not);
+        return $this->paren('having', $cb, $how, $not);
     }
 
-    private function whereParen($cb, $how = 'and', $not = false) 
+    private function whereParen($cb, $how = 'and', $not = false)
     {
-        return $this->parent('where', $cb, $how, $not);
+        return $this->paren('where', $cb, $how, $not);
     }
 
-    private function paren($cond, $cb, $how, $not) 
+    /**
+     * Wrap a grouped sub-clause in parens. Used when the caller hands a
+     * Closure to ->where() / ->having() to build a nested boolean group:
+     *
+     *     ->where(fn($q) => $q->where('a', 1)->orWhere('b', 2))
+     *
+     * The previous implementation shadowed `$cond` (which held the
+     * 'where'/'having' string) with `$this->$cond` (the existing filter
+     * value) on the very first line, breaking every subsequent
+     * `$this->$cond = …` write. Reworked to keep the slot name and the
+     * existing value in separate variables.
+     */
+    private function paren($condName, $cb, $how, $not)
     {
-        $cond = $this->$cond;
-        $this->$cond = null;
+        $existing = $this->$condName;
 
+        // Reset the slot so the callback writes into a clean group.
+        $this->$condName = null;
         $cb($this);
+        $group = $this->$condName;
 
-        if($cond === null) {
-            if($not) {
-                $this->$cond = new Parts('NOT', new Paren($this->$cond));
-            } else {
-                $this->$cond = new Paren($this->$cond);
-            }
-        } else {
-            if($not) {
-                $this->$cond = new Parts($cond, $how, 'NOT', new Paren($this->$cond));
-            } else {
-                $this->$cond = new Parts($cond, $how, new Paren($this->$cond));
-            }
+        // Empty callback — restore and bail out untouched.
+        if ($group === null) {
+            $this->$condName = $existing;
+            return $this;
         }
+
+        $wrapped = new Paren($group);
+        $node    = $not ? new Parts('NOT', $wrapped) : $wrapped;
+
+        $this->$condName = $existing === null
+            ? $node
+            : new Parts($existing, $how, $node);
+
         return $this;
     }
 
