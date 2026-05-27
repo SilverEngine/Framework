@@ -39,6 +39,24 @@ final class Container
     /** @var array<string, list<Closure>> abstract => list of decorators */
     private array $extenders = [];
 
+    /**
+     * Cached build plans — one entry per class ever built. Each entry is a
+     * pre-flattened description of what {@see build()} needs to construct
+     * the class: parameter names, their resolution kind (class autowire /
+     * optional default / required), and the resolved type / default value.
+     *
+     * Avoids the ~10-20 µs ReflectionClass + ReflectionParameter cost on
+     * every resolve. First build populates the cache; subsequent builds
+     * are pure dict lookups + a fresh `new $class(...)` call.
+     *
+     * @var array<string, array{
+     *     instantiable: bool,
+     *     hasCtor: bool,
+     *     params: list<array{name:string, kind:string, type?:string, default?:mixed}>,
+     * }>
+     */
+    private array $buildPlans = [];
+
     // ---- Legacy Instances surface (unchanged semantics) ----------------
 
     public function register(object $instance, bool $force = false): object
@@ -204,44 +222,82 @@ final class Container
      */
     private function build(string $class, array $params): object
     {
+        $plan = $this->buildPlans[$class] ?? $this->planFor($class);
+
+        if (!$plan['instantiable']) {
+            throw new Exception("Container: '$class' is not instantiable.");
+        }
+        if (!$plan['hasCtor']) {
+            return new $class();
+        }
+
+        $args = [];
+        foreach ($plan['params'] as $p) {
+            $pname = $p['name'];
+            if (array_key_exists($pname, $params)) {
+                $args[] = $params[$pname];
+                continue;
+            }
+            switch ($p['kind']) {
+                case 'class':
+                    $args[] = $this->make($p['type']);
+                    break;
+                case 'default':
+                    $args[] = $p['default'];
+                    break;
+                case 'required':
+                    throw new Exception("Container: unable to resolve \${$pname} for '$class'.");
+            }
+        }
+
+        return new $class(...$args);
+    }
+
+    /**
+     * Compute and cache the build plan for a class. Called once per class
+     * across the process lifetime. After this, `build()` skips Reflection
+     * entirely — straight dict lookup + a `new` expression.
+     *
+     * @return array{instantiable: bool, hasCtor: bool, params: list<array<string,mixed>>}
+     */
+    private function planFor(string $class): array
+    {
         if (!class_exists($class)) {
             throw new Exception("Container: cannot resolve '$class'.");
         }
 
         $ref = new ReflectionClass($class);
-
         if (!$ref->isInstantiable()) {
-            throw new Exception("Container: '$class' is not instantiable.");
+            return $this->buildPlans[$class] = [
+                'instantiable' => false, 'hasCtor' => false, 'params' => [],
+            ];
         }
 
         $ctor = $ref->getConstructor();
         if ($ctor === null) {
-            return new $class();
+            return $this->buildPlans[$class] = [
+                'instantiable' => true, 'hasCtor' => false, 'params' => [],
+            ];
         }
 
-        $args = [];
+        $params = [];
         foreach ($ctor->getParameters() as $param) {
-            $pname = $param->getName();
-
-            if (array_key_exists($pname, $params)) {
-                $args[] = $params[$pname];
-                continue;
-            }
-
-            $type = $param->getType();
+            $entry = ['name' => $param->getName()];
+            $type  = $param->getType();
             if ($type instanceof ReflectionNamedType && !$type->isBuiltin()) {
-                $args[] = $this->make($type->getName());
-                continue;
+                $entry['kind'] = 'class';
+                $entry['type'] = $type->getName();
+            } elseif ($param->isOptional()) {
+                $entry['kind']    = 'default';
+                $entry['default'] = $param->getDefaultValue();
+            } else {
+                $entry['kind'] = 'required';
             }
-
-            if ($param->isOptional()) {
-                $args[] = $param->getDefaultValue();
-                continue;
-            }
-
-            throw new Exception("Container: unable to resolve \${$pname} for '$class'.");
+            $params[] = $entry;
         }
 
-        return $ref->newInstanceArgs($args);
+        return $this->buildPlans[$class] = [
+            'instantiable' => true, 'hasCtor' => true, 'params' => $params,
+        ];
     }
 }

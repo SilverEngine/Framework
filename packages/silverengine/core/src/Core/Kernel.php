@@ -10,7 +10,7 @@ use Silver\Exception\NotFoundException;
 class Kernel
 {
     private ?App $app = null;
-    private array $services = [];
+    private array $providers = [];
     private array $middlewares = [];
 
     public function loadMiddlewares(): void
@@ -21,24 +21,29 @@ class Kernel
         }
     }
 
-    public function loadServices(Request $req, Response $res): void
+    /**
+     * Construct each Service Provider listed in config/Providers.php,
+     * register it in the container, then fire `before()` in declaration
+     * order. Matching `after()` calls run in {@see finalizeProviders()}
+     * after the response is flushed.
+     */
+    public function loadProviders(Request $req, Response $res): void
     {
-        $services = Env::get('services', []);
-        foreach ($services as $serviceClass) {
-            $service = new $serviceClass($this);
-            $this->services[] = $service;
-            $this->app->register($service);
+        foreach (Env::get('providers', []) as $providerClass) {
+            $provider = new $providerClass($this);
+            $this->providers[] = $provider;
+            $this->app->register($provider);
         }
 
-        foreach ($this->services as $service) {
-            $service->before($req, $res);
+        foreach ($this->providers as $provider) {
+            $provider->before($req, $res);
         }
     }
 
-    public function finalizeServices(Request $req, Response $res): void
+    public function finalizeProviders(Request $req, Response $res): void
     {
-        foreach ($this->services as $service) {
-            $service->after($req, $res);
+        foreach ($this->providers as $provider) {
+            $provider->after($req, $res);
         }
     }
 
@@ -194,15 +199,17 @@ class Kernel
     {
         $this->app = $app = App::instance();
 
+        dt()->begin('request init', 'request');
         $app->register(
             $req = new Request(),
             $res = new Response(),
         );
+        dt()->end('request init', 'request');
         dt()->mark('request received', 'request');
 
-        dt()->begin('services', 'kernel');
-        $this->loadServices($req, $res);
-        dt()->end('services', 'kernel');
+        dt()->begin('providers', 'kernel');
+        $this->loadProviders($req, $res);
+        dt()->end('providers', 'kernel');
 
         dt()->begin('middlewares + controller', 'kernel');
         $ret = $this->executeMiddlewares($this->middlewares, $req, $res);
@@ -231,7 +238,9 @@ class Kernel
         app(Hook::class)->runDeferred();
         dt()->end('deferred hooks', 'kernel');
 
-        $this->finalizeServices($req, $res);
+        dt()->begin('finalize providers', 'kernel');
+        $this->finalizeProviders($req, $res);
+        dt()->end('finalize providers', 'kernel');
 
         recorder()->record(
             $_SERVER['REQUEST_METHOD'] ?? 'GET',

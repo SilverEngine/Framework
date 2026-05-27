@@ -53,6 +53,10 @@ chdir(ROOT);
 | calls; the timeline is only ever rendered by the dev /debug page.
 */
 dt()->start();
+// Backfill the autoload + bootstrap window so heartbeat / debug see the
+// full picture — APP_START → here was invisible because dt() itself can't
+// observe its own pre-boot.
+dt()->record('autoload + bootstrap', 'boot', APP_START, hrtime(true));
 dt()->mark('autoload', 'boot');
 
 /*
@@ -105,7 +109,9 @@ dt()->end('database connect', 'boot');
 | Run
 |--------------------------------------------------------------------------
 */
+dt()->begin('kernel construct', 'kernel');
 $kernel = new Kernel();
+dt()->end('kernel construct', 'kernel');
 
 dt()->begin('load routes', 'kernel');
 $kernel->loadRoutes();
