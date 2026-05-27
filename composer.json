@@ -1,6 +1,6 @@
 {
     "name": "silverengine/framework",
-    "description": "SilverEngine — a lightweight, dependency-light PHP 8.4 MVC framework.",
+    "description": "SilverEngine — a lightweight, dependency-light PHP 8.5 MVC framework.",
     "type": "project",
     "license": "MIT",
     "authors": [
@@ -22,7 +22,7 @@
         }
     ],
     "require": {
-        "php": ">=8.4",
+        "php": ">=8.5",
         "silverengine/core": "@dev",
         "nejcc/php-datatypes": "^1.0"
     },

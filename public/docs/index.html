@@ -143,7 +143,7 @@
           {
             title: 'Introduction',
             tags: ['intro', 'about', 'overview', 'philosophy'],
-            body: `SilverEngine is a PHP 8.4 DMVC framework. Composer is the autoloader, not a package source — the framework lives in the same repo as your app under packages/silverengine/core. Runtime deps are intentionally minimal (vlucas/phpdotenv, nejcc/php-datatypes). Vite/Vue/Tailwind are build-time only. Wisp delivers server-driven Vue without a separate API layer or client router.`,
+            body: `SilverEngine is a PHP 8.5 DMVC framework. Composer is the autoloader, not a package source — the framework lives in the same repo as your app under packages/silverengine/core. Runtime deps are intentionally minimal (vlucas/phpdotenv, nejcc/php-datatypes). Vite/Vue/Tailwind are build-time only. Wisp delivers server-driven Vue without a separate API layer or client router.`,
             language: 'text',
             code: `silverengine/
 ├─ app/                         your code (App\\)
@@ -258,7 +258,7 @@ composer dev`,
           {
             title: 'Conventions',
             tags: ['convention', 'psr', 'php', 'namespace', 'final'],
-            body: `PHP 8.4+: declare(strict_types=1), typed/readonly properties, constructor promotion, match, enums, final on leaf classes. PSR-4 + PSR-12. Framework code → Silver\\. App code → App\\. Directories lowercase, namespaces PascalCase.`,
+            body: `PHP 8.5+: declare(strict_types=1), typed/readonly properties, constructor promotion, match, enums, final on leaf classes. PSR-4 + PSR-12. Framework code → Silver\\. App code → App\\. Directories lowercase, namespaces PascalCase.`,
             language: 'php',
             code: `<?php
 
@@ -1111,13 +1111,13 @@ php silver d controller Posts
 
 {
   "status": "ok",
-  "php": "8.4.0",
+  "php": "8.5.0",
   "env": "production",
   "debug": false,
   "elapsed_ms": 1.2,
 
   "checks": [
-    { "name": "php",         "status": "ok", "detail": "PHP 8.4.0 · opcache on" },
+    { "name": "php",         "status": "ok", "detail": "PHP 8.5.0 · opcache on" },
     { "name": "config",      "status": "ok", "detail": "loaded · env=production" },
     { "name": "container",   "status": "ok", "detail": "IoC resolves core services" },
     { "name": "routes",      "status": "ok", "detail": "42 routes · cache hit" },

@@ -26,7 +26,7 @@ use Silver\FileSystem\FileSystem;
 final class Heartbeat
 {
     /** Minimum PHP version this framework requires. */
-    private const MIN_PHP = '8.4.0';
+    private const MIN_PHP = '8.5.0';
 
     /**
      * @return array{

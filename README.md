@@ -1,9 +1,9 @@
 # SilverEngine Framework
 
 A lightweight PHP **DMVC** framework — *Dynamical Model View Controller* —
-modernized for **PHP 8.4+** and dependency-light.
+modernized for **PHP 8.5+** and dependency-light.
 
-![PHP 8.4+](https://img.shields.io/badge/PHP-8.4%2B-777BB4.svg?logo=php&logoColor=white)
+![PHP 8.5+](https://img.shields.io/badge/PHP-8.5%2B-777BB4.svg?logo=php&logoColor=white)
 ![DMVC](https://img.shields.io/badge/architecture-DMVC-blue.svg)
 ![Runtime deps 2](https://img.shields.io/badge/runtime%20deps-2-success.svg)
 ![License MIT](https://img.shields.io/badge/license-MIT-green.svg)
@@ -25,7 +25,7 @@ and `optimize` / `optimize:clear` cache commands.
 
 ## Requirements
 
-- PHP **8.4+**
+- PHP **8.5+**
 - Composer 2.x (autoloading only — no network access required for framework code)
 - PHP extensions: `pdo_sqlite` (bundled with PHP) for the default database
 - Node 20+ / npm — **build-time only**, for the Wisp frontend toolchain
@@ -152,9 +152,9 @@ class UserController
 }
 ```
 
-The legacy `Instances` registry surface (`register`/`registerNamed`/`get`/
-`getAll`) is preserved — `Container` is a strict superset, so existing
-calls keep working unchanged.
+`Container` also exposes the legacy registry surface
+(`register`/`registerNamed`/`get`/`getAll`) for backwards compatibility
+with code written before the IoC rework.
 
 ## Database
 
@@ -266,7 +266,7 @@ Contributions are welcome. Please keep to:
 2. PSR-4 autoloading, PSR-12 style
 3. Framework classes under the `Silver\` namespace; app code under `App\`
    (directories lowercased, namespaces PascalCase)
-4. PHP 8.4+ idioms — `declare(strict_types=1)`, typed/readonly properties,
+4. PHP 8.5+ idioms — `declare(strict_types=1)`, typed/readonly properties,
    constructor promotion, `match`, enums for finite sets, `final` on leaf
    classes
 5. Tests for behavioural changes — `tests/Unit/Framework/...`

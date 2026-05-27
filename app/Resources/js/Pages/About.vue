@@ -58,7 +58,7 @@ const pillars = [
     body: 'Wisp + Inertia. No client router, no separate API layer. Controllers return pages, not JSON.',
   },
   {
-    title: 'PHP 8.4, no apologies',
+    title: 'PHP 8.5, no apologies',
     body: 'Strict types, readonly, enums, match. Final classes by default. Modern PHP, end to end.',
   },
 ]
@@ -115,7 +115,7 @@ const pillars = [
         <p class="text-xs uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">/about</p>
         <h1 class="mt-3 text-5xl font-medium tracking-tight">A small framework, on purpose.</h1>
         <p class="mt-6 text-lg leading-relaxed text-zinc-600 dark:text-zinc-400 max-w-2xl">
-          {{ message }} SilverEngine is a PHP 8.4 DMVC framework built on a single rule —
+          {{ message }} SilverEngine is a PHP 8.5 DMVC framework built on a single rule —
           no dependency you wouldn't write yourself.
         </p>
 
