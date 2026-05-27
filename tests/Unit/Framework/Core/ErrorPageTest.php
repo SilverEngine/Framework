@@ -49,8 +49,27 @@ class ErrorPageTest extends TestCase
         $this->assertStringContainsString('Stack trace', $html);
         $this->assertStringContainsString('Request', $html);
         $this->assertStringContainsString('<style>', $html);            // self-contained
-        $this->assertStringNotContainsString('viteCss', $html);
-        $this->assertStringNotContainsString('/build/', $html);         // no asset-build dependency
+
+        // No asset-build dependency: the view must not emit Vite/build
+        // asset link/script tags. (The literal token 'viteCss' or
+        // '/build/' can legitimately appear inside frame source snippets
+        // — those are debugger context, not view-side imports — so the
+        // assertion checks for the actual tag patterns instead.)
+        $this->assertDoesNotMatchRegularExpression(
+            '#<link[^>]+href="[^"]*/build/#i',
+            $html,
+            'View must not <link> any Vite-built CSS.',
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '#<script[^>]+src="[^"]*/build/#i',
+            $html,
+            'View must not <script src> any Vite-built JS.',
+        );
+        $this->assertDoesNotMatchRegularExpression(
+            '/\{\{\s*viteCss\(\)\s*\}\}/',
+            $html,
+            'Ghost directive should be compiled away, not rendered raw.',
+        );
     }
 
     public function testProductionPageLeaksNothing(): void
