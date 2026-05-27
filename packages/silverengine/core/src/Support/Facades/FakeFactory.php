@@ -1,7 +1,7 @@
 <?php
 declare(strict_types=1);
 
-namespace Silver\Core\Bootstrap\Facades;
+namespace Silver\Support\Facades;
 
 use Silver\Support\Facade;
 

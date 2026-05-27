@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Framework\Http;
 
 use PHPUnit\Framework\TestCase;
-use Silver\Core\Bootstrap\Facades\Validator as ValidatorFacade;
+use Silver\Support\Facades\Validator as ValidatorFacade;
 use Silver\Http\Validator;
 
 /**

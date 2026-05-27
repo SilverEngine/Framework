@@ -1,14 +1,14 @@
 <?php
 declare(strict_types=1);
 
-namespace Silver\Core\Bootstrap\Facades;
+namespace Silver\Support\Facades;
 
 use Silver\Support\Facade;
 
-final class Log extends Facade
+final class Response extends Facade
 {
     protected static function getClass(): string
     {
-        return \Silver\Support\Log::class;
+        return \Silver\Http\Response::class;
     }
 }

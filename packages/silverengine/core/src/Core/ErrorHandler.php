@@ -3,7 +3,7 @@ declare(strict_types=1);
 
 namespace Silver\Core;
 
-use Silver\Core\Bootstrap\Facades\Request;
+use Silver\Support\Facades\Request;
 use Silver\Exception\NotFoundException;
 use Silver\Exception\ErrorException;
 use Silver\Exception\Exception;

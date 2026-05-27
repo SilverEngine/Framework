@@ -7,7 +7,7 @@ namespace Silver\Core;
  * Loads config files from the application's `config/` directory.
  *
  * Resolved as a singleton through the container; the
- * {@see \Silver\Core\Bootstrap\Facades\Config} facade provides static
+ * {@see \Silver\Support\Facades\Config} facade provides static
  * access for call sites that don't (or can't) take a constructor
  * dependency. Bootstrap-time config merging still lives in {@see Env}.
  */
