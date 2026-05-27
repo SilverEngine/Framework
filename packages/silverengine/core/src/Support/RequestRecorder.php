@@ -50,9 +50,17 @@ final class RequestRecorder
                 return;
             }
 
+            $recordStartedNs = hrtime(true);
             $id = sprintf('%013d-%s', (int) (microtime(true) * 1000), bin2hex(random_bytes(3)));
 
             $files = $this->timer->files();
+
+            // Inject a synthetic span covering our own snapshot work so far
+            // (files listing, id gen, the time spent in this method up to
+            // the timeline capture below) — otherwise the recorder's own
+            // overhead would be the one phase invisible in its own output.
+            $this->timer->record('recorder snapshot', 'kernel', $recordStartedNs, hrtime(true));
+
             $payload = [
                 'id'          => $id,
                 'at'          => date('Y-m-d H:i:s'),

@@ -6,9 +6,12 @@ require_once __DIR__ . '/../Env.php';
 use Silver\Core\Env;
 
 spl_autoload_register(function (string $alias): void {
-    $providers = Env::get('providers', []);
+    // Read from config/Autoload.php — the prefix→directory mapping.
+    // Falls back to the legacy `providers` key for backwards compatibility
+    // with installs that haven't been migrated yet.
+    $mapping = Env::get('autoload', null) ?? Env::get('providers', []);
 
-    foreach ($providers as $prefix => $path) {
+    foreach ($mapping as $prefix => $path) {
         if (str_starts_with($alias, $prefix)) {
             $class = substr($alias, strlen($prefix));
             $classPath = str_replace('\\', '/', $class) . '.php';

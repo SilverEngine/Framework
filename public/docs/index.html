@@ -1,0 +1,1567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>SilverEngine · Docs</title>
+  <script src="https://unpkg.com/@tailwindcss/browser@4"></script>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js"></script>
+  <!-- Prism for syntax highlighting. Load core first, then markup-templating
+       (required by PHP), then the languages we actually render. -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-markup-templating.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-bash.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-json.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-php.min.js"></script>
+  <script>
+    (function () {
+      try {
+        var stored = localStorage.getItem('silverengine-theme');
+        var choice = (stored === 'light' || stored === 'dark') ? stored : 'auto';
+        var prefersDark = window.matchMedia && window.matchMedia('(prefers-color-scheme: dark)').matches;
+        var dark = choice === 'dark' || (choice === 'auto' && prefersDark);
+        if (dark) document.documentElement.classList.add('dark');
+      } catch (e) {}
+    })();
+  </script>
+  <style type="text/tailwindcss">
+    @custom-variant dark (&:where(.dark, .dark *));
+    html { scroll-behavior: smooth; }
+    /* Offset for sticky header when jumping to anchors. */
+    .topic { scroll-margin-top: 5rem; }
+  </style>
+  <style>
+    /* Thin themed scrollbars — page, sidebars, code blocks. Firefox + WebKit. */
+    html { scrollbar-gutter: stable; }
+    html, .scroll-thin {
+      scrollbar-width: thin;
+      scrollbar-color: rgb(212 212 216) transparent;
+    }
+    html::-webkit-scrollbar,
+    .scroll-thin::-webkit-scrollbar { width: 8px; height: 8px; }
+    html::-webkit-scrollbar-track,
+    .scroll-thin::-webkit-scrollbar-track { background: transparent; }
+    html::-webkit-scrollbar-thumb,
+    .scroll-thin::-webkit-scrollbar-thumb {
+      background: rgb(228 228 231);
+      border-radius: 4px;
+    }
+    html::-webkit-scrollbar-thumb:hover,
+    .scroll-thin::-webkit-scrollbar-thumb:hover { background: rgb(161 161 170); }
+    :where(.dark) html,
+    :where(.dark) .scroll-thin {
+      scrollbar-color: rgb(63 63 70) transparent;
+    }
+    :where(.dark) html::-webkit-scrollbar-thumb,
+    :where(.dark) .scroll-thin::-webkit-scrollbar-thumb { background: rgb(39 39 42); }
+    :where(.dark) html::-webkit-scrollbar-thumb:hover,
+    :where(.dark) .scroll-thin::-webkit-scrollbar-thumb:hover { background: rgb(82 82 91); }
+
+    /* Prism syntax highlighting — minimal palette, zinc-friendly, dark-aware. */
+    pre code, code[class*="language-"], pre[class*="language-"] {
+      color: rgb(39 39 42);
+      font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+    }
+    :where(.dark) pre code,
+    :where(.dark) code[class*="language-"],
+    :where(.dark) pre[class*="language-"] { color: rgb(228 228 231); }
+
+    .token.comment, .token.prolog, .token.doctype, .token.cdata {
+      color: rgb(113 113 122); font-style: italic;
+    }
+    .token.punctuation { color: rgb(113 113 122); }
+    .token.namespace   { opacity: .8; }
+
+    .token.string, .token.attr-value, .token.char, .token.inserted { color: rgb(22 101 52); }      /* emerald-800 */
+    :where(.dark) .token.string,
+    :where(.dark) .token.attr-value,
+    :where(.dark) .token.char,
+    :where(.dark) .token.inserted { color: rgb(110 231 183); }                                     /* emerald-300 */
+
+    .token.keyword, .token.atrule, .token.rule, .token.important, .token.selector { color: rgb(29 78 216); font-weight: 500; }   /* blue-700 */
+    :where(.dark) .token.keyword,
+    :where(.dark) .token.atrule,
+    :where(.dark) .token.rule,
+    :where(.dark) .token.important,
+    :where(.dark) .token.selector { color: rgb(147 197 253); }                                     /* blue-300 */
+
+    .token.boolean, .token.number, .token.constant, .token.symbol, .token.deleted { color: rgb(190 18 60); }                       /* rose-700 */
+    :where(.dark) .token.boolean,
+    :where(.dark) .token.number,
+    :where(.dark) .token.constant,
+    :where(.dark) .token.symbol,
+    :where(.dark) .token.deleted { color: rgb(253 164 175); }                                     /* rose-300 */
+
+    .token.function, .token.class-name { color: rgb(126 34 206); }                                /* purple-700 */
+    :where(.dark) .token.function,
+    :where(.dark) .token.class-name { color: rgb(216 180 254); }                                  /* purple-300 */
+
+    .token.operator, .token.entity, .token.url, .token.variable, .token.property { color: rgb(154 52 18); }                        /* orange-800 */
+    :where(.dark) .token.operator,
+    :where(.dark) .token.entity,
+    :where(.dark) .token.url,
+    :where(.dark) .token.variable,
+    :where(.dark) .token.property { color: rgb(253 186 116); }                                    /* orange-300 */
+
+    .token.tag, .token.attr-name { color: rgb(155 28 28); }                                       /* red-800 */
+    :where(.dark) .token.tag,
+    :where(.dark) .token.attr-name { color: rgb(252 165 165); }                                   /* red-300 */
+  </style>
+</head>
+<body class="antialiased">
+  <div id="app"></div>
+
+  <script>
+    const { createApp, ref, computed, watch, onMounted, onUnmounted, nextTick } = Vue;
+
+    function slug(s) {
+      return s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+    }
+
+    function escapeHtml(s) {
+      return s
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function highlight(code, lang) {
+      const P = window.Prism;
+      if (P && lang && P.languages[lang]) {
+        try { return P.highlight(code, P.languages[lang], lang); }
+        catch { /* fall through */ }
+      }
+      return escapeHtml(code);
+    }
+
+    const CATEGORIES = [
+      {
+        name: 'Introduction',
+        topics: [
+          {
+            title: 'Introduction',
+            tags: ['intro', 'about', 'overview', 'philosophy'],
+            body: `SilverEngine is a PHP 8.4 DMVC framework. Composer is the autoloader, not a package source — the framework lives in the same repo as your app under packages/silverengine/core. Runtime deps are intentionally minimal (vlucas/phpdotenv, nejcc/php-datatypes). Vite/Vue/Tailwind are build-time only. Wisp delivers server-driven Vue without a separate API layer or client router.`,
+            language: 'text',
+            code: `silverengine/
+├─ app/                         your code (App\\)
+│  ├─ Controllers/
+│  ├─ Routes/Web.php
+│  └─ Resources/js/Pages/       Vue pages, server-driven via Wisp
+├─ packages/silverengine/core/  the framework (Silver\\)
+├─ config/                      overrides overlay (deep-merges)
+├─ database/
+├─ public/
+└─ silver                       CLI entrypoint`,
+          },
+          {
+            title: 'Install',
+            tags: ['install', 'setup', 'composer', 'npm', 'env'],
+            body: `Clone the repo, install PHP deps (autoloader only), install JS deps, copy .env, and start the dev server. SQLite is the default driver and is auto-created at database/db.sqlite — no DB setup needed to see it boot.`,
+            language: 'bash',
+            code: `# 1. Clone
+git clone https://github.com/SilverEngine/Framework.git my-app
+cd my-app
+
+# 2. Install (composer is autoloader-only)
+composer install
+npm install
+
+# 3. Environment
+cp .env.example .env
+
+# 4. Run
+composer dev       # PHP server + Vite, both at once
+# or separately:
+php silver serve   # http://127.0.0.1:8000
+npm run dev        # Vite HMR
+
+# 5. Open the scaffolder (local + APP_DEBUG=true)
+open http://127.0.0.1:8000/new`,
+          },
+          {
+            title: 'Upgrade',
+            tags: ['upgrade', 'migrate', 'update', 'version'],
+            body: `Pull the new framework version, reinstall autoload, clear caches, run migrations, and rebuild assets. Because Composer only resolves the autoloader, there is no Packagist version churn — updating the framework means updating this repo.`,
+            language: 'bash',
+            code: `# 1. Pull the new framework
+git pull origin master
+
+# 2. Refresh deps and bust caches
+composer install
+composer dump-autoload
+php silver optimize:clear
+
+# 3. Apply DB migrations
+php silver migrate
+
+# 4. Rebuild front-end assets
+npm install
+npm run build
+
+# 5. (Production) re-cache config + routes
+php silver optimize`,
+          },
+          {
+            title: 'Onboarding',
+            tags: ['onboarding', 'tutorial', 'first', 'hello', 'walkthrough'],
+            body: `Five minutes from clone to a custom page. Boot the server, open /new, type a route, click Build, and the scaffolder writes a controller, a Vue page, and the route line for you — then drops you on the new page. From there, edit the Vue file and Vite hot-reloads it.`,
+            language: 'text',
+            code: `1. composer dev
+   → PHP server on :8000, Vite HMR on :5173
+
+2. Open http://127.0.0.1:8000/new
+   → Scaffolder UI (gated by APP_ENV=local + APP_DEBUG=true)
+
+3. Type into the input:
+   /create about
+   → Creates:
+       app/Controllers/AboutController.php
+       app/Resources/js/Pages/About.vue
+       app/Routes/Web.php  (+ route line)
+   → Redirects to /about
+
+4. Edit app/Resources/js/Pages/About.vue
+   → Vite hot-reloads on save
+
+5. Need a layered feature? One command:
+   /create resource Posts
+   → Model + Repository + Service + Controller + Page + Route`,
+          },
+        ],
+      },
+      {
+        name: 'Getting Started',
+        topics: [
+          {
+            title: 'CLI · php silver',
+            tags: ['cli', 'silver', 'serve', 'migrate', 'optimize'],
+            body: `php silver serve [host:port] — built-in dev server. php silver migrate — run database/Migrations. php silver optimize — cache merged config + routes + composer dump -o. php silver optimize:clear — bust caches after touching .env, config/, or app/Routes/.`,
+            language: 'bash',
+            code: `# Start the dev server (default 127.0.0.1:8000)
+php silver serve
+
+# Run migrations from database/Migrations
+php silver migrate
+
+# Cache merged config + compiled routes + composer dump -o
+php silver optimize
+
+# Bust caches after changing .env, config/, or app/Routes/
+php silver optimize:clear
+
+# Run PHP server + Vite concurrently
+composer dev`,
+          },
+          {
+            title: 'Conventions',
+            tags: ['convention', 'psr', 'php', 'namespace', 'final'],
+            body: `PHP 8.4+: declare(strict_types=1), typed/readonly properties, constructor promotion, match, enums, final on leaf classes. PSR-4 + PSR-12. Framework code → Silver\\. App code → App\\. Directories lowercase, namespaces PascalCase.`,
+            language: 'php',
+            code: `<?php
+
+declare(strict_types=1);
+
+namespace App\\Models;
+
+final readonly class User
+{
+    public function __construct(
+        public int $id,
+        public string $email,
+        public Role $role,
+    ) {}
+}
+
+enum Role: string
+{
+    case Admin = 'admin';
+    case Member = 'member';
+}`,
+          },
+        ],
+      },
+      {
+        name: 'Routing & HTTP',
+        topics: [
+          {
+            title: 'Routing',
+            tags: ['route', 'web', 'api', 'router', 'http'],
+            body: `Routes live in app/Routes/Web.php and Api.php, loaded in order via config/Routes.php. The framework's core system routes load first. $route->get(path, Controller::class) wires a controller. Unknown routes → 404 via ErrorHandler middleware.`,
+            language: 'php',
+            code: `<?php
+
+declare(strict_types=1);
+
+namespace App\\Routes;
+
+use App\\Controllers\\WelcomeController;
+use App\\Controllers\\PostsController;
+
+/** @var \\Silver\\Core\\Route $route */
+
+$route->get('/',           WelcomeController::class, 'home');
+$route->get('/posts',      PostsController::class,   'posts.index');
+$route->get('/posts/{id}', PostsController::class,   'posts.show');
+$route->post('/posts',     PostsController::class,   'posts.store');`,
+          },
+          {
+            title: 'Controllers',
+            tags: ['controller', 'invoke', 'di', 'inject'],
+            body: `Final classes in app/Controllers/ that extend Silver\\Core\\Controller. Constructor injection works automatically — typehint dependencies and the container wires them. Single-action controllers use __invoke().`,
+            language: 'php',
+            code: `<?php
+
+declare(strict_types=1);
+
+namespace App\\Controllers;
+
+use App\\Services\\PostsService;
+use Silver\\Core\\Controller;
+use Silver\\Engine\\Ghost\\WispResponse;
+
+final class PostsController extends Controller
+{
+    public function __construct(
+        private readonly PostsService $posts,
+    ) {}
+
+    public function __invoke(): WispResponse
+    {
+        return wisp('Posts/Index', [
+            'posts' => $this->posts->latest(),
+        ]);
+    }
+}`,
+          },
+          {
+            title: 'Request',
+            tags: ['request', 'http', 'input', 'headers', 'query', 'body'],
+            body: `Silver\\Http\\Request wraps the current HTTP request. Inject it into controllers or middleware via constructor or method args. Common surface: input() for form/query bag, query(), method(), header()/headerValue(), hasHeader(), getUri().`,
+            language: 'php',
+            code: `use Silver\\Http\\Request;
+
+final class PostsController extends Controller
+{
+    public function __invoke(Request $request): WispResponse
+    {
+        $page = (int) ($request->input('page') ?? 1);
+        $sort = (string) ($request->query('sort') ?? 'recent');
+
+        if ($request->method() === 'post') {
+            // mutation flow
+        }
+
+        $isInertia = $request->hasHeader('X-Inertia');
+
+        return wisp('Posts', ['page' => $page]);
+    }
+}`,
+          },
+          {
+            title: 'Response',
+            tags: ['response', 'http', 'status', 'header', 'json'],
+            body: `Silver\\Http\\Response is the outbound side. setCode() / getCode() for status, setHeader() / hasHeader(), and content via body. Controllers usually return a WispResponse or a string; middleware mutates the live Response.`,
+            language: 'php',
+            code: `use Silver\\Http\\Response;
+use Silver\\Http\\Request;
+use Closure;
+use Silver\\Core\\Contracts\\MiddlewareInterface;
+
+final class ServerTime implements MiddlewareInterface
+{
+    public function execute(Request $req, Response $res, Closure $next): mixed
+    {
+        $ret = $next();
+        $res->setHeader('X-Server-Time', (string) time());
+        return $ret;
+    }
+}`,
+          },
+          {
+            title: 'Middleware',
+            tags: ['middleware', 'pipeline', 'request', 'response', 'next'],
+            body: `Middleware implements MiddlewareInterface::execute(Request, Response, Closure $next). Register the pipeline in config/Middlewares.php. Built-ins: AccessLog, ApiTransform, ErrorHandler, Version, Wisp, Auth. Order matters — earlier entries wrap later ones.`,
+            language: 'php',
+            code: `// config/Middlewares.php  (your overlay)
+return [
+    \\Silver\\App\\Middlewares\\AccessLog::class,
+    \\Silver\\App\\Middlewares\\ErrorHandler::class,
+    \\App\\Middlewares\\Wisp::class,
+    \\Silver\\App\\Middlewares\\Version::class,
+    \\App\\Middlewares\\Auth::class,
+];
+
+// app/Middlewares/Auth.php
+final class Auth implements MiddlewareInterface
+{
+    public function execute(Request $req, Response $res, Closure $next): mixed
+    {
+        if (!$req->session()->has('user_id')) {
+            $res->setCode(302)->setHeader('Location', '/login');
+            return null;
+        }
+        return $next();
+    }
+}`,
+          },
+          {
+            title: 'Built-in Middlewares',
+            tags: ['middleware', 'builtin', 'accesslog', 'auth', 'wisp', 'version'],
+            body: `The framework ships these middlewares; some are wired by default in config/Middlewares.php. Reorder, drop, or replace them in your overlay.`,
+            language: 'text',
+            code: `Silver\\App\\Middlewares\\AccessLog        Logs every request — timing, status, path
+Silver\\App\\Middlewares\\ApiTransform     Reshapes /api/ exceptions into the JSON envelope
+Silver\\App\\Middlewares\\ErrorHandler     Catches uncaught throwables, renders the 500 page
+Silver\\App\\Middlewares\\Version          Sends X-Frame-Options + X-Powered-By stripping
+
+App\\Middlewares\\Wisp                    Inertia handshake — 409 on stale assets, 302→303 on PUT/PATCH/DELETE
+App\\Middlewares\\Auth                    Example session-based gate (redirects unauthenticated → /login)
+
+# Default order (config/Middlewares.php):
+return [
+    \\Silver\\App\\Middlewares\\AccessLog::class,
+    \\Silver\\App\\Middlewares\\ErrorHandler::class,
+    \\Silver\\App\\Middlewares\\ApiTransform::class,
+    \\App\\Middlewares\\Wisp::class,
+    \\Silver\\App\\Middlewares\\Version::class,
+];`,
+          },
+          {
+            title: 'Service Providers',
+            tags: ['provider', 'serviceprovider', 'before', 'after', 'bootstrap'],
+            body: `Providers implement Silver\\Core\\Bootstrap\\ServiceProvider. Kernel constructs each one listed in config/Providers.php, registers it in the container, then calls before() *before* the middleware+controller pipeline and after() *after the response is flushed to the client*. Use them for request-scoped singletons, telemetry, feature-flag boot — anything kernel-level that doesn't fit in middleware.`,
+            language: 'php',
+            code: `// app/Providers/TelemetryProvider.php
+final class TelemetryProvider implements ServiceProvider
+{
+    public function before(Request $req, Response $res): void
+    {
+        // Pre-flight: bind request-scoped state, set headers, etc.
+        Container::singleton(RequestId::class, fn() => RequestId::generate());
+        $res->setHeader('X-Request-ID', RequestId::current());
+    }
+
+    public function after(Request $req, Response $res): void
+    {
+        // Post-response: response is already on the wire, safe to do
+        // expensive work that shouldn't block the client.
+        Metrics::flush($req, $res);
+    }
+}
+
+// config/Providers.php  (your overlay)
+return [
+    \\App\\Providers\\TelemetryProvider::class,
+];
+
+// Order matters — providers fire in declaration order for before(),
+// and the same order for after(). Distinct from middleware: providers
+// wrap the whole request lifecycle (including the response send);
+// middleware wraps only the controller call.`,
+          },
+          {
+            title: 'Session & Cookies',
+            tags: ['session', 'cookie', 'flash', 'state'],
+            body: `Silver\\Http\\Session is a thin facade over PHP sessions — get/set/has/forget/flash. Silver\\Http\\Cookie writes outbound cookies via Response. Sessions are lazy: nothing starts until first touch.`,
+            language: 'php',
+            code: `use Silver\\Http\\Session;
+use Silver\\Http\\Cookie;
+
+// Persist across requests
+Session::set('user_id', $user->id);
+$id = Session::get('user_id');
+
+// Flash — survives one redirect, gone next request
+Session::flash('notice', 'Saved.');
+
+// Remove
+Session::forget('user_id');
+
+// Outbound cookie (set on Response)
+Cookie::queue('theme', 'dark', minutes: 60 * 24 * 30);`,
+          },
+          {
+            title: 'Redirects',
+            tags: ['redirect', 'location', '302', '303'],
+            body: `Silver\\Http\\Redirect builds Location responses. Use ->to(url), ->back(), ->route(name, params). The Wisp middleware automatically upgrades 302 → 303 after PUT/PATCH/DELETE so the browser issues a GET.`,
+            language: 'php',
+            code: `use Silver\\Http\\Redirect;
+
+// Plain redirect
+return Redirect::to('/dashboard');
+
+// Named route
+return Redirect::route('posts.show', ['id' => $post->id]);
+
+// Back to referrer with a flash
+Session::flash('notice', 'Post created.');
+return Redirect::back();`,
+          },
+          {
+            title: 'Validator',
+            tags: ['validator', 'validation', 'rules', 'input'],
+            body: `Silver\\Http\\Validator runs rule-based checks against an input array. Pass the request bag plus a rules array; it returns errors keyed by field. Pair with a Wisp redirect-and-flash for the standard form flow.`,
+            language: 'php',
+            code: `use Silver\\Http\\Validator;
+
+$errors = Validator::check($request->all(), [
+    'email'    => ['required', 'email'],
+    'password' => ['required', 'min:8'],
+    'role'     => ['in:admin,member'],
+]);
+
+if ($errors) {
+    Session::flash('errors', $errors);
+    return Redirect::back();
+}
+
+// All good — proceed
+$user = $this->users->create($request->all());`,
+          },
+          {
+            title: 'Outbound HTTP · Curl',
+            tags: ['curl', 'http', 'client', 'outbound', 'api'],
+            body: `Silver\\Http\\Curl is a tiny wrapper around PHP curl for outbound calls. Set method, headers, JSON body, timeout — get back status + body. No retry/backoff built in; layer that on top if needed.`,
+            language: 'php',
+            code: `use Silver\\Http\\Curl;
+
+$res = Curl::post('https://api.example.com/v1/events', [
+    'headers' => [
+        'Authorization' => 'Bearer ' . env('API_TOKEN'),
+        'Content-Type'  => 'application/json',
+    ],
+    'json' => ['type' => 'user.created', 'id' => $user->id],
+    'timeout' => 5,
+]);
+
+if ($res->status >= 400) {
+    throw new RuntimeException("API failed: {$res->status}");
+}
+$data = json_decode($res->body, true);`,
+          },
+          {
+            title: 'Errors',
+            tags: ['error', '404', '500', 'exception', 'json', 'api'],
+            body: `500/404 HTML pages use inline CSS so they render even if assets, DB, or app are broken. Requests under /api/ get a JSON envelope { error: { status, message, ... } }. In production only status + message are exposed; exception/file/line/trace are debug-only.`,
+            language: 'text',
+            code: `GET /api/posts/9999  →  404
+
+Production envelope (APP_DEBUG=false):
+{
+  "error": {
+    "status": 404,
+    "message": "Post not found."
+  }
+}
+
+Debug envelope (APP_DEBUG=true) — extra fields, never sent in prod:
+{
+  "error": {
+    "status": 404,
+    "message": "Post not found.",
+    "exception": "Silver\\Exception\\NotFoundException",
+    "file": "app/Controllers/PostsController.php",
+    "line": 42,
+    "trace": ["..."]
+  }
+}`,
+          },
+        ],
+      },
+      {
+        name: 'Wisp',
+        topics: [
+          {
+            title: 'Wisp · Server-Driven Vue',
+            tags: ['wisp', 'vue', 'inertia', 'spa', 'page'],
+            body: `Controllers return wisp('PageName', $props). Uses @inertiajs/vue3. Pages live in app/Resources/js/Pages/. Persistent default layout in app/Resources/js/Layouts/Layout.vue — opt out per page with defineOptions({ layout: null }).`,
+            language: 'php',
+            code: `// app/Controllers/AboutController.php
+return wisp('About', [
+    'message' => 'Scaffolded by SilverEngine.',
+]);
+
+// app/Resources/js/Pages/About.vue
+<\x73cript setup lang="ts">
+import { Link } from '@inertiajs/vue3'
+
+defineOptions({ layout: null }) // opt out of default layout
+
+defineProps<{ message: string }>()
+<\x2Fscript>
+
+<template>
+  <h1>About</h1>
+  <p>{{ message }}</p>
+  <Link href="/">Home</Link>
+</template>`,
+          },
+          {
+            title: 'Ghost Templates',
+            tags: ['ghost', 'template', 'tpl', 'view', 'compile'],
+            body: `The classic .ghost.tpl renderer coexists with Wisp. Templates live in app/Resources/views/. The Compiler turns Ghost syntax into PHP and caches the result at storage/cache/views/. Use it for emails, plain HTML pages, or anywhere you don't need a Vue SPA.`,
+            language: 'php',
+            code: `// app/Controllers/Mail/WelcomeController.php
+return view('mail.welcome', [
+    'user' => $user,
+    'cta'  => route('dashboard'),
+]);
+
+// app/Resources/views/mail/welcome.ghost.tpl
+<!DOCTYPE html>
+<html>
+<body>
+  <h1>Hi {{ user.name }}!</h1>
+  <p>Your account is ready.</p>
+  <a href="{{ cta }}">Open dashboard</a>
+
+  @if(user.role === 'admin')
+    <p><strong>Admin access enabled.</strong></p>
+  @endif
+</body>
+</html>`,
+          },
+          {
+            title: 'Vite Integration',
+            tags: ['vite', 'hmr', 'manifest', 'assets', 'build'],
+            body: `Silver\\Engine\\Ghost\\Vite resolves asset URLs. In dev (Vite running), it points to the dev server with HMR. In prod, it reads public/build/.vite/manifest.json and emits hashed asset URLs. The app shell template uses it transparently — you usually don't touch it.`,
+            language: 'php',
+            code: `// app/Resources/views/app.ghost.tpl  (the Wisp shell)
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>{{ title ?? 'SilverEngine' }}</title>
+  {!! Vite::assets(['app/Resources/js/app.ts']) !!}
+</head>
+<body>
+  <div id="app" data-page="{{ page }}"></div>
+</body>
+</html>
+
+// Output in dev (vite running on :5173):
+//   <\x73cript type="module" src="http://localhost:5173/app/Resources/js/app.ts"><\x2Fscript>
+// Output in prod (manifest resolved):
+//   <link rel="stylesheet" href="/build/assets/app-C1wd9VoE.css">
+//   <\x73cript type="module" src="/build/assets/app-BvsXtlpt.js"><\x2Fscript>`,
+          },
+          {
+            title: 'Deferred & Lazy Props',
+            tags: ['defer', 'lazy', 'wisp', 'inertia', 'props', 'partial'],
+            body: `Wisp supports Inertia-style partial reloads. DeferProp delays evaluation until the partial reload arrives; LazyProp only runs when explicitly requested via X-Inertia-Partial-Data. Use them to avoid expensive computation on the initial render.`,
+            language: 'php',
+            code: `use Silver\\Engine\\Ghost\\DeferProp;
+use Silver\\Engine\\Ghost\\LazyProp;
+
+return wisp('Dashboard', [
+    // Always evaluated, sent in initial payload
+    'user'   => $this->user(),
+
+    // Sent only on a partial reload triggered by the client
+    'stats'  => new DeferProp(fn() => $this->stats->expensive()),
+
+    // Evaluated only if the client asks for it by name
+    'export' => new LazyProp(fn() => $this->reports->csv()),
+]);
+
+// Client-side partial reload (Inertia router):
+//   router.reload({ only: ['stats'] })`,
+          },
+          {
+            title: 'Scaffolder',
+            tags: ['scaffold', 'generate', 'new', 'create', 'remove'],
+            body: `Visit /new in local + debug mode. Commands: /create <name> (page), /create <type> <name> for service/repository/model/controller/middleware/provider/observer/dto/vo, /create resource <name> for the full CRUD bundle. /remove inverts everything.`,
+            language: 'text',
+            code: `# Implicit page (Controller + Vue + route)
+/create about
+
+# Layered class types
+/create model     User
+/create service   Users
+/create repository Users
+/create controller Users
+/create middleware Auth
+/create provider  Mailer
+/create observer  User
+/create dto       Login
+/create vo        Money
+
+# Full CRUD bundle (model + repository + service + page)
+/create resource Posts
+
+# Tear it all back down
+/remove resource Posts
+
+# Search the docs
+/docs container`,
+          },
+        ],
+      },
+      {
+        name: 'Architecture',
+        topics: [
+          {
+            title: 'Container / IoC',
+            tags: ['container', 'di', 'ioc', 'bind', 'singleton', 'autowire'],
+            body: `Silver\\Core\\Container is the real IoC — autowiring, bind / singleton. Legacy Instances registry (register/registerNamed/get/getAll) preserved as a strict subset. Use app(SomeClass::class) to resolve.`,
+            language: 'php',
+            code: `use Silver\\Core\\Container;
+
+// Resolve with autowiring (constructor deps wired recursively).
+$service = app(PostsService::class);
+
+// Register a singleton — one instance for the request lifecycle.
+Container::singleton(Mailer::class, fn() => new SmtpMailer(
+    host: env('MAIL_HOST'),
+));
+
+// Bind an interface to a concrete implementation.
+Container::bind(CacheInterface::class, RedisCache::class);
+
+// Legacy named registry still works.
+Container::registerNamed('clock', fn() => new SystemClock());
+$clock = Container::get('clock');`,
+          },
+          {
+            title: 'Configuration Files',
+            tags: ['config', 'files', 'reference', 'overlay'],
+            body: `One config file per concern, lowercased filename = config key. The framework ships defaults under packages/silverengine/core/src/Config/; your overlay lives in config/ and deep-merges over them. Quick reference for the built-in files.`,
+            language: 'text',
+            code: `config/                            → your overlay (deep-merges over core defaults)
+
+  App.php          Top-level app settings (name, locale, timezone)
+  Alias.php        Class aliases — short names mapped to FQNs
+  Autoload.php     PSR-4 prefix→directory mapping (custom autoloader)
+  Middlewares.php  The middleware pipeline (priority-keyed list)
+  Providers.php    Service providers (ordered list of before/after classes)
+  Routes.php       Ordered list of route files to include
+  Recorder.php     Debug recorder — enabled, limit, ignored paths
+  Scaffolder.php   /new scaffolder — enabled flag + route mount point
+  databases.php    DB connections — driver, host, name, credentials
+  lang.php         i18n — default locale + locale paths
+  mail.php         Mail FROM address/name and on/off switch
+
+# Read at runtime via dot-notation:
+Env::get('app.name');
+Env::get('recorder.limit');
+Env::get('scaffolder.route');`,
+          },
+          {
+            title: 'Config Overlay',
+            tags: ['config', 'merge', 'env', 'override'],
+            body: `Framework defaults live in packages/silverengine/core/src/Config/. App overrides live in config/. Deep-merges per file: associative keys merge recursively (app wins), lists/scalars replace wholesale. Only define keys you actually override.`,
+            language: 'php',
+            code: `// packages/silverengine/core/src/Config/Recorder.php  (framework default)
+return [
+    'enabled' => true,
+    'limit'   => 50,
+    'ignore'  => ['/debug', '/build', '/favicon', '/robots'],
+];
+
+// config/Recorder.php  (your overlay — only what changes)
+return [
+    'limit'  => 200,
+    'ignore' => ['/debug', '/build', '/favicon', '/robots', '/healthz'],
+];
+
+// Read at runtime with dot-notation:
+Env::get('recorder.limit');     // 200
+Env::get('recorder.enabled');   // true (inherited from default)`,
+          },
+        ],
+      },
+      {
+        name: 'Data',
+        topics: [
+          {
+            title: 'Database',
+            tags: ['db', 'database', 'pdo', 'sqlite', 'mysql', 'transaction', 'dialect'],
+            body: `ConnectionManager (registry + lazy PDO) + TransactionManager (nested BEGIN/COMMIT/ROLLBACK with savepoints) + a Db facade. Per-driver SQL via typed Dialect strategy + DbDriver / QueryType enums. Default: SQLite (database/db.sqlite, auto-created).`,
+            language: 'php',
+            code: `use Silver\\Database\\Db;
+
+// Simple query
+$rows = Db::select('SELECT id, email FROM users WHERE role = ?', ['admin']);
+
+// Single value / row
+$count = Db::scalar('SELECT COUNT(*) FROM users');
+$user  = Db::first('SELECT * FROM users WHERE id = ?', [$id]);
+
+// Write
+Db::statement('UPDATE users SET last_seen = ? WHERE id = ?', [time(), $id]);
+
+// Nested transactions (real BEGIN at outer, savepoints inside)
+Db::transaction(function () use ($payload) {
+    $userId = Db::insert('INSERT INTO users (email) VALUES (?)', [$payload->email]);
+
+    Db::transaction(function () use ($userId) {
+        Db::insert('INSERT INTO profiles (user_id) VALUES (?)', [$userId]);
+    });
+});`,
+          },
+          {
+            title: 'Model',
+            tags: ['model', 'orm', 'activerecord', 'eloquent'],
+            body: `Silver\\Database\\Model is the active-record base. Subclasses set $table, declare $fillable, and get find/all/save/delete for free. Constructor injection still works — wire other services into a model's methods, not its constructor.`,
+            language: 'php',
+            code: `namespace App\\Models;
+
+use Silver\\Database\\Model;
+
+final class Post extends Model
+{
+    protected string $table = 'posts';
+    protected array $fillable = ['title', 'body', 'author_id', 'published_at'];
+}
+
+// Read
+$post = Post::find($id);
+$posts = Post::all();
+$drafts = Post::where('published_at', null)->get();
+
+// Write
+$post = new Post(['title' => 'Hello', 'body' => '...', 'author_id' => 1]);
+$post->save();
+
+$post->title = 'Edited';
+$post->save();
+
+$post->delete();`,
+          },
+          {
+            title: 'Query Builder',
+            tags: ['query', 'builder', 'where', 'select', 'join'],
+            body: `Silver\\Database\\Query (and the QueryObject returned by Model::where) is a fluent builder. Chain where/orderBy/limit/offset, then ->get(), ->first(), ->count(). The Dialect strategy emits driver-correct SQL for SQLite, MySQL, Postgres.`,
+            language: 'php',
+            code: `use Silver\\Database\\Db;
+
+$rows = Db::table('posts')
+    ->select('id', 'title', 'author_id')
+    ->where('published_at', '!=', null)
+    ->where('author_id', 1)
+    ->orderBy('published_at', 'desc')
+    ->limit(20)
+    ->get();
+
+// Joins
+$rows = Db::table('posts')
+    ->join('users', 'users.id', '=', 'posts.author_id')
+    ->select('posts.title', 'users.name as author')
+    ->where('users.role', 'admin')
+    ->get();
+
+// Aggregates
+$count = Db::table('posts')->where('published_at', '!=', null)->count();`,
+          },
+          {
+            title: 'Relations',
+            tags: ['relation', 'hasMany', 'belongsTo', 'eager', 'load'],
+            body: `Silver\\Database\\Relation provides hasOne / hasMany / belongsTo / belongsToMany. Define them as methods on the Model; access them as properties. Use ->with('rel') to eager-load and avoid N+1.`,
+            language: 'php',
+            code: `final class Post extends Model
+{
+    public function author(): Relation
+    {
+        return $this->belongsTo(User::class, 'author_id');
+    }
+
+    public function comments(): Relation
+    {
+        return $this->hasMany(Comment::class, 'post_id');
+    }
+}
+
+// Lazy (N+1 risk)
+foreach (Post::all() as $post) {
+    echo $post->author->name;   // one query per post
+}
+
+// Eager — one extra query total
+foreach (Post::with('author')->get() as $post) {
+    echo $post->author->name;
+}`,
+          },
+          {
+            title: 'Dialects',
+            tags: ['dialect', 'sqlite', 'mysql', 'postgres', 'driver', 'sql'],
+            body: `Per-driver SQL differences live behind a typed Dialect strategy (Silver\\Database\\Dialect). The DbDriver enum keys it; the QueryType enum picks the right SQL shape per operation. Don't hardcode driver-specific SQL outside the dialect layer — extend the strategy instead.`,
+            language: 'php',
+            code: `use Silver\\Database\\Dialect;
+use Silver\\Database\\DbDriver;
+use Silver\\Database\\QueryType;
+
+// The Query builder asks the dialect for driver-correct SQL — you don't
+// usually touch this directly. Example of inspecting a dialect:
+$dialect = Dialect::for(DbDriver::Sqlite);
+$sql = $dialect->compile(QueryType::Select, [
+    'table'   => 'posts',
+    'columns' => ['id', 'title'],
+    'where'   => [['published_at', '!=', null]],
+    'limit'   => 10,
+]);
+// → SELECT id, title FROM posts WHERE published_at IS NOT NULL LIMIT 10
+
+// To support a new driver: implement a Dialect subclass and register it.
+// To override a single statement: extend the existing dialect and swap it
+// in via the container.`,
+          },
+          {
+            title: 'Migrations',
+            tags: ['migration', 'schema', 'database', 'migrate'],
+            body: `Migrations live in database/Migrations/. Each file declares up() and down() methods that mutate the schema. Run them with php silver migrate. The runner is order-aware — file names sort lexicographically.`,
+            language: 'php',
+            code: `// database/Migrations/2026_05_27_120000_create_posts_table.php
+return new class {
+    public function up(): void
+    {
+        Db::statement('
+            CREATE TABLE posts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                author_id INTEGER NOT NULL,
+                title TEXT NOT NULL,
+                body TEXT NOT NULL,
+                published_at TIMESTAMP NULL,
+                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+            )
+        ');
+        Db::statement('CREATE INDEX idx_posts_author ON posts(author_id)');
+    }
+
+    public function down(): void
+    {
+        Db::statement('DROP TABLE IF EXISTS posts');
+    }
+};
+
+// Run:
+//   php silver migrate
+//   php silver migrate-down       — roll back the latest
+//   php silver migrate-seed       — run all + seeders`,
+          },
+        ],
+      },
+      {
+        name: 'Helpers & Internals',
+        topics: [
+          {
+            title: 'Global Helpers',
+            tags: ['helpers', 'global', 'app', 'env', 'wisp', 'view', 'route'],
+            body: `Core/helpers.php exposes a handful of short global functions for the things you reach for daily. They're thin wrappers over the container, env, and engine — equivalent to the long-form calls but ergonomic.`,
+            language: 'php',
+            code: `// Resolve from the container
+$service = app(PostsService::class);
+
+// Read merged env (.env + config overlay, dot-notation)
+$dbg = env('debug');             // bool
+$lim = env('recorder.limit');    // 50
+
+// Render a Wisp page
+return wisp('Posts/Index', ['posts' => $posts]);
+
+// Render a Ghost template
+return view('mail.welcome', ['user' => $user]);
+
+// Resolve a named route
+$href = route('posts.show', ['id' => $post->id]);
+
+// dd() / dump() for quick debugging (debug only)
+dd($request->all());`,
+          },
+          {
+            title: 'String, URL, Path Helpers',
+            tags: ['helpers', 'str', 'url', 'path', 'html'],
+            body: `Silver\\Helpers exposes small utility classes: Str (slug, camel, snake, studly, contains), URL (build, current, with), Path (join, normalize, isAbsolute), HTMLElement (safe tag building). All static — no DI needed.`,
+            language: 'php',
+            code: `use Silver\\Helpers\\Str;
+use Silver\\Helpers\\URL;
+use Silver\\Helpers\\Path;
+use Silver\\Helpers\\HTMLElement;
+
+Str::slug('Hello World!');         // "hello-world"
+Str::camel('user_name');           // "userName"
+Str::studly('post-comment');       // "PostComment"
+Str::snake('UserName');            // "user_name"
+Str::contains('foobar', 'oob');    // true
+
+URL::current();                    // current request URL
+URL::with(['page' => 2]);          // current URL + query merge
+
+Path::join(\\ROOT, 'storage', 'cache'); // "/abs/path/storage/cache"
+Path::isAbsolute('/etc');          // true
+
+HTMLElement::tag('a', ['href' => $href, 'class' => 'btn'], 'Click');`,
+          },
+          {
+            title: 'Env & .env',
+            tags: ['env', 'dotenv', 'environment', 'config'],
+            body: `vlucas/phpdotenv loads .env at boot, exposed as $_ENV. The config overlay is layered on top — Env::get('foo.bar') first checks merged config, then the raw env var. .env is the only Composer runtime dep used here.`,
+            language: 'php',
+            code: `# .env
+APP_ENV=local
+APP_DEBUG=true
+DB_DRIVER=sqlite
+DB_PATH=database/db.sqlite
+
+// PHP
+use Silver\\Core\\Env;
+
+Env::name();                       // 'local'
+Env::get('debug');                 // true
+Env::get('db.driver');             // 'sqlite' (from config/databases.php overlay)
+
+// Convention: keep secrets in .env, structure in config/*.php`,
+          },
+          {
+            title: 'Hooks',
+            tags: ['hook', 'lifecycle', 'callback', 'kernel'],
+            body: `Silver\\Core\\Hook provides named callback points the framework fires during the request lifecycle (e.g., before-route, after-controller). Register listeners from a Service Provider; useful for tracing, metrics, or cross-cutting decorations.`,
+            language: 'php',
+            code: `use Silver\\Core\\Hook;
+
+// In a provider's before():
+Hook::on('controller.resolved', function (string $class, string $method) {
+    Log::debug("→ {$class}::{$method}");
+});
+
+Hook::on('response.sending', function (Response $res) {
+    $res->setHeader('X-Request-ID', RequestId::current());
+});
+
+// Fire a custom hook from your own code
+Hook::fire('users.created', $user);`,
+          },
+          {
+            title: 'Events',
+            tags: ['event', 'eventmanager', 'pubsub', 'listener'],
+            body: `Silver\\Engine\\Events\\EventManager is a simple pub/sub: subscribe(name, listener), publish(name, payload). Distinct from Hook (lifecycle-bound) — Events are for your domain (UserRegistered, OrderShipped). No queue; synchronous.`,
+            language: 'php',
+            code: `use Silver\\Engine\\Events\\EventManager;
+
+// Subscribe — typically from a provider
+$events = app(EventManager::class);
+
+$events->subscribe('user.registered', function (User $user): void {
+    app(Mailer::class)->send(new WelcomeMail($user));
+});
+
+// Publish from anywhere
+$events->publish('user.registered', $user);
+
+// Multiple listeners for the same event run in subscription order.`,
+          },
+          {
+            title: 'FileSystem',
+            tags: ['filesystem', 'fs', 'write', 'read', 'mkdir', 'hook'],
+            body: `Silver\\FileSystem\\FileSystem is the file-IO service. Has the obvious surface (read/write/isFile/mkdir/delete) but routes everything through hookable methods — the scaffolder uses it so file writes can be observed or replaced in tests.`,
+            language: 'php',
+            code: `use Silver\\FileSystem\\FileSystem;
+
+final class Generator
+{
+    public function __construct(private FileSystem $fs) {}
+
+    public function run(): void
+    {
+        if ($this->fs->isFile($path)) {
+            return; // idempotent
+        }
+        $this->fs->mkdir(dirname($path));
+        $this->fs->write($path, $contents);
+    }
+}
+
+// Tests can swap a fake FileSystem in the container — no real disk writes.`,
+          },
+        ],
+      },
+      {
+        name: 'Tooling',
+        topics: [
+          {
+            title: 'CLI Generators',
+            tags: ['cli', 'generate', 'g', 'd', 'resource', 'crud'],
+            body: `php silver g <type> <name> generates a stub on disk; php silver d <type> <name> removes it. Built-in types: resource (controller + model + view bundle), controller, model, view, helper, facade. The web /new scaffolder is the GUI front-end for the same idea, plus service/repository/middleware/etc.`,
+            language: 'bash',
+            code: `# Create a single artifact
+php silver g controller Posts
+php silver g model      Post
+php silver g view       posts.index
+php silver g helper     Money
+php silver g facade     Cache
+
+# Full CRUD bundle in one go (controller + model + view)
+php silver g resource Posts
+
+# Delete what you created
+php silver d resource Posts
+php silver d controller Posts
+
+# For service/repository/middleware/provider/observer/dto/vo,
+# use the web scaffolder at /new instead — those types live there.`,
+          },
+          {
+            title: 'Heartbeat',
+            tags: ['heartbeat', 'health', 'readiness', 'probe', 'status', 'ops', 'performance'],
+            body: `GET /heartbeat — built-in self-check + performance probe. Runs a fixed battery of subsystem checks (PHP, config, container, routes, middlewares, providers, storage, database, assets), plus a performance block: real per-phase request lifecycle from index.php → kernel → middleware → controller, synthetic subsystem timings, memory snapshot, opcache stats. HTTP 200 for ok+degraded, 503 for down. Cheap by design; safe to point a load balancer at.`,
+            language: 'text',
+            code: `GET /heartbeat  →  200 (or 503 when down)
+
+{
+  "status": "ok",
+  "php": "8.4.0",
+  "env": "production",
+  "debug": false,
+  "elapsed_ms": 1.2,
+
+  "checks": [
+    { "name": "php",         "status": "ok", "detail": "PHP 8.4.0 · opcache on" },
+    { "name": "config",      "status": "ok", "detail": "loaded · env=production" },
+    { "name": "container",   "status": "ok", "detail": "IoC resolves core services" },
+    { "name": "routes",      "status": "ok", "detail": "42 routes · cache hit" },
+    { "name": "middlewares", "status": "ok", "detail": "5 registered" },
+    { "name": "providers",   "status": "ok", "detail": "2 registered" },
+    { "name": "storage",     "status": "ok", "detail": "cache + recordings writable" },
+    { "name": "database",    "status": "ok", "detail": "ping ok · driver=sqlite" },
+    { "name": "assets",      "status": "ok", "detail": "vite manifest present" }
+  ],
+
+  "performance": {
+    "request": {
+      "elapsed_ms": 2.18,    // index.php → now
+      "boot_ms":    1.15     // index.php → kernel.run()
+    },
+    "lifecycle": {            // ← real dt() timeline of THIS request
+      "total_ms": 2.082,
+      "by_category": {
+        "boot":       0.41,   // Env::construct, error handlers, DB connect
+        "kernel":     0.36,   // load routes, load middlewares, providers
+        "request":    0.01,   // route resolve
+        "controller": 0.08    // controller resolve + action so far
+      },
+      "spans": [ ...per-span breakdown... ]
+    },
+    "subsystems": {            // ← synthetic micro-benchmarks
+      "config_lookup_us":          6,
+      "container_resolve_us":      5,
+      "middleware_instantiate_us": 18,
+      "provider_instantiate_us":   2,
+      "route_table_us":            2,
+      "request_object_us":         12
+    },
+    "memory": {
+      "current_mb": 2,
+      "peak_mb":    2,
+      "limit":      "512M"
+    },
+    "opcache": {
+      "enabled":        true,
+      "used_mb":        10.3,
+      "free_mb":        116.7,
+      "hit_rate_pct":   93.32,
+      "cached_scripts": 87
+    }
+  }
+}
+
+Per-check status:
+  ok    healthy
+  warn  not configured / not required — overall stays ok or degrades
+  fail  hard failure — overall becomes "down" (HTTP 503)`,
+          },
+          {
+            title: 'Debug Recorder',
+            tags: ['debug', 'recorder', 'profiler', 'timeline', 'telescope'],
+            body: `When APP_DEBUG=true every request is timed and persisted to storage/debug/recordings/ (file-based, ring-buffered, configurable via config/Recorder.php). Browse /debug for overview/timeline. /debug, /build, /favicon, /robots excluded by default.`,
+            language: 'php',
+            code: `// config/Recorder.php  — extend the default exclude list
+return [
+    'enabled' => true,
+    'limit'   => 100,
+    'ignore'  => [
+        '/debug',
+        '/build',
+        '/favicon',
+        '/robots',
+        '/healthz',
+        '/metrics',
+    ],
+];
+
+// Recordings on disk:
+//   storage/debug/recordings/2026-05-27T08-21-14-abc123.json
+//
+// Browse them at:
+//   /debug?tab=recordings`,
+          },
+          {
+            title: 'Optimize Cache',
+            tags: ['optimize', 'cache', 'production', 'opcache'],
+            body: `php silver optimize caches the merged config and the compiled route table, then runs composer dump-autoload -o. Do NOT use --classmap-authoritative — the framework relies on dynamic class resolution. In production, enable opcache.`,
+            language: 'bash',
+            code: `# Production build
+php silver optimize        # caches config + routes, composer dump -o
+npm run build              # bundles JS/CSS to public/build/
+
+# After editing .env, config/*, or app/Routes/*:
+php silver optimize:clear  # then re-optimize if running in prod
+
+# DO NOT use --classmap-authoritative — breaks dynamic class resolution.
+# DO enable opcache in php.ini for production:
+#   opcache.enable=1
+#   opcache.validate_timestamps=0   # in prod only`,
+          },
+        ],
+      },
+    ];
+
+    // Pre-compute slugs + flat list once.
+    const ALL = [];
+    for (const cat of CATEGORIES) {
+      for (const t of cat.topics) {
+        t.id = slug(t.title);
+        t.category = cat.name;
+        ALL.push(t);
+      }
+    }
+
+    function readQ() {
+      try { return new URL(window.location.href).searchParams.get('q') || ''; }
+      catch { return ''; }
+    }
+    function writeQ(q) {
+      try {
+        const u = new URL(window.location.href);
+        if (q) u.searchParams.set('q', q); else u.searchParams.delete('q');
+        history.replaceState(null, '', u.toString());
+      } catch {}
+    }
+
+    createApp({
+      setup() {
+        const query = ref(readQ());
+        const activeId = ref(ALL[0]?.id || '');
+        const copiedId = ref(null);
+        let observer = null;
+
+        /* Theme: light | dark | auto — synced with the rest of the app via
+           the shared 'silverengine-theme' localStorage key. */
+        const STORAGE_KEY = 'silverengine-theme';
+        const theme = ref('auto');
+        let mql = null;
+
+        function readStoredTheme() {
+          try {
+            const v = localStorage.getItem(STORAGE_KEY);
+            return (v === 'light' || v === 'dark' || v === 'auto') ? v : 'auto';
+          } catch { return 'auto'; }
+        }
+        function applyTheme(choice) {
+          const dark = choice === 'dark' || (choice === 'auto' && mql && mql.matches);
+          document.documentElement.classList.toggle('dark', dark);
+        }
+        function setTheme(next) {
+          theme.value = next;
+          try { localStorage.setItem(STORAGE_KEY, next); } catch {}
+          applyTheme(next);
+        }
+        function onSystemChange() {
+          if (theme.value === 'auto') applyTheme('auto');
+        }
+
+        async function copyCode(id, text) {
+          try {
+            await navigator.clipboard.writeText(text);
+            copiedId.value = id;
+            setTimeout(() => { if (copiedId.value === id) copiedId.value = null; }, 1500);
+          } catch {}
+        }
+
+        const groupedFiltered = computed(() => {
+          const q = query.value.trim().toLowerCase();
+          const terms = q ? q.split(/\s+/).filter(Boolean) : [];
+          const match = (t) => {
+            if (terms.length === 0) return true;
+            const hay = (t.title + ' ' + t.tags.join(' ') + ' ' + t.body).toLowerCase();
+            return terms.every(term => hay.includes(term));
+          };
+          return CATEGORIES
+            .map(c => ({ name: c.name, topics: c.topics.filter(match) }))
+            .filter(c => c.topics.length > 0);
+        });
+
+        const flatFiltered = computed(() =>
+          groupedFiltered.value.flatMap(c => c.topics)
+        );
+
+        const totalCount = ALL.length;
+
+        function clear() { query.value = ''; }
+
+        watch(query, (v) => writeQ(v));
+
+        function setupObserver() {
+          if (observer) observer.disconnect();
+          observer = new IntersectionObserver(
+            (entries) => {
+              // Pick the topmost intersecting entry.
+              const visible = entries
+                .filter(e => e.isIntersecting)
+                .sort((a, b) => a.boundingClientRect.top - b.boundingClientRect.top);
+              if (visible[0]) activeId.value = visible[0].target.id;
+            },
+            { rootMargin: '-80px 0px -65% 0px', threshold: 0 }
+          );
+          document.querySelectorAll('.topic').forEach(el => observer.observe(el));
+        }
+
+        watch(flatFiltered, () => { nextTick(setupObserver); });
+
+        onMounted(() => {
+          nextTick(setupObserver);
+          // Honor #hash on load.
+          if (location.hash) {
+            const el = document.querySelector(location.hash);
+            if (el) el.scrollIntoView();
+          }
+          // Theme bootstrap (separate from the pre-paint script, which only
+          // sets the initial class; this hooks the reactive controls up).
+          theme.value = readStoredTheme();
+          if (typeof window !== 'undefined') {
+            mql = window.matchMedia('(prefers-color-scheme: dark)');
+            mql.addEventListener('change', onSystemChange);
+          }
+          applyTheme(theme.value);
+        });
+
+        onUnmounted(() => {
+          if (observer) observer.disconnect();
+          if (mql) mql.removeEventListener('change', onSystemChange);
+        });
+
+        function jump(id) {
+          const el = document.getElementById(id);
+          if (el) {
+            el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            history.replaceState(null, '', '#' + id);
+            activeId.value = id;
+          }
+        }
+
+        return {
+          query, clear, groupedFiltered, flatFiltered,
+          totalCount, activeId, jump, copyCode, copiedId,
+          highlight, theme, setTheme,
+        };
+      },
+      template: `
+        <div class="min-h-screen flex flex-col bg-white text-zinc-900 dark:bg-zinc-950 dark:text-zinc-100 transition-colors">
+          <header class="sticky top-0 z-30 backdrop-blur bg-white/80 dark:bg-zinc-950/80 border-b border-zinc-100 dark:border-zinc-900 px-6 lg:px-8 h-14 flex items-center gap-6 text-sm">
+            <a href="/" class="flex items-center gap-2 font-medium tracking-tight hover:opacity-80 transition-opacity shrink-0">
+              <span class="inline-block size-2 bg-zinc-900 dark:bg-zinc-100"></span>
+              SilverEngine
+              <span class="text-zinc-400 dark:text-zinc-500 font-normal hidden sm:inline">· Docs</span>
+            </a>
+
+            <div class="flex-1 flex justify-center">
+              <div class="w-full max-w-md flex items-center gap-2 rounded-full border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 px-4 py-1.5 focus-within:bg-white dark:focus-within:bg-zinc-900 focus-within:border-zinc-300 dark:focus-within:border-zinc-700 transition-colors">
+                <svg class="size-3.5 text-zinc-400 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="11" cy="11" r="7" />
+                  <path d="m20 20-3.5-3.5" />
+                </svg>
+                <input
+                  v-model="query"
+                  type="text"
+                  placeholder="Search the docs…"
+                  spellcheck="false"
+                  autocomplete="off"
+                  class="flex-1 bg-transparent outline-none text-[13px] text-zinc-900 dark:text-zinc-100 placeholder:text-zinc-400 dark:placeholder:text-zinc-500"
+                />
+                <button
+                  v-if="query"
+                  type="button"
+                  @click="clear"
+                  aria-label="Clear search"
+                  class="text-zinc-400 hover:text-zinc-700 dark:hover:text-zinc-200 cursor-pointer transition-colors"
+                >
+                  <svg class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                    <path d="M18 6 6 18M6 6l12 12" />
+                  </svg>
+                </button>
+              </div>
+            </div>
+
+            <nav class="hidden md:flex items-center gap-6 text-zinc-500 dark:text-zinc-400 shrink-0">
+              <a href="/" class="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Home</a>
+              <a href="/new" class="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">Scaffolder</a>
+              <a href="https://github.com/SilverEngine/Framework" class="hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">GitHub</a>
+            </nav>
+
+            <div
+              role="group"
+              aria-label="Color theme"
+              class="flex items-center gap-0.5 rounded-full border border-zinc-200 dark:border-zinc-800 p-0.5 shrink-0"
+            >
+              <button
+                v-for="opt in ['light', 'auto', 'dark']"
+                :key="opt"
+                type="button"
+                :aria-pressed="theme === opt"
+                :title="opt[0].toUpperCase() + opt.slice(1) + ' theme'"
+                @click="setTheme(opt)"
+                class="size-7 rounded-full grid place-items-center cursor-pointer transition-colors text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100"
+                :class="theme === opt ? 'bg-zinc-100 text-zinc-900 dark:bg-zinc-800 dark:text-zinc-100' : ''"
+              >
+                <svg v-if="opt === 'light'" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round">
+                  <circle cx="12" cy="12" r="4" />
+                  <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M4.93 19.07l1.41-1.41M17.66 6.34l1.41-1.41" />
+                </svg>
+                <svg v-else-if="opt === 'auto'" class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M12 3v18" />
+                  <path d="M12 3a9 9 0 0 1 0 18z" fill="currentColor" />
+                </svg>
+                <svg v-else class="size-3.5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M21 12.79A9 9 0 1 1 11.21 3 7 7 0 0 0 21 12.79z" />
+                </svg>
+              </button>
+            </div>
+          </header>
+
+          <div class="flex-1 mx-auto w-full max-w-[88rem] grid grid-cols-1 lg:grid-cols-[16rem_minmax(0,1fr)_14rem] gap-8 px-6 lg:px-8">
+            <!-- LEFT SIDEBAR: categorized nav -->
+            <aside class="hidden lg:block py-10">
+              <div class="sticky top-20 max-h-[calc(100vh-6rem)] overflow-y-auto scroll-thin pr-2">
+                <div v-for="cat in groupedFiltered" :key="cat.name" class="mb-6">
+                  <h3 class="text-[11px] uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400 mb-2 px-2">{{ cat.name }}</h3>
+                  <ul class="space-y-0.5">
+                    <li v-for="t in cat.topics" :key="t.id">
+                      <button
+                        type="button"
+                        @click="jump(t.id)"
+                        class="w-full text-left px-2 py-1.5 rounded text-[13px] cursor-pointer transition-colors"
+                        :class="activeId === t.id
+                          ? 'bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium'
+                          : 'text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 hover:bg-zinc-50 dark:hover:bg-zinc-900'"
+                      >
+                        {{ t.title }}
+                      </button>
+                    </li>
+                  </ul>
+                </div>
+                <div v-if="groupedFiltered.length === 0" class="text-[12px] text-zinc-500 dark:text-zinc-400 px-2">
+                  No matches.
+                </div>
+              </div>
+            </aside>
+
+            <!-- CENTER: content -->
+            <main class="py-10 min-w-0">
+              <div class="max-w-2xl">
+                <p class="text-xs uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400">/docs</p>
+                <h1 class="mt-3 text-4xl font-medium tracking-tight">Documentation</h1>
+                <p class="mt-4 text-base leading-relaxed text-zinc-600 dark:text-zinc-400">
+                  The framework's mental model — searchable. {{ flatFiltered.length }} of {{ totalCount }} topics shown.
+                </p>
+
+                <div v-if="flatFiltered.length === 0" class="mt-10 text-sm text-zinc-500 dark:text-zinc-400">
+                  No topics match <code class="px-1.5 py-0.5 rounded bg-zinc-100 dark:bg-zinc-800 font-mono text-[12px]">{{ query }}</code>.
+                </div>
+
+                <div class="mt-12 space-y-12">
+                  <section
+                    v-for="cat in groupedFiltered"
+                    :key="cat.name"
+                  >
+                    <h2 class="text-[11px] uppercase tracking-[0.2em] text-zinc-500 dark:text-zinc-400 mb-5">{{ cat.name }}</h2>
+                    <div class="space-y-8">
+                      <article
+                        v-for="t in cat.topics"
+                        :key="t.id"
+                        :id="t.id"
+                        class="topic"
+                      >
+                        <h3 class="text-xl font-medium tracking-tight flex items-center gap-2 group">
+                          {{ t.title }}
+                          <a
+                            :href="'#' + t.id"
+                            :aria-label="'Link to ' + t.title"
+                            class="text-sm font-normal text-zinc-300 dark:text-zinc-600 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors"
+                          >#</a>
+                        </h3>
+                        <p class="mt-3 text-[15px] leading-relaxed text-zinc-700 dark:text-zinc-300">{{ t.body }}</p>
+
+                        <div
+                          v-if="t.code"
+                          class="mt-5 rounded-xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50 dark:bg-zinc-900 overflow-hidden"
+                        >
+                          <div class="flex items-center justify-between px-4 py-2 border-b border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-950/40">
+                            <span class="text-[10px] uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400 font-mono">{{ t.language || 'code' }}</span>
+                            <button
+                              type="button"
+                              @click="copyCode(t.id, t.code)"
+                              class="text-[11px] text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 cursor-pointer transition-colors"
+                            >
+                              {{ copiedId === t.id ? 'Copied' : 'Copy' }}
+                            </button>
+                          </div>
+                          <pre class="px-4 py-3 overflow-x-auto scroll-thin text-[12.5px] leading-relaxed font-mono"><code :class="'language-' + (t.language || 'text')" v-html="highlight(t.code, t.language)"></code></pre>
+                        </div>
+
+                        <div class="mt-4 flex flex-wrap gap-1.5">
+                          <span
+                            v-for="tag in t.tags"
+                            :key="tag"
+                            class="text-[10px] px-2 py-0.5 rounded-full bg-zinc-100 dark:bg-zinc-800 text-zinc-500 dark:text-zinc-400 font-mono"
+                          >{{ tag }}</span>
+                        </div>
+                      </article>
+                    </div>
+                  </section>
+                </div>
+              </div>
+            </main>
+
+            <!-- RIGHT SIDEBAR: on this page -->
+            <aside class="hidden lg:block py-10">
+              <div class="sticky top-20">
+                <h3 class="text-[11px] uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400 mb-3">On this page</h3>
+                <ul class="space-y-1.5 border-l border-zinc-200 dark:border-zinc-800">
+                  <li v-for="t in flatFiltered" :key="t.id">
+                    <button
+                      type="button"
+                      @click="jump(t.id)"
+                      class="block w-full text-left pl-3 -ml-px py-1 text-[12px] cursor-pointer border-l transition-colors"
+                      :class="activeId === t.id
+                        ? 'border-zinc-900 dark:border-zinc-100 text-zinc-900 dark:text-zinc-100'
+                        : 'border-transparent text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100'"
+                    >
+                      {{ t.title }}
+                    </button>
+                  </li>
+                </ul>
+
+                <div class="mt-8 pt-4 border-t border-zinc-100 dark:border-zinc-900">
+                  <p class="text-[11px] uppercase tracking-[0.15em] text-zinc-500 dark:text-zinc-400 mb-2">Quick links</p>
+                  <ul class="space-y-1.5 text-[12px]">
+                    <li><a href="/new" class="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">→ Scaffolder</a></li>
+                    <li><a href="/debug" class="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">→ Debug</a></li>
+                    <li><a href="https://github.com/SilverEngine/Framework" class="text-zinc-500 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-zinc-100 transition-colors">→ GitHub</a></li>
+                  </ul>
+                </div>
+              </div>
+            </aside>
+          </div>
+
+          <footer class="mx-auto w-full max-w-[88rem] px-6 lg:px-8 py-5 flex items-center justify-between text-xs text-zinc-400 dark:text-zinc-500 border-t border-zinc-100 dark:border-zinc-900">
+            <span>&copy; SilverEngine · MIT</span>
+            <span>Vue 3 + Tailwind 4 · CDN-only</span>
+          </footer>
+        </div>
+      `,
+    }).mount('#app');
+  </script>
+</body>
+</html>

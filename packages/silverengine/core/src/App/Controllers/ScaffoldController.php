@@ -3,7 +3,6 @@ declare(strict_types=1);
 
 namespace System\App\Controllers;
 
-use Silver\Core\App;
 use Silver\Core\Controller;
 use Silver\Core\Env;
 use Silver\Exception\NotFoundException;
@@ -28,21 +27,44 @@ final class ScaffoldController extends Controller
         // autowire its FileSystem dep from App::bindFrameworkDefaults().
         $scaffolder = app(Scaffolder::class);
 
-        $url  = (string) $request->input('url');
-        $name = (string) $request->input('name');
-        if ($url === '' || $name === '') {
-            return $this->json(['ok' => false, 'error' => 'url and name are required'], 422);
+        $action = (string) ($request->input('action') ?: 'create');
+        $type   = (string) ($request->input('type') ?: 'page');
+        $name   = (string) $request->input('name');
+        $url    = (string) $request->input('url');
+
+        if ($name === '' && $url === '') {
+            return $this->json(['ok' => false, 'error' => 'name is required'], 422);
         }
 
         try {
-            $result = $scaffolder->scaffold($url, $name);
+            if ($action === 'remove' || $action === 'delete') {
+                // Legacy URL-based removal still supported when caller passed
+                // `url` instead of `name` (e.g. from the 404 page).
+                if ($type === 'page' && $name === '' && $url !== '') {
+                    $scaffolder->unscaffold($url);
+                } else {
+                    $scaffolder->remove($type, $name);
+                }
+                header('Location: /');
+                http_response_code(303);
+                return '';
+            }
+
+            // Legacy URL-based scaffold (404 page flow).
+            if ($type === 'page' && $url !== '' && $name !== '') {
+                $result = $scaffolder->scaffold($url, $name);
+                header('Location: ' . $result['url']);
+                http_response_code(303);
+                return '';
+            }
+
+            $result = $scaffolder->create($type, $name);
         } catch (\Throwable $e) {
             return $this->json(['ok' => false, 'error' => $e->getMessage()], 422);
         }
 
-        // The original 404'd URL is now (or will be on next request) live —
-        // redirect there so the dev sees the new page immediately.
-        header('Location: ' . $result['url']);
+        // For page: jump to the new page. For class types: back home.
+        header('Location: ' . ($result['url'] ?? '/'));
         http_response_code(303);
         return '';
     }

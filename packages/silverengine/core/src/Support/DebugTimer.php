@@ -75,7 +75,35 @@ final class DebugTimer
         ];
     }
 
-    public function timeline(): array
+    /**
+     * Inject a closed span retroactively. Use when a phase ran *before*
+     * {@see start()} was even called — most commonly the autoload +
+     * bootstrap window between APP_START and the first dt() activity.
+     * Counterpart to {@see begin()}/{@see end()} for code paths where you
+     * already have both hrtime() values.
+     */
+    public function record(string $label, string $category, int $startNs, int $endNs): void
+    {
+        if (!$this->enabled) {
+            return;
+        }
+        $this->events[] = [
+            'type'     => 'span',
+            'label'    => $label,
+            'category' => $category,
+            'start'    => $startNs,
+            'end'      => $endNs,
+        ];
+    }
+
+    /**
+     * Render the timeline. When $includeOpen is true (default), spans that
+     * have called begin() but not yet end() — typically the middleware
+     * frames and controller action wrapping the caller — are reported with
+     * end_ms = now and `in_progress => true`, so observers fired mid-request
+     * (like /heartbeat) still see them on the waterfall.
+     */
+    public function timeline(bool $includeOpen = true): array
     {
         if (!$this->enabled) {
             return [];
@@ -92,15 +120,34 @@ final class DebugTimer
                 ];
             } else {
                 $timeline[] = [
-                    'type'       => 'span',
-                    'label'      => $e['label'],
-                    'category'   => $e['category'],
-                    'start_ms'   => ($e['start'] - $origin) / 1e6,
-                    'end_ms'     => ($e['end'] - $origin) / 1e6,
-                    'duration_ms'=> ($e['end'] - $e['start']) / 1e6,
+                    'type'        => 'span',
+                    'label'       => $e['label'],
+                    'category'    => $e['category'],
+                    'start_ms'    => ($e['start'] - $origin) / 1e6,
+                    'end_ms'      => ($e['end'] - $origin) / 1e6,
+                    'duration_ms' => ($e['end'] - $e['start']) / 1e6,
+                    'in_progress' => false,
                 ];
             }
         }
+
+        if ($includeOpen && $this->openSpans !== []) {
+            $now = hrtime(true);
+            foreach ($this->openSpans as $key => $start) {
+                // Key is "{category}::{label}".
+                [$category, $label] = explode('::', $key, 2) + ['app', $key];
+                $timeline[] = [
+                    'type'        => 'span',
+                    'label'       => $label,
+                    'category'    => $category,
+                    'start_ms'    => ($start - $origin) / 1e6,
+                    'end_ms'      => ($now - $origin) / 1e6,
+                    'duration_ms' => ($now - $start) / 1e6,
+                    'in_progress' => true,
+                ];
+            }
+        }
+
         return $timeline;
     }
 

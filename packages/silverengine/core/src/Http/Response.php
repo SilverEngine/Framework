@@ -86,7 +86,20 @@ class Response implements ResponseInterface
             $this->setHeader('Content-Type', 'application/json');
         }
 
-        $this->setHeader('Content-Type', $contentType);
+        // Respect an explicit Content-Type set by the controller — don't
+        // clobber it with the Accept-negotiated value (and never emit the
+        // useless literal "*/*" when the client expressed no preference).
+        if (!isset($this->headers['Content-Type'])) {
+            $this->setHeader(
+                'Content-Type',
+                $contentType === '*/*' ? 'text/html' : $contentType,
+            );
+        }
+
+        // Whatever ended up in the outbound header drives the body dispatch
+        // below — strip parameters like "; charset=utf-8" so the match()
+        // arms keep matching the bare MIME.
+        $contentType = strtok($this->headers['Content-Type'], ';') ?: $contentType;
 
         if (defined('APP_START')) {
             $totalMs = (hrtime(true) - APP_START) / 1e6;
@@ -135,9 +148,12 @@ class Response implements ResponseInterface
                 is_array($body), is_object($body) => print(json_encode($body)),
                 default => throw new \Exception("FATAL: Unknown body type."),
             },
-            'application/json' => print(json_encode(
-                $body instanceof RenderInterface ? $body->data() : $body,
-            )),
+            'application/json' => print(match (true) {
+                // Already-serialized JSON from a controller — pass through.
+                is_string($body)                  => $body,
+                $body instanceof RenderInterface  => json_encode($body->data()),
+                default                           => json_encode($body),
+            }),
             default => throw new \Exception('Unsupported content type: ' . $contentType),
         };
     }
