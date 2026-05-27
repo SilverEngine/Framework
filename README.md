@@ -5,17 +5,21 @@ modernized for **PHP 8.4+** and dependency-light.
 
 ![PHP 8.4+](https://img.shields.io/badge/PHP-8.4%2B-777BB4.svg?logo=php&logoColor=white)
 ![DMVC](https://img.shields.io/badge/architecture-DMVC-blue.svg)
+![Runtime deps 2](https://img.shields.io/badge/runtime%20deps-2-success.svg)
 ![License MIT](https://img.shields.io/badge/license-MIT-green.svg)
 ![Status](https://img.shields.io/badge/status-modernized-blue.svg)
+
+> **Two tiny runtime deps, build-time-only frontend, framework code in the
+> repo.** Composer is used **only** as the autoloader — `silverengine/core`
+> ships as a local Composer `path` package under `packages/`, never pulled
+> from Packagist. The only Packagist runtime requires are
+> `vlucas/phpdotenv` and `nejcc/php-datatypes`.
 
 SilverEngine is a **D**ynamical **M**odel **V**iew **C**ontroller framework:
 routing, a fluent query builder + Model, the Ghost template engine,
 server-driven Vue (Wisp), middleware, an IoC container with autowiring,
 a code-generation CLI, a built-in debug profiler with a request recorder,
-and `optimize` / `optimize:clear` cache commands — without pulling
-framework code from Packagist. Composer is used **only** as the autoloader;
-all first-party code ships in the repo as a local Composer **path** package
-under `packages/`.
+and `optimize` / `optimize:clear` cache commands.
 
 ---
 

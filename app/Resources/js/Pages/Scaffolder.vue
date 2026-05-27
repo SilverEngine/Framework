@@ -493,6 +493,7 @@ async function submit(): Promise<void> {
       </div>
 
       <form @submit.prevent="submit" class="w-full max-w-xl">
+        <div class="relative">
         <div
           class="flex items-center gap-3 rounded-full border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 px-5 py-3.5 shadow-sm hover:shadow-md focus-within:shadow-md focus-within:border-zinc-300 dark:focus-within:border-zinc-700 transition-shadow"
         >
@@ -530,7 +531,7 @@ async function submit(): Promise<void> {
 
         <div
           v-if="showSuggestions"
-          class="mt-2 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-sm overflow-hidden"
+          class="absolute left-0 right-0 top-[calc(100%+0.5rem)] z-20 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900 shadow-lg overflow-hidden"
         >
           <ul>
             <li v-for="(s, i) in suggestions" :key="s.command">
@@ -551,6 +552,7 @@ async function submit(): Promise<void> {
           <div class="px-4 py-1.5 border-t border-zinc-100 dark:border-zinc-800 text-[10px] text-zinc-400 dark:text-zinc-500">
             <kbd class="font-mono">↑↓</kbd> navigate · <kbd class="font-mono">Tab</kbd> complete · <kbd class="font-mono">Esc</kbd> dismiss
           </div>
+        </div>
         </div>
 
         <div
