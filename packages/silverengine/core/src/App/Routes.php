@@ -20,9 +20,10 @@ if (Env::get('debug')) {
 }
 
 if (Env::name() === 'local') {
-    $route->get('/migrate/{modelName?}', 'Migrations@up', 'migrate');
-    $route->get('/migrate-down/{modelName?}', 'Migrations@down', 'migrate-down');
-    $route->get('/migrate-seed', 'Migrations@all', 'migrate-seed');
+    // Migrations are CLI-only now (php silver migrate / migrate:rollback /
+    // migrate:fresh / migrate:status). The old web migrate routes
+    // (Migrations@up/down/all) were removed in P7 alongside the
+    // Silver\Database\ tree.
 
     // 404 dev scaffolder endpoint (POST). Gated again controller-side.
     if (Env::get('debug')) {
