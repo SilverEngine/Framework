@@ -41,6 +41,7 @@ class CLI
             Command::Serve            => $this->serve(),
             Command::Optimize         => $this->optimize(),
             Command::OptimizeClear    => $this->optimizeClear(),
+            Command::KeyGenerate      => $this->keyGenerate(),
             Command::Help             => $this->help(),
             null                      => $this->error('Command not found: ' . $this->cmd),
         };
@@ -321,6 +322,35 @@ PHP,
         );
     }
 
+    private function keyGenerate(): void
+    {
+        $envPath = ROOT . '.env';
+        $flags   = $this->parseFlags();
+        $force   = (bool) ($flags['force'] ?? false);
+
+        if (!is_file($envPath)) {
+            $this->error('.env not found. Run "cp .env.example .env" first.');
+            exit(1);
+        }
+
+        $contents = (string) file_get_contents($envPath);
+        $newKey   = 'base64:' . base64_encode(random_bytes(32));
+
+        if (preg_match('/^APP_KEY=(.*)$/m', $contents, $m)) {
+            $current = trim($m[1]);
+            if ($current !== '' && $current !== 'mysupersecurekey' && !$force) {
+                $this->error('APP_KEY already set. Pass --force to overwrite.');
+                exit(1);
+            }
+            $contents = (string) preg_replace('/^APP_KEY=.*$/m', 'APP_KEY=' . $newKey, $contents, 1);
+        } else {
+            $contents = rtrim($contents, "\n") . "\nAPP_KEY=" . $newKey . "\n";
+        }
+
+        file_put_contents($envPath, $contents, LOCK_EX);
+        $this->success('APP_KEY generated and written to .env');
+    }
+
     private function serve(): never
     {
         $bind = $this->args[2] ?? '127.0.0.1:8000';
@@ -360,6 +390,7 @@ PHP,
          -----
          Optimize:          php silver optimize          # cache config + routes, -o autoload
          Clear caches:      php silver optimize:clear
+         App key:           php silver key:generate [--force]
          -----
          Generate:          php silver g <type> <name>
          Delete:            php silver d <type> <name>

@@ -3,13 +3,22 @@ declare(strict_types=1);
 
 namespace Silver\Http;
 
-use Silver\Support\Crypter;
+use Silver\Crypto\Crypter;
+use Silver\Crypto\CryptoException;
 
+/**
+ * Thin wrapper over $_COOKIE / Response::setCookie.
+ *
+ * Values are JSON-encoded with a small envelope that records whether
+ * the payload was encrypted on the way out. ::get() honours the flag
+ * and refuses to silently treat malformed ciphertext as plaintext.
+ */
 final class Cookie
 {
-    private static string $name = '';
-    private static string $value = '';
-    private static int $expire = 315360000; // 10 years
+    private const ENVELOPE_PREFIX = 'sec:';
+    private static string $name   = '';
+    private static string $value  = '';
+    private static int $expire    = 315360000; // 10 years
 
     public static function set(string $name, mixed $value, int $expire = 0, bool $extend = false): self
     {
@@ -21,27 +30,28 @@ final class Cookie
 
         $time = $extend ? self::$expire : time() + self::$expire;
 
-        $data = [
+        $payload = [
             'values'    => is_array($value) ? $value : [$value],
             'expire'    => $time,
-            'encrypted' => '0',
+            'encrypted' => false,
         ];
 
-        self::setCookie($name, json_encode($data), time() + self::$expire);
-        $data['encrypted'] = 1;
-        self::$value = json_encode($data);
+        $encoded = json_encode($payload, JSON_THROW_ON_ERROR);
+        self::setCookie($name, $encoded, time() + self::$expire);
+        self::$value = $encoded;
 
         return new self();
     }
 
     public function encrypt(): bool
     {
-        if (isset($_COOKIE)) {
-            $value = Crypter::crypt(self::$value);
-            self::setCookie(self::$name, $value, time() + self::$expire);
-            return true;
+        if (self::$name === '' || self::$value === '') {
+            return false;
         }
-        return false;
+        $cipher = Crypter::encrypt(self::$value);
+        $wire   = self::ENVELOPE_PREFIX . $cipher;
+        self::setCookie(self::$name, $wire, time() + self::$expire);
+        return true;
     }
 
     public static function get(string $name, ?string $returnType = null): mixed
@@ -51,20 +61,26 @@ final class Cookie
         }
 
         self::$name = $name;
-        $ret = self::isCrypted($name)
-            ? json_decode(Crypter::decrypt($_COOKIE[$name]), true)
-            : json_decode($_COOKIE[$name], true);
+        $raw        = (string) $_COOKIE[$name];
+
+        $decoded = self::decodePayload($raw);
+        if ($decoded === null) {
+            return null;
+        }
 
         return match ($returnType) {
-            'expire' => $ret['expire'],
-            'all' => $ret,
-            default => $ret['values'],
+            'expire' => $decoded['expire'] ?? null,
+            'all'    => $decoded,
+            default  => $decoded['values'] ?? null,
         };
     }
 
     public static function isCrypted(string $name): bool
     {
-        return !is_null($name) && Crypter::decrypt($_COOKIE[$name] ?? '') !== '';
+        if (!self::exists($name)) {
+            return false;
+        }
+        return str_starts_with((string) $_COOKIE[$name], self::ENVELOPE_PREFIX);
     }
 
     public static function attach(string $key, mixed $newValue): bool
@@ -75,11 +91,11 @@ final class Cookie
         }
 
         $newValue = is_array($newValue) ? $newValue : [$newValue];
+        $merged   = array_merge($oldData['values'] ?? [], $newValue);
 
-        if ($oldData['encrypted'] == 1) {
-            self::set($key, array_merge($oldData['values'], $newValue), $oldData['expire'], true)->encrypt();
-        } else {
-            self::set($key, array_merge($oldData['values'], $newValue), $oldData['expire'], true);
+        $self = self::set($key, $merged, $oldData['expire'] ?? 0, true);
+        if (!empty($oldData['encrypted'])) {
+            $self->encrypt();
         }
         return true;
     }
@@ -91,13 +107,12 @@ final class Cookie
             return false;
         }
 
-        $values = $oldData['values'];
+        $values = $oldData['values'] ?? [];
         unset($values[$valueToDelete]);
 
-        if ($oldData['encrypted'] == 1) {
-            self::set($key, $values, $oldData['expire'], true)->encrypt();
-        } else {
-            self::set($key, $values, $oldData['expire'], true);
+        $self = self::set($key, $values, $oldData['expire'] ?? 0, true);
+        if (!empty($oldData['encrypted'])) {
+            $self->encrypt();
         }
         return true;
     }
@@ -122,6 +137,25 @@ final class Cookie
         foreach (array_keys(self::all()) as $key) {
             self::delete($key);
         }
+    }
+
+    private static function decodePayload(string $raw): ?array
+    {
+        if (str_starts_with($raw, self::ENVELOPE_PREFIX)) {
+            try {
+                $json = Crypter::decrypt(substr($raw, strlen(self::ENVELOPE_PREFIX)));
+            } catch (CryptoException) {
+                return null;
+            }
+            $data = json_decode($json, true);
+            if (is_array($data)) {
+                $data['encrypted'] = true;
+            }
+            return is_array($data) ? $data : null;
+        }
+
+        $data = json_decode($raw, true);
+        return is_array($data) ? $data : null;
     }
 
     private static function setCookie(string $key, string $value, int $expiration): void

@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Silver\Support;
 
 /**
- * Character sets {@see Crypter::makePassword()} can draw from. Backed
- * values match the historical integer `$charsType` argument exactly, so
- * `makePassword(16, 2)` and `makePassword(16, PasswordCharset::AlphaNumeric)`
+ * Character sets {@see \Silver\Crypto\Random::password()} can draw from.
+ * Backed values match the historical integer `$charsType` argument exactly,
+ * so `Random::password(16, 2)` and `Random::password(16, PasswordCharset::AlphaNumeric)`
  * are equivalent. Any unknown integer falls back to {@see self::Symbols},
  * the same lenient `default` arm the original `match` had.
  */

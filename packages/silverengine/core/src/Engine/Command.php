@@ -22,6 +22,7 @@ enum Command: string
     case Serve            = 'serve';
     case Optimize         = 'optimize';
     case OptimizeClear    = 'optimize:clear';
+    case KeyGenerate      = 'key:generate';
     case Help             = 'help';
 
     public static function parse(string $cmd): ?self
