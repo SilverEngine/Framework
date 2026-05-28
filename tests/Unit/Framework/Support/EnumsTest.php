@@ -3,7 +3,7 @@
 namespace Tests\Unit\Framework\Support;
 
 use PHPUnit\Framework\TestCase;
-use Silver\Support\Crypter;
+use Silver\Crypto\Random;
 use Silver\Support\LogType;
 use Silver\Support\PasswordCharset;
 
@@ -29,11 +29,11 @@ class EnumsTest extends TestCase
         $this->assertSame(PasswordCharset::Upper, PasswordCharset::resolve(PasswordCharset::Upper));
     }
 
-    public function testMakePasswordIntAndEnumAreEquivalentDomains(): void
+    public function testRandomPasswordIntAndEnumAreEquivalentDomains(): void
     {
-        $this->assertMatchesRegularExpression('/^[0-9]{12}$/', Crypter::makePassword(12, 5));
-        $this->assertMatchesRegularExpression('/^[0-9]{12}$/', Crypter::makePassword(12, PasswordCharset::Numeric));
-        $this->assertMatchesRegularExpression('/^[A-Z]{20}$/', Crypter::makePassword(20, 3));
-        $this->assertSame(16, strlen(Crypter::makePassword()));
+        $this->assertMatchesRegularExpression('/^[0-9]{12}$/', Random::password(12, 5));
+        $this->assertMatchesRegularExpression('/^[0-9]{12}$/', Random::password(12, PasswordCharset::Numeric));
+        $this->assertMatchesRegularExpression('/^[A-Z]{20}$/', Random::password(20, 3));
+        $this->assertSame(16, strlen(Random::password()));
     }
 }

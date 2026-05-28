@@ -37,9 +37,12 @@ class Response implements ResponseInterface
         return $this->code;
     }
 
-    public function setCookie(string $name, string $value, int $expiration): void
+    /**
+     * @param array{path?:string,domain?:string,secure?:bool,httponly?:bool,samesite?:string} $options
+     */
+    public function setCookie(string $name, string $value, int $expiration, array $options = []): void
     {
-        $this->cookies[$name] = [$value, $expiration];
+        $this->cookies[$name] = [$value, $expiration, $options];
     }
 
     /**
@@ -185,8 +188,15 @@ class Response implements ResponseInterface
             header($key . ': ' . $value);
         }
 
-        foreach ($this->cookies as $name => [$value, $expiration]) {
-            setcookie($name, $value, $expiration);
+        foreach ($this->cookies as $name => $entry) {
+            $value      = $entry[0];
+            $expiration = $entry[1];
+            $options    = $entry[2] ?? [];
+            if ($options === []) {
+                setcookie($name, $value, $expiration);
+            } else {
+                setcookie($name, $value, array_merge(['expires' => $expiration], $options));
+            }
         }
 
         if ($this->body === null) {

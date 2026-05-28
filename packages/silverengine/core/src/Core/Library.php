@@ -135,6 +135,32 @@ if (!function_exists('wisp')) {
     }
 }
 
+if (!function_exists('auth')) {
+    /** AuthManager for advanced use (Auth::guard('api') etc.), or the
+     *  default guard via auth()->user(). */
+    function auth(): \Silver\Auth\AuthManager
+    {
+        return app(\Silver\Auth\AuthManager::class);
+    }
+}
+
+if (!function_exists('csrf_token')) {
+    /** Current per-session CSRF token. Stable across requests until rotate(). */
+    function csrf_token(): string
+    {
+        return app(\Silver\Http\Csrf\TokenStore::class)->current();
+    }
+}
+
+if (!function_exists('csrf_field')) {
+    /** Hidden input with the current CSRF token — drop into any classic <form>. */
+    function csrf_field(): string
+    {
+        $token = htmlspecialchars(csrf_token(), ENT_QUOTES | ENT_SUBSTITUTE, 'UTF-8');
+        return '<input type="hidden" name="_token" value="' . $token . '">';
+    }
+}
+
 if (!function_exists('route')) {
     function route(string $name, array $args = []): string
     {
