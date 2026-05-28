@@ -61,7 +61,9 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
     /** @return T|null */
     public function last(): mixed
     {
-        if ($this->items === []) return null;
+        if ($this->items === []) {
+            return null;
+        }
         return $this->items[array_key_last($this->items)];
     }
 
@@ -109,11 +111,11 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
     public function pluck(string|callable $key, ?string $indexBy = null): static
     {
         $out = [];
-        $extract = is_callable($key) ? $key : fn ($item) => self::dig($item, $key);
+        $extract = is_callable($key) ? $key : fn ($item): mixed => $this->dig($item, $key);
         foreach ($this->items as $i => $item) {
             $value = $extract($item);
             if ($indexBy !== null) {
-                $k = self::dig($item, $indexBy);
+                $k = $this->dig($item, $indexBy);
                 $out[(string) $k] = $value;
             } else {
                 $out[$i] = $value;
@@ -128,7 +130,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
      */
     public function keyBy(string|callable $key): static
     {
-        $extract = is_callable($key) ? $key : fn ($item) => self::dig($item, $key);
+        $extract = is_callable($key) ? $key : fn ($item): mixed => $this->dig($item, $key);
         $out = [];
         foreach ($this->items as $item) {
             $out[(string) $extract($item)] = $item;
@@ -142,14 +144,14 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
      */
     public function groupBy(string|callable $key): static
     {
-        $extract = is_callable($key) ? $key : fn ($item) => self::dig($item, $key);
+        $extract = is_callable($key) ? $key : fn ($item): mixed => $this->dig($item, $key);
         $groups = [];
         foreach ($this->items as $item) {
             $k = (string) $extract($item);
             $groups[$k] ??= [];
             $groups[$k][] = $item;
         }
-        return new static(array_map(fn ($g) => new static($g), $groups));
+        return new static(array_map(fn ($g): static => new static($g), $groups));
     }
 
     /**
@@ -194,7 +196,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
      */
     public function sum(string|callable $by): int|float
     {
-        $extract = is_callable($by) ? $by : fn ($i) => self::dig($i, $by);
+        $extract = is_callable($by) ? $by : fn ($i): mixed => $this->dig($i, $by);
         $sum = 0;
         foreach ($this->items as $item) {
             $sum += (float) $extract($item);
@@ -227,11 +229,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
     {
         $out = [];
         foreach ($this->items as $k => $v) {
-            if (is_object($v) && method_exists($v, 'toArray')) {
-                $out[$k] = $v->toArray();
-            } else {
-                $out[$k] = $v;
-            }
+            $out[$k] = is_object($v) && method_exists($v, 'toArray') ? $v->toArray() : $v;
         }
         return $out;
     }
@@ -260,7 +258,7 @@ class Collection implements ArrayAccess, Countable, IteratorAggregate, JsonSeria
 
     // ---------- helpers ----------
 
-    private static function dig(mixed $item, string $path): mixed
+    private function dig(mixed $item, string $path): mixed
     {
         if ($path === '') {
             return $item;

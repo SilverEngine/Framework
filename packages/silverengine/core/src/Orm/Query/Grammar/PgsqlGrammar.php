@@ -16,6 +16,8 @@ final class PgsqlGrammar extends Grammar
 {
     public function driver(): Driver { return Driver::Pgsql; }
 
+    #[\Override]
     public function explainPrefix(): string { return 'EXPLAIN (FORMAT JSON) '; }
+    #[\Override]
     public function analyzePrefix(): string { return 'EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) '; }
 }

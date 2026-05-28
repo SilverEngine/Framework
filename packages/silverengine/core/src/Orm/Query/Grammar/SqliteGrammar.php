@@ -15,6 +15,8 @@ final class SqliteGrammar extends Grammar
      * `explain()` and `analyze()` on its own, executing the real query
      * for `analyze()` and timing it via the QueryExecuted event.
      */
+    #[\Override]
     public function explainPrefix(): string { return 'EXPLAIN QUERY PLAN '; }
+    #[\Override]
     public function analyzePrefix(): string { return 'EXPLAIN QUERY PLAN '; }
 }

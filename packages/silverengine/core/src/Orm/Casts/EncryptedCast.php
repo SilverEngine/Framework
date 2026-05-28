@@ -8,9 +8,9 @@ namespace Silver\Orm\Casts;
  * (base64-encoded): [12-byte nonce][16-byte tag][ciphertext…].
  * Out of scope: rotation, envelope encryption, key-versioning.
  */
-final class EncryptedCast implements CastsAttribute
+final readonly class EncryptedCast implements CastsAttribute
 {
-    private readonly string $key;
+    private string $key;
 
     public function __construct(?string $key = null)
     {
@@ -23,7 +23,9 @@ final class EncryptedCast implements CastsAttribute
 
     public function get(mixed $value): mixed
     {
-        if ($value === null || $value === '') return null;
+        if ($value === null || $value === '') {
+            return null;
+        }
         $blob = base64_decode((string) $value, strict: true);
         if ($blob === false || strlen($blob) < 28) {
             throw new \RuntimeException('EncryptedCast: malformed ciphertext.');
@@ -40,7 +42,9 @@ final class EncryptedCast implements CastsAttribute
 
     public function set(mixed $value): mixed
     {
-        if ($value === null) return null;
+        if ($value === null) {
+            return null;
+        }
         $nonce = random_bytes(12);
         $tag   = '';
         $ct    = openssl_encrypt((string) $value, 'aes-256-gcm', $this->key, OPENSSL_RAW_DATA, $nonce, $tag);

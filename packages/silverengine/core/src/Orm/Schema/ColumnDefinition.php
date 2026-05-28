@@ -30,7 +30,7 @@ final class ColumnDefinition
     public bool   $useCurrentOnUpdate = false;
 
     /** Sentinel for "no DEFAULT clause", distinct from null which means DEFAULT NULL. */
-    public const NO_DEFAULT = "\x00__NO_DEFAULT__\x00";
+    public const string NO_DEFAULT = "\x00__NO_DEFAULT__\x00";
 
     public function __construct(
         public string $name,

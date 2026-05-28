@@ -19,10 +19,10 @@ use Silver\Orm\Query\Grammar\SqliteGrammar;
  * throws a clear "not implemented yet" rather than silently degrading
  * to sqlite.
  */
-final class Compiler
+final readonly class Compiler
 {
     public function __construct(
-        private readonly ConnectionManager $connections,
+        private ConnectionManager $connections,
     ) {}
 
     public function for(?string $connection = null): GrammarInterface

@@ -8,15 +8,15 @@ namespace Silver\Orm\Cache;
  * Falls back to a no-op when APCu isn't enabled — the model layer
  * stays functional; you just lose the persistent layer.
  */
-final class ApcuStore implements CacheStore
+final readonly class ApcuStore implements CacheStore
 {
     public function __construct(
-        private readonly string $prefix = 'silver:orm:',
+        private string $prefix = 'silver:orm:',
     ) {}
 
     public function get(string $key): mixed
     {
-        if (!self::available()) {
+        if (!$this->available()) {
             return null;
         }
         $ok = false;
@@ -27,7 +27,7 @@ final class ApcuStore implements CacheStore
     /** @param list<string> $tags */
     public function set(string $key, mixed $value, int $ttl, array $tags = []): void
     {
-        if (!self::available()) {
+        if (!$this->available()) {
             return;
         }
         apcu_store($this->prefix . $key, $value, $ttl);
@@ -41,7 +41,7 @@ final class ApcuStore implements CacheStore
 
     public function forget(string $key): void
     {
-        if (!self::available()) {
+        if (!$this->available()) {
             return;
         }
         apcu_delete($this->prefix . $key);
@@ -49,7 +49,7 @@ final class ApcuStore implements CacheStore
 
     public function forgetTag(string $tag): void
     {
-        if (!self::available()) {
+        if (!$this->available()) {
             return;
         }
         $tagKey = $this->prefix . 'tag:' . $tag;
@@ -62,7 +62,7 @@ final class ApcuStore implements CacheStore
 
     public function flush(): void
     {
-        if (!self::available()) {
+        if (!$this->available()) {
             return;
         }
         // Only wipe keys with our prefix — leave other APCu users alone.
@@ -70,7 +70,7 @@ final class ApcuStore implements CacheStore
         apcu_delete($iter);
     }
 
-    private static function available(): bool
+    private function available(): bool
     {
         return function_exists('apcu_fetch') && (bool) ini_get('apc.enabled');
     }

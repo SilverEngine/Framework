@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Routes;
 
+use Silver\Core\Route;
 use App\Controllers\WelcomeController;
 use App\Controllers\WispDemoController;
 use App\Controllers\AboutController;
 use App\Controllers\UsersController;
 use App\Controllers\TestErrorController;
-/** @var \Silver\Core\Route $route */
+/** @var Route $route */
 $route->get('/', WelcomeController::class, 'home', 'public');
 $route->get('/wisp-demo', WispDemoController::class, 'wisp.demo', 'public');
 $route->get('/about', AboutController::class);

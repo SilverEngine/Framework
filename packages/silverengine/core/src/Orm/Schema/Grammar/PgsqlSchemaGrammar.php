@@ -42,6 +42,7 @@ final class PgsqlSchemaGrammar extends SchemaGrammar
         };
     }
 
+    #[\Override]
     protected function compileColumn(ColumnDefinition $c): string
     {
         // SERIAL types already encode autoincrement + NOT NULL behaviour.

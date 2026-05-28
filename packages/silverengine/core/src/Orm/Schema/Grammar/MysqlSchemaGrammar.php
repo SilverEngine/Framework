@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Silver\Orm\Schema\Grammar;
 
+use Silver\Orm\Schema\IndexDefinition;
 use Silver\Orm\Connection\Driver;
 use Silver\Orm\Schema\Blueprint;
 use Silver\Orm\Schema\ColumnDefinition;
@@ -40,6 +41,7 @@ final class MysqlSchemaGrammar extends SchemaGrammar
         };
     }
 
+    #[\Override]
     protected function compileColumn(ColumnDefinition $c): string
     {
         // MySQL emits column-level AUTO_INCREMENT alongside the type.
@@ -83,6 +85,7 @@ final class MysqlSchemaGrammar extends SchemaGrammar
         return implode(' ', $parts);
     }
 
+    #[\Override]
     public function compileCreate(Blueprint $b): array
     {
         // Promote auto-increment columns to a table-level PRIMARY KEY
@@ -95,13 +98,7 @@ final class MysqlSchemaGrammar extends SchemaGrammar
             }
         }
         if ($autoIncrement !== null) {
-            $hasPk = false;
-            foreach ($b->indexes as $i) {
-                if ($i->kind === \Silver\Orm\Schema\IndexDefinition::KIND_PRIMARY) {
-                    $hasPk = true;
-                    break;
-                }
-            }
+            $hasPk = array_any($b->indexes, fn($i): bool => $i->kind === IndexDefinition::KIND_PRIMARY);
             if (!$hasPk) {
                 $b->primary([$autoIncrement]);
             }
@@ -110,6 +107,7 @@ final class MysqlSchemaGrammar extends SchemaGrammar
         return parent::compileCreate($b);
     }
 
+    #[\Override]
     protected function tableSuffix(Blueprint $b): string
     {
         $bits = [];
