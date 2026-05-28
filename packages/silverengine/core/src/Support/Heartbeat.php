@@ -9,7 +9,7 @@ use Silver\Core\App;
 use Silver\Core\Env;
 use Silver\Core\Hook;
 use Silver\Core\Route;
-use Silver\Database\Db;
+use Silver\Orm\Connection\ConnectionManager;
 use Silver\Engine\Events\EventManager;
 use Silver\FileSystem\FileSystem;
 
@@ -455,8 +455,9 @@ final class Heartbeat
             return $this->ok('database', 'configured · ping disabled (databases.on=false)');
         }
         try {
-            $pdo = Db::connection();
-            $driver = $pdo->getAttribute(PDO::ATTR_DRIVER_NAME);
+            $cm     = app(ConnectionManager::class);
+            $pdo    = $cm->pdo();
+            $driver = $cm->driverName();
             $pdo->query('SELECT 1');
             return $this->ok('database', "ping ok · driver={$driver}");
         } catch (Throwable $e) {

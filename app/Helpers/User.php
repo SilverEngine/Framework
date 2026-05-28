@@ -4,7 +4,6 @@ namespace App\Helpers;
 
 use App\Models\Users;
 use Silver\Core\Env;
-use Silver\Database\Query;
 use Silver\Http\Redirect;
 use Silver\Http\Session;
 

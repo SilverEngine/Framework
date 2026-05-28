@@ -36,8 +36,8 @@ class App implements InstanceInterface
         $this->instances->singleton(Config::class);
         $this->instances->singleton(Hook::class);
         $this->instances->singleton(DI::class);
-        $this->instances->singleton(\Silver\Database\ConnectionManager::class);
-        $this->instances->singleton(\Silver\Database\TransactionManager::class);
+        $this->instances->singleton(\Silver\Orm\Connection\ConnectionManager::class);
+        $this->instances->singleton(\Silver\Orm\Connection\TransactionManager::class);
         $this->instances->singleton(ErrorHandler::class);
         $this->instances->singleton(\Silver\Support\DebugTimer::class);
         $this->instances->singleton(\Silver\Support\RequestRecorder::class);

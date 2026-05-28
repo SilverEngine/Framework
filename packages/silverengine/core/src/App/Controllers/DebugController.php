@@ -151,7 +151,7 @@ class DebugController extends Controller
             'Database'       => $db->local->database ?? $db->local->basename ?? 'unknown',
             'Host'           => $db->local->hostname ?? 'N/A',
             'Status'         => 'connected',
-            'Connections'    => implode(', ', \Silver\Database\Query::connections()),
+            'Connections'    => implode(', ', app(\Silver\Orm\Connection\ConnectionManager::class)->names()),
         ];
     }
 
