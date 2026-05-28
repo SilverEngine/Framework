@@ -3,9 +3,10 @@ declare(strict_types=1);
 
 namespace Silver\Engine;
 
-use Silver\Engine\Ghost\Template;
+use RuntimeException;
 use Silver\Core\Env;
 use Silver\Core\Route;
+use Silver\Support\Scaffolder;
 
 class CLI
 {
@@ -154,181 +155,85 @@ class CLI
     {
         echo <<<'HELP'
 
-         SilverEngine framework - commands
+         SilverEngine framework — commands
 
          -----
-         Start dev server: php silver serve [host:port]
-         Run migrations:   php silver migrate
+         Dev server:        php silver serve [host:port]
+         Migrations:        php silver migrate
          -----
-         Optimize (cache config+routes, -o autoload): php silver optimize
-         Clear caches:                                php silver optimize:clear
+         Optimize:          php silver optimize          # cache config + routes, -o autoload
+         Clear caches:      php silver optimize:clear
          -----
-         Create CRUD resource: php silver g resource {name}
-         Create Controller:    php silver g controller {name}
-         Create Model:         php silver g model {name}
-         Create View:          php silver g view {name}
-         Create Facade:        php silver g facade {name}
-         Create Helper:        php silver g helper {name}
-         -----
-         Delete CRUD resource: php silver d resource {name}
+         Generate:          php silver g <type> <name>
+         Delete:            php silver d <type> <name>
+
+         Types
+           page         controller + Vue page + route line (Wisp)
+           resource     model + repository + service + page (full layered stack)
+           controller   PHP controller in app/Controllers/
+           model        app/Models/<Name>.php
+           service      app/Services/<Name>Service.php
+           repository   app/Repositories/<Name>Repository.php
+           middleware   app/Middlewares/<Name>.php
+           provider     app/Providers/<Name>Provider.php
+           observer     app/Observers/<Name>Observer.php
+           dto          app/Dtos/<Name>Dto.php (readonly)
+           vo           app/ValueObjects/<Name>.php (readonly)
+           view         app/Resources/views/<name>.ghost.tpl
+           helper       app/Helpers/<Name>.php
+           facade       app/Facades/<Name>.php
+
+         The web scaffolder at /new is the GUI for the same operations.
 
         HELP;
     }
 
+    /**
+     * `php silver g <type> <name>` — delegated to {@see Scaffolder}.
+     * Single source of truth for every scaffolded artifact; the legacy
+     * template files under app/Templates/ are no longer consulted.
+     */
     private function make(): void
     {
         $type = $this->args[2] ?? '';
         $name = $this->args[3] ?? '';
 
-        if ($type === 'resource') {
-            foreach (['controller', 'view', 'model'] as $t) {
-                $this->generate($t, $name);
+        if ($type === '' || $name === '') {
+            $this->error('Please enter complete command', Scaffolder::TYPES);
+            return;
+        }
+
+        try {
+            $result = app(Scaffolder::class)->create($type, $name);
+            foreach ($result['created'] ?? [] as $path) {
+                $this->success("  created  {$path}");
             }
-        } elseif (in_array($type, ['controller', 'model', 'view', 'helper', 'facade'], true)) {
-            $this->generate($type, $name);
-        } else {
-            $this->error('Please enter complete command', ['resource', 'controller', 'model', 'view', 'helper', 'facade']);
+            $this->success("{$result['type']} '{$result['name']}' created.");
+        } catch (RuntimeException $e) {
+            $this->error($e->getMessage(), Scaffolder::TYPES);
         }
     }
 
+    /** `php silver d <type> <name>` — inverse of `make()`. */
     private function delete(): void
     {
         $type = $this->args[2] ?? '';
         $name = $this->args[3] ?? '';
 
-        if ($type === 'resource') {
-            foreach (['model', 'view', 'controller'] as $t) {
-                $this->deleteResources($t, $name);
+        if ($type === '' || $name === '') {
+            $this->error('Please enter complete command', Scaffolder::TYPES);
+            return;
+        }
+
+        try {
+            $result = app(Scaffolder::class)->remove($type, $name);
+            foreach ($result['removed'] ?? [] as $path) {
+                $this->success("  removed  {$path}");
             }
-        } else {
-            $this->error('Please enter complete command', ['resource', 'controller', 'model', 'view', 'helper', 'facade']);
+            $this->success("{$result['type']} '{$result['name']}' removed.");
+        } catch (RuntimeException $e) {
+            $this->error($e->getMessage(), Scaffolder::TYPES);
         }
-    }
-
-    private function generate(string $type, string $name): void
-    {
-        [$template, $destination] = $this->resolvePaths($type, $name);
-
-        if (!file_exists($template)) {
-            $this->error('Template is missing');
-            return;
-        }
-
-        if ($type === 'view') {
-            $this->generateView($destination, $type, $name);
-            return;
-        }
-
-        if (file_exists($destination)) {
-            $this->error('File exists!');
-            return;
-        }
-
-        $this->generateFile($template, $destination, $type, $name);
-    }
-
-    private function deleteResources(string $type, string $name): void
-    {
-        [, $destination] = $this->resolvePaths($type, $name);
-
-        if ($type === 'controller') {
-            $this->fixRoutes($name, false);
-        }
-
-        if (!file_exists($destination)) {
-            $this->error('File does not exist!');
-            return;
-        }
-
-        unlink($destination);
-        $this->success("{$type} {$name} successfully deleted. ({$destination})");
-    }
-
-    private function resolvePaths(string $type, string $name): array
-    {
-        return match ($type) {
-            'model', 'controller' => [
-                ROOT . 'app/Templates/' . ucfirst($type) . '.ghost.tpl',
-                ROOT . 'app/' . ucfirst($type) . 's/' . ucfirst($name) . ucfirst($type) . '.php',
-            ],
-            'view' => [
-                ROOT . 'app/Templates/View.ghost.tpl',
-                ROOT . 'app/Views/' . str_replace('.', '/', strtolower($name)) . '.ghost.tpl',
-            ],
-            'helper' => [
-                ROOT . 'app/Templates/Helper.ghost.tpl',
-                ROOT . 'app/Helpers/' . str_replace('.', '/', strtolower($name)) . '.php',
-            ],
-            'facade' => [
-                ROOT . 'app/Templates/Facade.ghost.tpl',
-                ROOT . 'app/Facades/' . ucfirst(str_replace('.', '/', strtolower($name))) . '.php',
-            ],
-            default => ['', ''],
-        };
-    }
-
-    private function generateFile(string $template, string $destination, string $type, string $name): void
-    {
-        $ghost = new Template($template);
-        $ghost->set('type', $type);
-        $ghost->set('name', $name);
-
-        file_put_contents($destination, $ghost->render());
-
-        if ($type === 'controller') {
-            $this->fixRoutes($name);
-        }
-
-        $this->success("{$type} {$name} successfully created. ({$destination})");
-    }
-
-    private function generateView(string $destination, string $type, string $name): void
-    {
-        $content = <<<'TPL'
-        {{ extends('layouts.master') }}
-
-        #set[content]
-            <p>Welcome to <b> @routeName()</b> page</p>
-            <p>This file you can find in app/Views/@routeName().ghost.tpl</p>
-            <p>Also check out  app/Views/layouts/master.ghost.tpl<p>
-        #end
-        TPL;
-
-        file_put_contents($destination, $content);
-        $this->success("{$type} {$name} successfully created. ({$destination})");
-    }
-
-    private function fixRoutes(string $name, bool $add = true): void
-    {
-        $name = ucfirst($name);
-
-        $routesPath = is_file(ROOT . 'app/Routes.php')
-            ? ROOT . 'app/Routes.php'
-            : ROOT . 'app/Routes/Web.php';
-
-        $content = file($routesPath);
-        $fh = fopen($routesPath, 'w');
-
-        if (!$fh) {
-            $this->error("Cannot open {$routesPath}.");
-            return;
-        }
-
-        foreach ($content as $row) {
-            if (str_contains($row, "{$name}@") && !str_starts_with(trim($row), '//')) {
-                fwrite($fh, '// ' . trim($row) . "    -- removed by resource manager\n");
-            } else {
-                fwrite($fh, $row);
-            }
-        }
-
-        if ($add) {
-            fwrite($fh, "\n// Route for {$name} controller.\n");
-            fwrite($fh, "\$route->get('/" . lcfirst($name) . "', '{$name}@get', '" . lcfirst($name) . "', 'public');\n");
-            $this->success('Route created!');
-        }
-
-        fclose($fh);
     }
 
     private function error(string $message, array|false $help = false): void

@@ -15,12 +15,6 @@ class View implements RenderInterface
     private string $template;
     private array $data = [];
 
-    /** @var array<string,mixed> Global data merged into every view and Wisp page. */
-    private static array $shared = [];
-
-    /** @var list<array{patterns:list<string>,callback:callable}> */
-    private static array $composers = [];
-
     public function __construct(string $template, array $data = [])
     {
         $this->template = $template;
@@ -29,71 +23,46 @@ class View implements RenderInterface
         }
     }
 
-    /**
-     * Share data globally — available as $key in every Ghost template and as
-     * a shared prop in every Wisp page. Pass an array to share several keys.
-     *
-     * Note: shared values are also serialized into Wisp's client-side JSON,
-     * so keep them client-safe.
-     */
+    // ------------------------------------------------------------------
+    // Static delegates over the {@see ViewRegistry} container singleton.
+    // They preserve the historical static call sites (`View::share(...)`)
+    // while the actual state lives on an instance — tests can swap it via
+    // `Container::instance(ViewRegistry::class, new ViewRegistry())`.
+    // ------------------------------------------------------------------
+
+    private static function registry(): ViewRegistry
+    {
+        return app(ViewRegistry::class);
+    }
+
+    /** @param string|array<string,mixed> $key */
     public static function share(string|array $key, mixed $value = null): void
     {
-        foreach (is_array($key) ? $key : [$key => $value] as $k => $v) {
-            self::$shared[$k] = $v;
-        }
+        self::registry()->share($key, $value);
     }
 
     /** @return array<string,mixed> */
     public static function shared(): array
     {
-        return self::$shared;
+        return self::registry()->shared();
     }
 
-    /**
-     * Register a composer: $callback(string $name): array is invoked whenever
-     * a view/Wisp component whose name matches $patterns renders, and its
-     * return value is merged into that render's data.
-     *
-     * @param string|list<string> $patterns Exact name or fnmatch wildcard
-     *                                       ("Users/*", "errors.*").
-     */
+    /** @param string|list<string> $patterns */
     public static function composer(string|array $patterns, callable $callback): void
     {
-        self::$composers[] = [
-            'patterns'  => array_values((array) $patterns),
-            'callback'  => $callback,
-        ];
+        self::registry()->composer($patterns, $callback);
     }
 
     /** Reset shared data + composers (tests, long-lived processes). */
     public static function flushShared(): void
     {
-        self::$shared = [];
-        self::$composers = [];
+        self::registry()->reset();
     }
 
-    /**
-     * Resolve shared data + matching composer output for a given view or
-     * Wisp component name. Instance/prop data is layered on top by the caller.
-     *
-     * @return array<string,mixed>
-     */
+    /** @return array<string,mixed> */
     public static function sharedFor(string $name): array
     {
-        $data = self::$shared;
-
-        foreach (self::$composers as $composer) {
-            $matches = array_any(
-                $composer['patterns'],
-                static fn (string $pattern): bool => $pattern === $name || fnmatch($pattern, $name),
-            );
-
-            if ($matches) {
-                $data = array_merge($data, (array) ($composer['callback'])($name));
-            }
-        }
-
-        return $data;
+        return self::registry()->sharedFor($name);
     }
 
     public static function make(string $template, array $data = []): static

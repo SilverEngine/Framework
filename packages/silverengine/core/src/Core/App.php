@@ -41,6 +41,12 @@ class App implements InstanceInterface
         $this->instances->singleton(ErrorHandler::class);
         $this->instances->singleton(\Silver\Support\DebugTimer::class);
         $this->instances->singleton(\Silver\Support\RequestRecorder::class);
+
+        // View composer + shared-data registry. Was static state on the
+        // View class; now an instance so tests can swap a fresh one per
+        // case via `Container::instance(...)`.
+        $this->instances->singleton(\Silver\Http\ViewRegistry::class);
+        $this->instances->singleton(\Silver\Http\Validator::class);
     }
 
     public function instances(): Container

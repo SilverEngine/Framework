@@ -123,6 +123,24 @@ final class ConnectionManager
         return $stmt;
     }
 
+    /**
+     * Global debug flag. When on, callers can echo their SQL before
+     * running it. Lives here as instance state on the container-resolved
+     * singleton instead of as `static $global_debug` on Db, so a test
+     * that swaps the ConnectionManager gets a fresh debug state too.
+     */
+    private bool $debug = false;
+
+    public function setDebug(bool $enabled): void
+    {
+        $this->debug = $enabled;
+    }
+
+    public function isDebug(): bool
+    {
+        return $this->debug;
+    }
+
     public function exec($sql): int|false
     {
         return $this->pdo()->exec($sql);

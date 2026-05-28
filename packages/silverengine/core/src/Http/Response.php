@@ -22,17 +22,6 @@ class Response implements ResponseInterface
         $this->headers[$key] = $value;
     }
 
-    public function json(string $payload): mixed
-    {
-        header('Content-type: Application/json');
-        return json_decode($payload);
-    }
-
-    public function xml(string $data): string
-    {
-        return " $data ";
-    }
-
     public function getHeader(string $key, mixed $default = null): mixed
     {
         return $this->headers[$key] ?? $default;
@@ -51,6 +40,87 @@ class Response implements ResponseInterface
     public function setCookie(string $name, string $value, int $expiration): void
     {
         $this->cookies[$name] = [$value, $expiration];
+    }
+
+    /**
+     * Configure the response as JSON and return the encoded body.
+     *
+     * Centralises the three-step ritual (set code → set Content-Type →
+     * json_encode) so controllers don't each re-derive it. The encoded
+     * string is returned so callers can `return $response->json(...)`
+     * directly from `__invoke()`. Already-encoded strings pass through
+     * verbatim — letting controllers hand-craft pretty JSON without it
+     * getting double-encoded.
+     *
+     * @param int $flags  json_encode flags (defaults match what every
+     *                    existing call site was already using)
+     */
+    public function json(
+        mixed $body,
+        int $code = 200,
+        int $flags = JSON_UNESCAPED_SLASHES,
+    ): string {
+        $this->setCode($code);
+        $this->setHeader('Content-Type', 'application/json; charset=utf-8');
+        return is_string($body) ? $body : (string) json_encode($body, $flags);
+    }
+
+    /**
+     * Configure the response as XML and return the encoded body. Mirrors
+     * {@see self::json()} for clients that prefer XML (legacy SOAP-ish
+     * partners, RSS/Atom feeds, etc.).
+     *
+     * Accepts:
+     *   - pre-rendered XML string  → passed through verbatim
+     *   - SimpleXMLElement         → serialized via asXML()
+     *   - array                    → recursively serialized under $rootElement
+     */
+    public function xml(
+        string|array|\SimpleXMLElement $body,
+        int $code = 200,
+        string $rootElement = 'response',
+    ): string {
+        $this->setCode($code);
+        $this->setHeader('Content-Type', 'application/xml; charset=utf-8');
+
+        if (is_string($body)) {
+            return $body;
+        }
+        if ($body instanceof \SimpleXMLElement) {
+            return (string) $body->asXML();
+        }
+
+        $root = new \SimpleXMLElement('<?xml version="1.0" encoding="UTF-8"?><' . $rootElement . '/>');
+        self::arrayToXml($body, $root);
+        return (string) $root->asXML();
+    }
+
+    /** Recursively append array entries as children of $parent. */
+    private static function arrayToXml(array $data, \SimpleXMLElement $parent): void
+    {
+        foreach ($data as $key => $value) {
+            // Numeric keys become <item index="N"> so the XML stays well-formed.
+            if (is_int($key)) {
+                $child = $parent->addChild('item');
+                $child->addAttribute('index', (string) $key);
+            } else {
+                // Element names must start with a letter/underscore — sanitise.
+                $name = preg_replace('/[^A-Za-z0-9_\-]/', '_', (string) $key) ?: 'field';
+                if (!preg_match('/^[A-Za-z_]/', $name)) {
+                    $name = '_' . $name;
+                }
+                $child = $parent->addChild($name);
+            }
+
+            if (is_array($value)) {
+                self::arrayToXml($value, $child);
+            } elseif (is_object($value)) {
+                self::arrayToXml((array) $value, $child);
+            } else {
+                // SimpleXML refuses raw null; cast everything to scalar.
+                $child[0] = (string) ($value ?? '');
+            }
+        }
     }
 
     public function setBody(mixed $body): void
@@ -73,7 +143,11 @@ class Response implements ResponseInterface
 
         $contentType = array_find(
             $types,
-            static fn (string $type): bool => in_array($type, ['application/json', 'text/html', 'text/*', '*/*'], true),
+            static fn (string $type): bool => in_array(
+                $type,
+                ['application/json', 'application/xml', 'text/xml', 'text/html', 'text/*', '*/*'],
+                true,
+            ),
         );
 
         if ($contentType === null) {
@@ -153,6 +227,14 @@ class Response implements ResponseInterface
                 is_string($body)                  => $body,
                 $body instanceof RenderInterface  => json_encode($body->data()),
                 default                           => json_encode($body),
+            }),
+            'application/xml', 'text/xml' => print(match (true) {
+                // Already-serialized XML from a controller — pass through.
+                is_string($body)                 => $body,
+                $body instanceof \SimpleXMLElement => $body->asXML(),
+                $body instanceof RenderInterface => $this->xml($body->data()),
+                is_array($body), is_object($body) => $this->xml((array) $body),
+                default => throw new \Exception('Unsupported XML body type.'),
             }),
             default => throw new \Exception('Unsupported content type: ' . $contentType),
         };

@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="SilverEngine — a small PHP 8.4 framework you can read in one sitting.">
+    <meta name="description" content="SilverEngine — a small PHP 8.5 framework you can read in one sitting.">
     <title>SilverEngine</title>
     {{ viteCss() }}
     <style>
@@ -34,7 +34,7 @@
             </h1>
 
             <p class="mt-8 max-w-xl text-zinc-600 leading-relaxed">
-                SilverEngine is a small, opinionated PHP 8.4 framework. Two runtime
+                SilverEngine is a small, opinionated PHP 8.5 framework. Two runtime
                 dependencies. Routing, container, persistence, errors, and a Vue 3
                 bridge — all in one repository.
             </p>

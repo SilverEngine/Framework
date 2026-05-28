@@ -4,7 +4,6 @@ declare(strict_types=1);
 namespace Silver\Engine\Ghost;
 
 use Silver\Core\Contracts\RenderInterface;
-use Silver\Core\Route;
 use Silver\Http\Session;
 use Silver\Http\Request;
 
@@ -45,11 +44,11 @@ class Template implements RenderInterface
         $cacheFile = Compiler::pathFor($this->file);
 
         // Fast path: cache is fresh — skip the regex pipeline entirely.
-        if (Compiler::isFresh($cacheFile, $this->file)) {
-            // Bubble transitively-tracked deps into the parent frame so this
-            // template's deps stick to whatever cache the parent ends up
-            // writing.
-            Compiler::trackMany(Compiler::depsFrom($cacheFile) ?? []);
+        // freshDeps returns the tracked deps map on a cache hit (null on
+        // miss) so we can bubble them into the parent frame in one pass.
+        $cachedDeps = Compiler::freshDeps($cacheFile, $this->file);
+        if ($cachedDeps !== null) {
+            Compiler::trackMany($cachedDeps);
             return $this->execute($cacheFile);
         }
 
@@ -84,9 +83,9 @@ class Template implements RenderInterface
         $render = $this->parseDebug($render);
         $render = $this->parseComments($render);
         $render = $this->parseIncludes($render);
-        $render = $this->filterIf($render);
-        $render = $this->filterForeach($render);
-        $render = $this->filterFor($render);
+        $render = $this->filterControl($render, 'if');
+        $render = $this->filterControl($render, 'foreach');
+        $render = $this->filterControl($render, 'for');
         $render = $this->parseLang($render);
         $render = $this->parseTrans($render);
         $render = $this->parseExtends($render);
@@ -141,9 +140,17 @@ class Template implements RenderInterface
 
     private function parseVars(string $body): string
     {
-        // Raw output {{{ }}} — caller's responsibility to ensure the value is
-        // already safe HTML. Note: no @ silencing — undefined vars/notices now
-        // surface (E_NOTICE is filtered globally by View::render).
+        // Raw output, Laravel-style: {!! $html !!} — emits the expression
+        // verbatim, caller is responsible for safety. Run BEFORE {{{ }}}
+        // and {{ }} so the `!!` markers can't be misread as braces.
+        $body = preg_replace_callback(
+            '/{!!\s*(.+?)\s*!!}/s',
+            fn(array $m) => '<?php echo ' . trim($m[1]) . ';?>',
+            $body,
+        );
+
+        // Raw output, Mustache-style: {{{ $html }}} — identical semantics
+        // to {!! !!}, kept for backwards compatibility.
         $body = preg_replace_callback(
             '/{{{([^}]*)}}}/s',
             fn(array $m) => '<?php echo ' . trim($m[1]) . ';?>',
@@ -188,27 +195,28 @@ class Template implements RenderInterface
         );
     }
 
-    private function filterIf(string $body): string
+    /**
+     * Compile a PHP control block (#if / #foreach / #for) into raw PHP.
+     * Each tag rewrites the opener to `<?php ${tag} { ?>` and the
+     * matching `#end<tag>` to `<?php } ?>`. #if additionally supports
+     * #elseif and #else.
+     */
+    private function filterControl(string $body, string $tag): string
     {
-        $body = preg_replace_callback('/#if.*/', fn(array $m) => '<?php ' . substr(trim($m[0]), 1) . ' { ?>', $body);
-        $body = preg_replace_callback('/#elseif.*/', fn(array $m) => '<?php } ' . substr(trim($m[0]), 1) . ' { ?>', $body);
-        $body = preg_replace('/#else/', '<?php } else { ?>', $body);
-        $body = preg_replace('/#endif/', '<?php } ?>', $body);
-        return $body;
-    }
-
-    private function filterForeach(string $body): string
-    {
-        $body = preg_replace_callback('/#foreach.*/', fn(array $m) => '<?php ' . substr(trim($m[0]), 1) . ' { ?>', $body);
-        $body = preg_replace('/#endforeach/', '<?php } ?>', $body);
-        return $body;
-    }
-
-    private function filterFor(string $body): string
-    {
-        $body = preg_replace_callback('/#for.*/', fn(array $m) => '<?php ' . substr(trim($m[0]), 1) . ' { ?>', $body);
-        $body = preg_replace('/#endfor/', '<?php } ?>', $body);
-        return $body;
+        $body = preg_replace_callback(
+            '/#' . $tag . '.*/',
+            fn (array $m) => '<?php ' . substr(trim($m[0]), 1) . ' { ?>',
+            $body,
+        );
+        if ($tag === 'if') {
+            $body = preg_replace_callback(
+                '/#elseif.*/',
+                fn (array $m) => '<?php } ' . substr(trim($m[0]), 1) . ' { ?>',
+                $body,
+            );
+            $body = preg_replace('/#else/', '<?php } else { ?>', $body);
+        }
+        return preg_replace('/#end' . $tag . '/', '<?php } ?>', $body);
     }
 
     protected function parseComments(string $body): string
@@ -218,7 +226,6 @@ class Template implements RenderInterface
 
     protected function parseMaster(string $render): string
     {
-        $master = str_replace('.', '/', $this->master);
         $blocks = [];
         $currentBlock = null;
         $blockContent = '';
@@ -241,9 +248,9 @@ class Template implements RenderInterface
             $blockContent .= $line . "\n";
         }
 
-        $fullpath = ROOT . "app/Views/{$master}.ghost.php";
-        if (!is_file($fullpath)) {
-            $fullpath = ROOT . "app/Views/{$master}.ghost.tpl";
+        $fullpath = self::resolveView($this->master);
+        if ($fullpath === null) {
+            return $render;
         }
 
         $ghost = new self($fullpath);
@@ -366,40 +373,40 @@ class Template implements RenderInterface
 
     protected function includeFile(string $alias): string
     {
-        $alias = str_replace('.', '/', $alias);
-        $fullpath = ROOT . "app/Views/{$alias}.ghost.php";
-        if (!is_file($fullpath)) {
-            $fullpath = ROOT . "app/Views/{$alias}.ghost.tpl";
-        }
-
-        if (file_exists($fullpath)) {
-            return (new self($fullpath))->render();
-        }
-
-        return '';
+        $fullpath = self::resolveView($alias);
+        return $fullpath !== null ? (new self($fullpath))->render() : '';
     }
 
     protected function includeComponent(string $alias): string
     {
-        $alias = str_replace('.', '/', $alias);
-        $fullpath = ROOT . "app/Views/components/{$alias}.ghost.php";
-        if (!is_file($fullpath)) {
-            $fullpath = ROOT . "app/Views/components/{$alias}.ghost.tpl";
+        $fullpath = self::resolveView($alias, 'components/');
+        if ($fullpath === null) {
+            return '';
         }
-
-        if (file_exists($fullpath)) {
-            $ghost = new self($fullpath);
-            $ghost->data = $this->data;
-            return $ghost->render();
-        }
-
-        return '';
+        $ghost = new self($fullpath);
+        $ghost->data = $this->data;
+        return $ghost->render();
     }
 
-    protected function getRoute(string $routeName, array $vars = []): string
+    /**
+     * Locate a Ghost view by dotted alias under `app/Views/[$subdir]`,
+     * trying `.ghost.php` first then `.ghost.tpl`. Returns the resolved
+     * absolute path or null if neither exists.
+     *
+     * Centralises the dotted-alias → file lookup that previously lived
+     * inline in {@see parseMaster()}, {@see includeFile()} and
+     * {@see includeComponent()}.
+     */
+    private static function resolveView(string $alias, string $subdir = ''): ?string
     {
-        $router = app(Route::class);
-        return $router->getRoute($routeName)->url($vars);
+        $relative = str_replace('.', '/', $alias);
+        foreach (['.ghost.php', '.ghost.tpl'] as $ext) {
+            $path = ROOT . 'app/Views/' . $subdir . $relative . $ext;
+            if (is_file($path)) {
+                return $path;
+            }
+        }
+        return null;
     }
 
     /**

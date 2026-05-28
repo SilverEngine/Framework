@@ -82,33 +82,49 @@ final class Compiler
     }
 
     /**
-     * Whether a cached artifact is still valid for the given source. Returns
-     * false if the cache file is missing, was produced by a different
-     * compiler version, or any tracked dependency has a stale mtime.
+     * If the cache for $sourceFile is still valid, return its tracked deps
+     * (so the caller can bubble them into the parent compile frame). Returns
+     * null when the cache is missing, was produced by a different compiler
+     * version, or any tracked dependency has a stale mtime.
+     *
+     * Single-pass: replaces the previous `isFresh() + depsFrom()` two-call
+     * pattern that opened and parsed the cache header twice on every hit.
+     *
+     * @return array<string,int>|null
      */
-    public static function isFresh(string $cacheFile, string $sourceFile): bool
+    public static function freshDeps(string $cacheFile, string $sourceFile): ?array
     {
         if (!is_file($cacheFile) || !is_file($sourceFile)) {
-            return false;
+            return null;
         }
         $header = self::readHeader($cacheFile);
         if ($header === null || $header['version'] !== self::VERSION) {
-            return false;
+            return null;
         }
         $deps = $header['deps'];
-        // Source must be present in deps with current mtime.
         if (($deps[$sourceFile] ?? null) !== filemtime($sourceFile)) {
-            return false;
+            return null;
         }
         foreach ($deps as $path => $mtime) {
             if (!is_file($path) || filemtime($path) !== $mtime) {
-                return false;
+                return null;
             }
         }
-        return true;
+        return $deps;
     }
 
-    /** @return array<string,int>|null deps map from the cached file, or null on parse error */
+    /** Convenience predicate over {@see freshDeps()}. */
+    public static function isFresh(string $cacheFile, string $sourceFile): bool
+    {
+        return self::freshDeps($cacheFile, $sourceFile) !== null;
+    }
+
+    /**
+     * @deprecated since the freshDeps() refactor — prefer that since it
+     * reuses the freshness check's header read. Kept for callers that only
+     * want deps without the freshness check.
+     * @return array<string,int>|null
+     */
     public static function depsFrom(string $cacheFile): ?array
     {
         $header = self::readHeader($cacheFile);

@@ -105,7 +105,7 @@ onUnmounted(() => {
       </div>
 
       <p class="max-w-xl text-center text-base text-zinc-500 dark:text-zinc-400 leading-relaxed">
-        A small PHP 8.4 framework, on purpose. Server-driven Vue via Wisp,
+        A small PHP 8.5 framework, on purpose. Server-driven Vue via Wisp,
         no Packagist deps, no client router.
       </p>
 

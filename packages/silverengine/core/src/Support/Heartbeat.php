@@ -26,7 +26,7 @@ use Silver\FileSystem\FileSystem;
 final class Heartbeat
 {
     /** Minimum PHP version this framework requires. */
-    private const MIN_PHP = '8.4.0';
+    private const MIN_PHP = '8.5.0';
 
     /**
      * @return array{
@@ -145,7 +145,7 @@ final class Heartbeat
     {
         $c = App::instance()->instances();
         foreach ((array) Env::get('middlewares', []) as $cls) {
-            if (is_string($cls) && class_exists($cls)) {
+            if (is_class($cls)) {
                 $c->make($cls);
             }
         }
@@ -154,7 +154,7 @@ final class Heartbeat
     private function exerciseProviders(): void
     {
         foreach ((array) Env::get('providers', []) as $cls) {
-            if (is_string($cls) && class_exists($cls)) {
+            if (is_class($cls)) {
                 // Construct only — don't fire before()/after() side effects.
                 new $cls(null);
             }
@@ -406,7 +406,7 @@ final class Heartbeat
             return $this->warn('middlewares', 'pipeline is empty');
         }
         foreach ($list as $cls) {
-            if (!is_string($cls) || !class_exists($cls)) {
+            if (!is_class($cls)) {
                 return $this->fail('middlewares', "missing class: " . (string) $cls);
             }
         }
@@ -418,7 +418,7 @@ final class Heartbeat
         $list = (array) Env::get('providers', []);
         $count = count($list);
         foreach ($list as $cls) {
-            if (!is_string($cls) || !class_exists($cls)) {
+            if (!is_class($cls)) {
                 return $this->fail('providers', "missing class: " . (string) $cls);
             }
         }
