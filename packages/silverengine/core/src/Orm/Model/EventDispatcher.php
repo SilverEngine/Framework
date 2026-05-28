@@ -10,7 +10,7 @@ namespace Silver\Orm\Model;
  * through the IoC container (`fn ($class) => app($class)`) and tests
  * can swap in plain `new $class`.
  */
-final class EventDispatcher
+final readonly class EventDispatcher
 {
     /** @var \Closure(class-string): object */
     private \Closure $resolver;

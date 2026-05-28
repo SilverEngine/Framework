@@ -7,7 +7,9 @@ final class ArrayCast implements CastsAttribute
 {
     public function get(mixed $value): mixed
     {
-        if ($value === null || $value === '') return [];
+        if ($value === null || $value === '') {
+            return [];
+        }
         $decoded = json_decode((string) $value, associative: true, flags: JSON_THROW_ON_ERROR);
         return is_array($decoded) ? $decoded : [];
     }

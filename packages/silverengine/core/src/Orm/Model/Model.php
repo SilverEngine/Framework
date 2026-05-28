@@ -3,6 +3,20 @@ declare(strict_types=1);
 
 namespace Silver\Orm\Model;
 
+use Silver\Orm\Relations\HasOne;
+use Silver\Orm\Relations\Relation;
+use Silver\Orm\Relations\HasMany;
+use Silver\Orm\Relations\BelongsTo;
+use Silver\Orm\Relations\BelongsToMany;
+use Silver\Orm\Relations\HasManyThrough;
+use Silver\Orm\Relations\Morph\MorphOne;
+use Silver\Orm\Relations\Morph\MorphMany;
+use Silver\Orm\Relations\Morph\MorphTo;
+use Silver\Orm\Relations\LazyLoadingViolation;
+use Silver\Orm\Connection\TransactionManager;
+use Silver\Orm\Query\Node\Raw;
+use Silver\Orm\Attributes\UseRepository;
+use Silver\Orm\Attributes\RepositoryAttribute;
 use DateTimeImmutable;
 use DateTimeZone;
 use JsonSerializable;
@@ -111,7 +125,7 @@ abstract class Model implements JsonSerializable
         );
     }
 
-    private static function events(): EventDispatcher
+    private function events(): EventDispatcher
     {
         return self::$events ?? new EventDispatcher();
     }
@@ -174,33 +188,33 @@ abstract class Model implements JsonSerializable
     // ---------- relation factories (used inside model method definitions) ----------
 
     /** @param class-string<Model> $related */
-    protected function hasOne(string $related, ?string $foreignKey = null, ?string $localKey = null): \Silver\Orm\Relations\HasOne
+    protected function hasOne(string $related, ?string $foreignKey = null, ?string $localKey = null): HasOne
     {
-        return new \Silver\Orm\Relations\HasOne(
+        return new HasOne(
             $this,
             $related,
-            $foreignKey ?? \Silver\Orm\Relations\Relation::defaultForeignKey(static::class),
-            $localKey   ?? \Silver\Orm\Relations\Relation::defaultLocalKey(static::class),
+            $foreignKey ?? Relation::defaultForeignKey(static::class),
+            $localKey   ?? Relation::defaultLocalKey(static::class),
         );
     }
 
     /** @param class-string<Model> $related */
-    protected function hasMany(string $related, ?string $foreignKey = null, ?string $localKey = null): \Silver\Orm\Relations\HasMany
+    protected function hasMany(string $related, ?string $foreignKey = null, ?string $localKey = null): HasMany
     {
-        return new \Silver\Orm\Relations\HasMany(
+        return new HasMany(
             $this,
             $related,
-            $foreignKey ?? \Silver\Orm\Relations\Relation::defaultForeignKey(static::class),
-            $localKey   ?? \Silver\Orm\Relations\Relation::defaultLocalKey(static::class),
+            $foreignKey ?? Relation::defaultForeignKey(static::class),
+            $localKey   ?? Relation::defaultLocalKey(static::class),
         );
     }
 
     /** @param class-string<Model> $related */
-    protected function belongsTo(string $related, ?string $foreignKey = null, ?string $ownerKey = null): \Silver\Orm\Relations\BelongsTo
+    protected function belongsTo(string $related, ?string $foreignKey = null, ?string $ownerKey = null): BelongsTo
     {
-        $fk = $foreignKey ?? \Silver\Orm\Relations\Relation::defaultForeignKey($related);
-        $ok = $ownerKey   ?? \Silver\Orm\Relations\Relation::defaultLocalKey($related);
-        return new \Silver\Orm\Relations\BelongsTo($this, $related, $fk, $ok);
+        $fk = $foreignKey ?? Relation::defaultForeignKey($related);
+        $ok = $ownerKey   ?? Relation::defaultLocalKey($related);
+        return new BelongsTo($this, $related, $fk, $ok);
     }
 
     /** @param class-string<Model> $related */
@@ -211,7 +225,7 @@ abstract class Model implements JsonSerializable
         ?string $relatedPivotKey = null,
         ?string $parentKey       = null,
         ?string $relatedKey      = null,
-    ): \Silver\Orm\Relations\BelongsToMany {
+    ): BelongsToMany {
         $parentBase  = substr(static::class, (int) strrpos(static::class, '\\') + 1);
         $relatedBase = substr($related,       (int) strrpos($related,       '\\') + 1);
 
@@ -219,14 +233,14 @@ abstract class Model implements JsonSerializable
         sort($sortedPair);
         $defaultPivotTable = implode('_', $sortedPair);
 
-        return new \Silver\Orm\Relations\BelongsToMany(
+        return new BelongsToMany(
             $this,
             $related,
             $pivotTable      ?? $defaultPivotTable,
-            $foreignPivotKey ?? \Silver\Orm\Relations\Relation::defaultForeignKey(static::class),
-            $relatedPivotKey ?? \Silver\Orm\Relations\Relation::defaultForeignKey($related),
-            $parentKey       ?? \Silver\Orm\Relations\Relation::defaultLocalKey(static::class),
-            $relatedKey      ?? \Silver\Orm\Relations\Relation::defaultLocalKey($related),
+            $foreignPivotKey ?? Relation::defaultForeignKey(static::class),
+            $relatedPivotKey ?? Relation::defaultForeignKey($related),
+            $parentKey       ?? Relation::defaultLocalKey(static::class),
+            $relatedKey      ?? Relation::defaultLocalKey($related),
         );
     }
 
@@ -241,43 +255,43 @@ abstract class Model implements JsonSerializable
         ?string $secondKey      = null,
         ?string $localKey       = null,
         ?string $secondLocalKey = null,
-    ): \Silver\Orm\Relations\HasManyThrough {
-        return new \Silver\Orm\Relations\HasManyThrough(
+    ): HasManyThrough {
+        return new HasManyThrough(
             $this,
             $related,
             $through,
-            $firstKey       ?? \Silver\Orm\Relations\Relation::defaultForeignKey(static::class),
-            $secondKey      ?? \Silver\Orm\Relations\Relation::defaultForeignKey($through),
-            $localKey       ?? \Silver\Orm\Relations\Relation::defaultLocalKey(static::class),
-            $secondLocalKey ?? \Silver\Orm\Relations\Relation::defaultLocalKey($through),
+            $firstKey       ?? Relation::defaultForeignKey(static::class),
+            $secondKey      ?? Relation::defaultForeignKey($through),
+            $localKey       ?? Relation::defaultLocalKey(static::class),
+            $secondLocalKey ?? Relation::defaultLocalKey($through),
         );
     }
 
     /** @param class-string<Model> $related */
-    protected function morphOne(string $related, string $morph, ?string $localKey = null): \Silver\Orm\Relations\Morph\MorphOne
+    protected function morphOne(string $related, string $morph, ?string $localKey = null): MorphOne
     {
-        return new \Silver\Orm\Relations\Morph\MorphOne(
+        return new MorphOne(
             $this,
             $related,
             $morph,
-            $localKey ?? \Silver\Orm\Relations\Relation::defaultLocalKey(static::class),
+            $localKey ?? Relation::defaultLocalKey(static::class),
         );
     }
 
     /** @param class-string<Model> $related */
-    protected function morphMany(string $related, string $morph, ?string $localKey = null): \Silver\Orm\Relations\Morph\MorphMany
+    protected function morphMany(string $related, string $morph, ?string $localKey = null): MorphMany
     {
-        return new \Silver\Orm\Relations\Morph\MorphMany(
+        return new MorphMany(
             $this,
             $related,
             $morph,
-            $localKey ?? \Silver\Orm\Relations\Relation::defaultLocalKey(static::class),
+            $localKey ?? Relation::defaultLocalKey(static::class),
         );
     }
 
-    protected function morphTo(string $morph): \Silver\Orm\Relations\Morph\MorphTo
+    protected function morphTo(string $morph): MorphTo
     {
-        return new \Silver\Orm\Relations\Morph\MorphTo($this, $morph);
+        return new MorphTo($this, $morph);
     }
 
     /**
@@ -293,7 +307,7 @@ abstract class Model implements JsonSerializable
         }
         // Is it a relation method on the subclass? If so, complain.
         if (method_exists($this, $name)) {
-            throw \Silver\Orm\Relations\LazyLoadingViolation::for(static::class, $name);
+            throw LazyLoadingViolation::for(static::class, $name);
         }
         // Fall through: extras (join projections) are addressable.
         if (array_key_exists($name, $this->extras)) {
@@ -334,7 +348,7 @@ abstract class Model implements JsonSerializable
         $deferred = static::deferred();
         if ($deferred !== []) {
             $cols = [];
-            foreach (static::metadata()->properties as $name => $_) {
+            foreach (array_keys(static::metadata()->properties) as $name) {
                 if (!in_array($name, $deferred, true)) {
                     $cols[] = $name;
                 }
@@ -389,7 +403,7 @@ abstract class Model implements JsonSerializable
         $found = ModelCache::rememberPk(
             static::class,
             $id,
-            fn () => static::query()->where(static::primaryKey(), $id)->first(),
+            fn (): mixed => static::query()->where(static::primaryKey(), $id)->first(),
         );
         return $found;
     }
@@ -470,22 +484,22 @@ abstract class Model implements JsonSerializable
 
     public function save(): static
     {
-        $cm   = self::connections();
+        self::connections();
         $meta = static::metadata();
 
         if ($this->exists) {
-            return $this->performUpdate($cm, $meta);
+            return $this->performUpdate($meta);
         }
-        return $this->performInsert($cm, $meta);
+        return $this->performInsert($meta);
     }
 
-    private function performInsert(ConnectionManager $cm, ModelMetadata $meta): static
+    private function performInsert(ModelMetadata $meta): static
     {
-        self::events()->dispatch('creating', $this);
+        $this->events()->dispatch('creating', $this);
 
         // Stamp timestamps.
         if ($meta->hasTimestamps()) {
-            $now = self::nowUtc();
+            $now = $this->nowUtc();
             $this->setIfMissing($meta->timestamps->createdAt, $now);
             $this->setIfMissing($meta->timestamps->updatedAt, $now);
         }
@@ -523,11 +537,11 @@ abstract class Model implements JsonSerializable
             }
         }
 
-        self::events()->dispatch('created', $this);
+        $this->events()->dispatch('created', $this);
         return $this;
     }
 
-    private function performUpdate(ConnectionManager $cm, ModelMetadata $meta): static
+    private function performUpdate(ModelMetadata $meta): static
     {
         $dirty    = $this->dirty();
         $editable = static::editable();
@@ -538,10 +552,10 @@ abstract class Model implements JsonSerializable
             return $this;
         }
 
-        self::events()->dispatch('updating', $this);
+        $this->events()->dispatch('updating', $this);
 
         if ($meta->hasTimestamps()) {
-            $now = self::nowUtc();
+            $now = $this->nowUtc();
             $col = $meta->timestamps->updatedAt;
             $this->{$col} = $now;
             $dirty[$col]  = $this->columnValue($col);
@@ -560,18 +574,18 @@ abstract class Model implements JsonSerializable
         // Targeted bust: only this PK.
         ModelCache::forgetPk(static::class, $this->primaryKeyValue());
 
-        self::events()->dispatch('updated', $this);
+        $this->events()->dispatch('updated', $this);
         return $this;
     }
 
     public function delete(): bool
     {
         $meta = static::metadata();
-        self::events()->dispatch('deleting', $this);
+        $this->events()->dispatch('deleting', $this);
 
         if ($meta->hasSoftDeletes()) {
             $col = $meta->softDeletes->column;
-            $this->{$col} = self::nowUtc();
+            $this->{$col} = $this->nowUtc();
             $pkValue = $this->primaryKeyValue();
             $this->writer()
                 ->where(self::primaryKey(), $pkValue)
@@ -583,15 +597,15 @@ abstract class Model implements JsonSerializable
             return true;
         }
 
-        self::events()->dispatch('deleted', $this);
+        $this->events()->dispatch('deleted', $this);
         return true;
     }
 
     public function forceDelete(): bool
     {
-        self::events()->dispatch('deleting', $this);
+        $this->events()->dispatch('deleting', $this);
         $pkValue = $this->primaryKeyValue();
-        $deleted = (new ModelBuilder(self::connections(), self::compiler(), null, static::class))
+        $deleted = new ModelBuilder(self::connections(), self::compiler(), null, static::class)
             ->from(static::table())
             ->where(self::primaryKey(), $pkValue)
             ->delete();
@@ -602,7 +616,7 @@ abstract class Model implements JsonSerializable
         ModelCache::forgetPk(static::class, $pkValue);
 
         $this->exists = false;
-        self::events()->dispatch('deleted', $this);
+        $this->events()->dispatch('deleted', $this);
         return $deleted > 0;
     }
 
@@ -621,7 +635,7 @@ abstract class Model implements JsonSerializable
         }
         $meta = static::metadata();
         foreach ($targets as $table) {
-            $b = (new Builder(self::connections(), self::compiler()))->from($table);
+            $b = new Builder(self::connections(), self::compiler())->from($table);
             if ($op === 'insert') {
                 $b->insert($row);
             } else {
@@ -640,7 +654,7 @@ abstract class Model implements JsonSerializable
         }
         $meta = static::metadata();
         foreach ($targets as $table) {
-            (new Builder(self::connections(), self::compiler()))
+            new Builder(self::connections(), self::compiler())
                 ->from($table)
                 ->where($meta->primaryKey ?? 'id', $pkValue)
                 ->delete();
@@ -679,13 +693,13 @@ abstract class Model implements JsonSerializable
         $newPos    = $before ? $anchorPos : $anchorPos + 1;
 
         $cm = self::connections();
-        $tx = new \Silver\Orm\Connection\TransactionManager($cm);
+        $tx = new TransactionManager($cm);
 
         $tx->run(function () use ($newPos, $orderColumn): void {
             // Shift every row at >= $newPos by +1 to make a hole.
             $cm      = self::connections();
             $driver  = $cm->driver(static::writeConnection());
-            $shiftBy = new \Silver\Orm\Query\Node\Raw(
+            $shiftBy = new Raw(
                 $driver->quoteIdentifier($orderColumn) . ' + 1',
             );
             $this->writer()
@@ -714,7 +728,7 @@ abstract class Model implements JsonSerializable
         if ($other === null) {
             return $this;
         }
-        foreach (static::metadata()->properties as $name => $_) {
+        foreach (array_keys(static::metadata()->properties) as $name) {
             if (isset($other->{$name})) {
                 $this->{$name} = $other->{$name};
             }
@@ -736,7 +750,7 @@ abstract class Model implements JsonSerializable
     {
         $out  = [];
         $meta = static::metadata();
-        foreach ($meta->properties as $name => $prop) {
+        foreach (array_keys($meta->properties) as $name) {
             if (!isset($this->{$name})) {
                 continue;
             }
@@ -753,7 +767,7 @@ abstract class Model implements JsonSerializable
     {
         $out  = [];
         $meta = static::metadata();
-        foreach ($meta->properties as $name => $prop) {
+        foreach (array_keys($meta->properties) as $name) {
             if (!isset($this->{$name})) {
                 continue;
             }
@@ -789,7 +803,7 @@ abstract class Model implements JsonSerializable
      */
     private function writer(): Builder
     {
-        $b = (new Builder(self::connections(), self::compiler()))->from(static::table());
+        $b = new Builder(self::connections(), self::compiler())->from(static::table());
         $write = static::writeConnection();
         if ($write !== null) {
             $b->onConnection($write);
@@ -797,7 +811,7 @@ abstract class Model implements JsonSerializable
         return $b;
     }
 
-    private static function nowUtc(): DateTimeImmutable
+    private function nowUtc(): DateTimeImmutable
     {
         return new DateTimeImmutable('now', new DateTimeZone('UTC'));
     }
@@ -937,7 +951,7 @@ abstract class Model implements JsonSerializable
         }
         // Discovered via #[UseRepository] / #[RepositoryAttribute].
         $rc = new \ReflectionClass(static::class);
-        foreach ([\Silver\Orm\Attributes\UseRepository::class, \Silver\Orm\Attributes\RepositoryAttribute::class] as $attr) {
+        foreach ([UseRepository::class, RepositoryAttribute::class] as $attr) {
             $tags = $rc->getAttributes($attr);
             if ($tags !== []) {
                 /** @var object{class: class-string<Repository>} $inst */
@@ -969,7 +983,7 @@ abstract class Model implements JsonSerializable
     public static function __callStatic(string $name, array $arguments): mixed
     {
         $repo = static::repository();
-        if ($repo !== null && method_exists($repo, $name)) {
+        if ($repo instanceof Repository && method_exists($repo, $name)) {
             return $repo->{$name}(...$arguments);
         }
         throw new \BadMethodCallException(
@@ -985,7 +999,7 @@ abstract class Model implements JsonSerializable
         $out    = [];
         $meta   = static::metadata();
         $hidden = static::hidden();
-        foreach ($meta->properties as $name => $prop) {
+        foreach (array_keys($meta->properties) as $name) {
             if (in_array($name, $hidden, true)) {
                 continue;
             }

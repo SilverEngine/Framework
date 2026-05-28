@@ -10,10 +10,10 @@ namespace Silver\Orm\Query\Node;
  */
 final readonly class Join implements Node
 {
-    public const KIND_INNER = 'INNER';
-    public const KIND_LEFT  = 'LEFT';
-    public const KIND_RIGHT = 'RIGHT';
-    public const KIND_CROSS = 'CROSS';
+    public const string KIND_INNER = 'INNER';
+    public const string KIND_LEFT  = 'LEFT';
+    public const string KIND_RIGHT = 'RIGHT';
+    public const string KIND_CROSS = 'CROSS';
 
     public function __construct(
         public string                $kind,

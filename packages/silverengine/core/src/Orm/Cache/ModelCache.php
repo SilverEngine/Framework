@@ -67,7 +67,7 @@ final class ModelCache
             return $hit;
         }
         $store = self::store($modelClass);
-        if ($store !== null) {
+        if ($store instanceof CacheStore) {
             $persistent = $store->get($key);
             if ($persistent !== null) {
                 self::identity()->set($key, $persistent, 0, [self::tag($modelClass)]);

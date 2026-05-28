@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Helpers;
 
 use App\Models\Users;
@@ -10,11 +12,9 @@ use Silver\Http\Session;
 class User
 {
 
-    private $user;
-
     public function me($demo = 'me')
     {
-        return $this->user = $demo;
+        return $demo;
     }
 
 }

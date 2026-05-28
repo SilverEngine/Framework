@@ -62,7 +62,7 @@ class Builder
     {
         $cols = is_array($columns) ? $columns : [$columns];
         foreach ($cols as $c) {
-            $this->state->select[] = $c instanceof Node ? $c : self::identifierFromExpression($c);
+            $this->state->select[] = $c instanceof Node ? $c : $this->identifierFromExpression($c);
         }
         return $this;
     }
@@ -71,7 +71,7 @@ class Builder
     {
         $this->state->select[] = $column instanceof Node
             ? $column
-            : self::identifierFromExpression($column);
+            : $this->identifierFromExpression($column);
         return $this;
     }
 
@@ -80,7 +80,7 @@ class Builder
      * like "users.email" keep working — they're handled inside the
      * grammar's identifier quoter.
      */
-    private static function identifierFromExpression(string $expr): Identifier
+    private function identifierFromExpression(string $expr): Identifier
     {
         if (preg_match('/^(.+?)\s+AS\s+(.+)$/i', $expr, $m) === 1) {
             return new Identifier(trim($m[1]), trim($m[2]));
@@ -130,7 +130,7 @@ class Builder
     {
         $this->state->wheres[] = new Expression('IN', [
             new Identifier($column),
-            array_map(static fn ($v) => new Binding($v), $values),
+            array_map(static fn ($v): Binding => new Binding($v), $values),
         ]);
         return $this;
     }
@@ -140,7 +140,7 @@ class Builder
     {
         $this->state->wheres[] = new Expression('NOT IN', [
             new Identifier($column),
-            array_map(static fn ($v) => new Binding($v), $values),
+            array_map(static fn ($v): Binding => new Binding($v), $values),
         ]);
         return $this;
     }
@@ -563,7 +563,7 @@ class Builder
         }
 
         // ->where('col', $value) shorthand.
-        if ($value === null && !in_array($op, [null], true) && !$this->looksLikeOp($op)) {
+        if ($value === null && $op !== null && !$this->looksLikeOp($op)) {
             $value = $op;
             $op    = '=';
         } elseif ($op === null) {

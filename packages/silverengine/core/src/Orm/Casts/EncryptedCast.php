@@ -10,14 +10,9 @@ use Silver\Crypto\Crypter;
  * {@see Crypter} — base64([12 nonce][16 tag][ciphertext]) — so payloads
  * are interchangeable with anything else the framework signs.
  */
-final class EncryptedCast implements CastsAttribute
+final readonly class EncryptedCast implements CastsAttribute
 {
-    private readonly ?string $key;
-
-    public function __construct(?string $key = null)
-    {
-        $this->key = $key;
-    }
+    public function __construct(private ?string $key = null) {}
 
     public function get(mixed $value): mixed
     {

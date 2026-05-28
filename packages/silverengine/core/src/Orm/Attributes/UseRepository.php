@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Silver\Orm\Attributes;
 
+use Silver\Orm\Model\Repository;
 use Attribute;
 
 /**
@@ -17,7 +18,7 @@ use Attribute;
 final readonly class UseRepository
 {
     /**
-     * @param class-string<\Silver\Orm\Model\Repository> $class
+     * @param class-string<Repository> $class
      */
     public function __construct(public string $class) {}
 }

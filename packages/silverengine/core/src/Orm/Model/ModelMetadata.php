@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Silver\Orm\Model;
 
+use Silver\Orm\Contracts\GlobalScopeInterface;
 use Silver\Orm\Concerns\SoftDeletes;
 use Silver\Orm\Concerns\Timestamps;
 
@@ -16,7 +17,7 @@ final readonly class ModelMetadata
      * @param list<string>                          $guarded
      * @param list<class-string>                    $observers
      * @param array<string, string>                 $scopes        scope-method name → real method on the model
-     * @param list<class-string<\Silver\Orm\Contracts\GlobalScopeInterface>> $globalScopes
+     * @param list<class-string<GlobalScopeInterface>> $globalScopes
      */
     public function __construct(
         public string       $class,
@@ -35,6 +36,6 @@ final readonly class ModelMetadata
         public array        $globalScopes = [],
     ) {}
 
-    public function hasTimestamps(): bool { return $this->timestamps !== null; }
-    public function hasSoftDeletes(): bool { return $this->softDeletes !== null; }
+    public function hasTimestamps(): bool { return $this->timestamps instanceof Timestamps; }
+    public function hasSoftDeletes(): bool { return $this->softDeletes instanceof SoftDeletes; }
 }
