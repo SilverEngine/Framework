@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Silver\Orm\Schema;
 
+use Silver\Orm\Connection\ConnectionConfig;
 use PDO;
 use Silver\Orm\Connection\ConnectionManager;
 use Silver\Orm\Connection\TransactionManager;
@@ -18,12 +19,12 @@ use Throwable;
  * Multi-connection callers loop over connections and instantiate one
  * Migrator per name.
  */
-final class Migrator
+final readonly class Migrator
 {
     public function __construct(
-        private readonly ConnectionManager  $connections,
-        private readonly TransactionManager $tx,
-        private readonly string             $connection,
+        private ConnectionManager  $connections,
+        private TransactionManager $tx,
+        private string             $connection,
     ) {
         Schema::bind($this->connections);
     }
@@ -104,7 +105,7 @@ final class Migrator
 
         $files = $this->discover();
         $out   = [];
-        foreach ($files as $name => $path) {
+        foreach (array_keys($files) as $name) {
             if (isset($ran[$name])) {
                 $out[] = new MigrationStatus(
                     connection: $this->connection,
@@ -132,7 +133,7 @@ final class Migrator
     private function discover(): array
     {
         $cfg = $this->connections->config($this->connection);
-        if ($cfg === null || $cfg->migrationsPath === null) {
+        if (!$cfg instanceof ConnectionConfig || $cfg->migrationsPath === null) {
             throw new \LogicException(
                 "Connection '{$this->connection}' has no migrationsPath configured."
             );
@@ -208,10 +209,7 @@ final class Migrator
                 $run();
             }
         } catch (Throwable $e) {
-            throw new \RuntimeException(
-                "Migration {$entry['name']} on connection '{$this->connection}' failed: " . $e->getMessage(),
-                previous: $e,
-            );
+            throw new \RuntimeException("Migration {$entry['name']} on connection '{$this->connection}' failed: " . $e->getMessage(), $e->getCode(), previous: $e);
         }
 
         return new MigrationRun($this->connection, $entry['name'], applied: true, pretended: false);
@@ -304,7 +302,7 @@ final class Migrator
             $this->connection,
         );
         /** @var list<int> $batches */
-        $batches = array_map('intval', $stmt->fetchAll(PDO::FETCH_COLUMN));
+        $batches = array_map(intval(...), $stmt->fetchAll(PDO::FETCH_COLUMN));
         return $batches;
     }
 

@@ -10,8 +10,8 @@ namespace Silver\Orm\Schema;
  */
 final class Blueprint
 {
-    public const ACTION_CREATE = 'create';
-    public const ACTION_ALTER  = 'alter';
+    public const string ACTION_CREATE = 'create';
+    public const string ACTION_ALTER  = 'alter';
 
     public string $action = self::ACTION_CREATE;
 
@@ -52,8 +52,7 @@ final class Blueprint
 
     public function increments(string $name = 'id'): ColumnDefinition
     {
-        $col = $this->add($name, 'integer')->unsigned()->autoIncrement()->primary();
-        return $col;
+        return $this->add($name, 'integer')->unsigned()->autoIncrement()->primary();
     }
 
     public function bigIncrements(string $name = 'id'): ColumnDefinition

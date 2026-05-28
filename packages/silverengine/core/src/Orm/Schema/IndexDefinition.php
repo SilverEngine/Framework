@@ -10,9 +10,9 @@ namespace Silver\Orm\Schema;
  */
 final class IndexDefinition
 {
-    public const KIND_INDEX   = 'INDEX';
-    public const KIND_UNIQUE  = 'UNIQUE';
-    public const KIND_PRIMARY = 'PRIMARY';
+    public const string KIND_INDEX   = 'INDEX';
+    public const string KIND_UNIQUE  = 'UNIQUE';
+    public const string KIND_PRIMARY = 'PRIMARY';
 
     /** @param list<string> $columns */
     public function __construct(

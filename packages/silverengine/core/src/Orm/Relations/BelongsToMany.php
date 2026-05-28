@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Silver\Orm\Relations;
 
+use Silver\Orm\Query\Compiler;
+use Silver\Orm\Query\Node\Identifier;
 use Silver\Orm\Collection;
 use Silver\Orm\Model\Model;
 use Silver\Orm\Query\Builder;
@@ -118,10 +120,10 @@ final class BelongsToMany extends Relation
 
     private function pivot(): Builder
     {
-        return (new Builder(
+        return new Builder(
             Model::connections(),
-            new \Silver\Orm\Query\Compiler(Model::connections()),
-        ))->from($this->pivotTable);
+            new Compiler(Model::connections()),
+        )->from($this->pivotTable);
     }
 
     /**
@@ -137,7 +139,7 @@ final class BelongsToMany extends Relation
         return $cls::query()
             ->select([
                 $relatedTable . '.*',
-                new \Silver\Orm\Query\Node\Identifier(
+                new Identifier(
                     "{$this->pivotTable}.{$this->foreignPivotKey}",
                     '__pivot_parent',
                 ),

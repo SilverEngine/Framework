@@ -48,7 +48,7 @@ abstract class Grammar implements GrammarInterface
             $this->compileLimitOffset($state),
             $this->compileUnions($state, $bindings),
             $this->compileLock($state),
-        ], static fn (string $p) => $p !== '');
+        ], static fn (string $p): bool => $p !== '');
 
         return [implode(' ', $parts), $bindings];
     }
@@ -68,7 +68,7 @@ abstract class Grammar implements GrammarInterface
         }
 
         $columns  = array_keys($first);
-        $quotedCs = implode(', ', array_map(fn ($c) => $this->quote($c), $columns));
+        $quotedCs = implode(', ', array_map($this->quote(...), $columns));
 
         $bindings = [];
         $tuples   = [];
@@ -113,7 +113,7 @@ abstract class Grammar implements GrammarInterface
             }
         }
 
-        $sql = 'UPDATE ' . $this->compileFromTarget($state->from, $bindings, prefix: false)
+        $sql = 'UPDATE ' . $this->compileFromTarget($state->from, $bindings)
             . ' SET ' . implode(', ', $sets);
 
         $where = $this->compileWheres($state, $bindings);
@@ -135,7 +135,7 @@ abstract class Grammar implements GrammarInterface
         }
 
         $bindings = [];
-        $sql      = 'DELETE FROM ' . $this->compileFromTarget($state->from, $bindings, prefix: false);
+        $sql      = 'DELETE FROM ' . $this->compileFromTarget($state->from, $bindings);
 
         $where = $this->compileWheres($state, $bindings);
         if ($where !== '') {
@@ -168,11 +168,11 @@ abstract class Grammar implements GrammarInterface
         if ($state->from === null) {
             return '';
         }
-        return 'FROM ' . $this->compileFromTarget($state->from, $bindings, prefix: false);
+        return 'FROM ' . $this->compileFromTarget($state->from, $bindings);
     }
 
     /** @param list<mixed> $bindings */
-    private function compileFromTarget(Identifier|Subquery $from, array &$bindings, bool $prefix): string
+    private function compileFromTarget(Identifier|Subquery $from, array &$bindings): string
     {
         if ($from instanceof Subquery) {
             [$sub, $subBindings] = $this->compileSelect($from->state);
@@ -196,7 +196,7 @@ abstract class Grammar implements GrammarInterface
         $out = [];
         foreach ($state->joins as $j) {
             $table = $j->table instanceof Subquery
-                ? $this->compileFromTarget($j->table, $bindings, prefix: false)
+                ? $this->compileFromTarget($j->table, $bindings)
                 : $this->compileIdentifier($j->table);
 
             $on = $j->on !== null ? ' ON ' . $this->compileNode($j->on, $bindings) : '';

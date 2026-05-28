@@ -12,6 +12,7 @@
 
 namespace App\Middlewares;
 
+use Silver\Http\View;
 use App\Facades\Api;
 use Firebase\JWT\JWT;
 use Silver\Core\Contracts\MiddlewareInterface;
@@ -25,7 +26,7 @@ use Silver\Http\Redirect;
 class Auth implements MiddlewareInterface
 {
     // put the name to make it public
-    private $unguard = [
+    private array $unguard = [
         'unguard',
         'guest',
         'public',
@@ -37,10 +38,10 @@ class Auth implements MiddlewareInterface
             return $next();
         }
 
-        if (!array_search($req->route()->middleware(), $this->unguard) !== false) {
+        if (!array_search($req->route()->middleware(), $this->unguard)) {
             //Change here if you want to check if someone is loggin in owherwise use Error 404;
 
-            return \Silver\Http\View::error('404');
+            return View::error('404');
         }
 
         return $next();

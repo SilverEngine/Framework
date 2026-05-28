@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 /**
  * SilverEngine  - PHP MVC framework
  *
@@ -9,7 +11,6 @@
  * @license   MIT
  * @link      https://github.com/SilverEngine/Framework
  */
-
 namespace App\Facades;
 
 use Silver\Support\Facade;
@@ -21,9 +22,9 @@ use Silver\Support\Facade;
 class User extends Facade
 {
 
-    protected static function getClass()
+    protected static function getClass(): string
     {
-        return 'App\Helpers\User';
+        return \App\Helpers\User::class;
     }
 
 }

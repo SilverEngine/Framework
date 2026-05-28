@@ -126,8 +126,8 @@ final class CliBootstrap
 
         return match ($driver) {
             Driver::Sqlite => 'sqlite:' . self::resolvePath($db ?: 'database/database.sqlite', $root),
-            Driver::Mysql  => "mysql:host={$host}" . ($port ? ";port={$port}" : '') . ";dbname={$db};charset=utf8mb4",
-            Driver::Pgsql  => "pgsql:host={$host}" . ($port ? ";port={$port}" : '') . ";dbname={$db}",
+            Driver::Mysql  => "mysql:host={$host}" . ($port !== '' && $port !== '0' ? ";port={$port}" : '') . ";dbname={$db};charset=utf8mb4",
+            Driver::Pgsql  => "pgsql:host={$host}" . ($port !== '' && $port !== '0' ? ";port={$port}" : '') . ";dbname={$db}",
         };
     }
 
@@ -143,10 +143,9 @@ final class CliBootstrap
     private static function defaultMigrationsPath(string $connection, string $root): string
     {
         $root = rtrim($root, '/') . '/';
-        $primary = $connection === 'default' || $connection === 'local'
+        return $connection === 'default' || $connection === 'local'
             ? $root . 'database/migrations'
             : $root . 'database/migrations/' . $connection;
-        return $primary;
     }
 
     /**

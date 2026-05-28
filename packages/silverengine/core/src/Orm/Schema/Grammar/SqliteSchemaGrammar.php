@@ -38,6 +38,7 @@ final class SqliteSchemaGrammar extends SchemaGrammar
      * already declared it (autoIncrement path). Other rules from the
      * parent stay in effect.
      */
+    #[\Override]
     protected function compileColumn(ColumnDefinition $c): string
     {
         if ($c->autoIncrement) {

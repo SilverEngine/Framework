@@ -32,7 +32,7 @@ class ConnectionManager implements ConnectionInterface
      */
     public function connect(string $name, string $dsn, ?string $username = null, ?string $password = null): void
     {
-        $driver = self::driverFromDsn($dsn);
+        $driver = $this->driverFromDsn($dsn);
         $this->registerConfig($name, new ConnectionConfig(
             driver:   $driver,
             dsn:      $dsn,
@@ -160,7 +160,7 @@ class ConnectionManager implements ConnectionInterface
     public function raw(string $sql, array $bindings = [], ?string $name = null): PDOStatement
     {
         if ($this->debug) {
-            self::echoSql($sql, $bindings);
+            $this->echoSql($sql, $bindings);
         }
         $stmt = $this->pdo($name)->prepare($sql);
         $stmt->execute($bindings);
@@ -170,7 +170,7 @@ class ConnectionManager implements ConnectionInterface
     public function exec(string $sql, ?string $name = null): int
     {
         if ($this->debug) {
-            self::echoSql($sql, []);
+            $this->echoSql($sql, []);
         }
         $result = $this->pdo($name)->exec($sql);
         return $result === false ? 0 : $result;
@@ -192,7 +192,7 @@ class ConnectionManager implements ConnectionInterface
         return $this->debug;
     }
 
-    private static function driverFromDsn(string $dsn): Driver
+    private function driverFromDsn(string $dsn): Driver
     {
         $prefix = strstr($dsn, ':', true);
         return match ($prefix) {
@@ -204,7 +204,7 @@ class ConnectionManager implements ConnectionInterface
     }
 
     /** @param array<int|string, mixed> $bindings */
-    private static function echoSql(string $sql, array $bindings): void
+    private function echoSql(string $sql, array $bindings): void
     {
         echo $sql;
         if ($bindings !== []) {

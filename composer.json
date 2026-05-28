@@ -39,7 +39,8 @@
     },
     "require-dev": {
         "phpstan/phpstan": "^2.1",
-        "phpunit/phpunit": "^12"
+        "phpunit/phpunit": "^12",
+        "rector/rector": "^2.4"
     },
     "scripts": {
         "dev":   "npm run dev:all",

@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Silver\Orm\Model;
 
+use Silver\Orm\Contracts\GlobalScopeInterface;
 use Closure;
 use Silver\Orm\Connection\ConnectionManager;
 use Silver\Orm\Query\Builder;
@@ -21,10 +22,10 @@ final class ModelBuilder extends Builder
     /** @var array<string, ?Closure(Builder): void> Relation name → optional constraint. */
     private array $with = [];
 
-    /** @var list<class-string<\Silver\Orm\Contracts\GlobalScopeInterface>> */
+    /** @var list<class-string<GlobalScopeInterface>> */
     private array $pendingGlobalScopes = [];
 
-    /** @var array<class-string<\Silver\Orm\Contracts\GlobalScopeInterface>, true> */
+    /** @var array<class-string<GlobalScopeInterface>, true> */
     private array $disabledGlobalScopes = [];
 
     private bool $globalScopesApplied = false;
@@ -39,14 +40,14 @@ final class ModelBuilder extends Builder
         parent::__construct($connections, $compiler, $state);
     }
 
-    /** @param class-string<\Silver\Orm\Contracts\GlobalScopeInterface> $scopeClass */
+    /** @param class-string<GlobalScopeInterface> $scopeClass */
     public function registerGlobalScope(string $scopeClass): static
     {
         $this->pendingGlobalScopes[] = $scopeClass;
         return $this;
     }
 
-    /** @param class-string<\Silver\Orm\Contracts\GlobalScopeInterface> $scopeClass */
+    /** @param class-string<GlobalScopeInterface> $scopeClass */
     public function withoutGlobalScope(string $scopeClass): static
     {
         $this->disabledGlobalScopes[$scopeClass] = true;
@@ -83,14 +84,14 @@ final class ModelBuilder extends Builder
      */
     public function __call(string $method, array $args): mixed
     {
-        $meta = \Silver\Orm\Model\AttributeRegistry::for($this->modelClass);
+        $meta = AttributeRegistry::for($this->modelClass);
         if (isset($meta->scopes[$method])) {
             $instance = new $this->modelClass();
             $result   = $instance->{$method}($this, ...$args);
             return $result ?? $this;
         }
         throw new \BadMethodCallException(
-            sprintf('Method %s::%s does not exist (and no #[Scope]-tagged method on %s matches).', static::class, $method, $this->modelClass),
+            sprintf('Method %s::%s does not exist (and no #[Scope]-tagged method on %s matches).', self::class, $method, $this->modelClass),
         );
     }
 
@@ -127,6 +128,7 @@ final class ModelBuilder extends Builder
     }
 
     /** @return list<T> */
+    #[\Override]
     public function get(): array
     {
         $this->applyGlobalScopes();
@@ -191,9 +193,11 @@ final class ModelBuilder extends Builder
     }
 
     /** @return list<T> */
+    #[\Override]
     public function all(): array { return $this->get(); }
 
     /** @return T|null */
+    #[\Override]
     public function first(): mixed
     {
         $clone = clone $this;
@@ -202,11 +206,13 @@ final class ModelBuilder extends Builder
     }
 
     /** @return T|null */
+    #[\Override]
     public function find(mixed $id, string $pk = 'id'): mixed
     {
         return (clone $this)->where($pk, $id)->first();
     }
 
+    #[\Override]
     public function newQuery(): static
     {
         return new self($this->connections, $this->compiler, null, $this->modelClass);

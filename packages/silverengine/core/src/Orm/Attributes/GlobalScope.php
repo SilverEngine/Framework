@@ -3,6 +3,7 @@ declare(strict_types=1);
 
 namespace Silver\Orm\Attributes;
 
+use Silver\Orm\Contracts\GlobalScopeInterface;
 use Attribute;
 
 /**
@@ -18,7 +19,7 @@ use Attribute;
 #[Attribute(Attribute::TARGET_CLASS | Attribute::IS_REPEATABLE)]
 final readonly class GlobalScope
 {
-    /** @param class-string<\Silver\Orm\Contracts\GlobalScopeInterface> $scope */
+    /** @param class-string<GlobalScopeInterface> $scope */
     public function __construct(
         public string $scope,
     ) {}

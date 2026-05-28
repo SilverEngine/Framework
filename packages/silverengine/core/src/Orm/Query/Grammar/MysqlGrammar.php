@@ -18,6 +18,8 @@ final class MysqlGrammar extends Grammar
 {
     public function driver(): Driver { return Driver::Mysql; }
 
+    #[\Override]
     public function explainPrefix(): string { return 'EXPLAIN FORMAT=TREE '; }
+    #[\Override]
     public function analyzePrefix(): string { return 'EXPLAIN ANALYZE FORMAT=TREE '; }
 }

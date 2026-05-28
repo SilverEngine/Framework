@@ -7,7 +7,9 @@ final class JsonCast implements CastsAttribute
 {
     public function get(mixed $value): mixed
     {
-        if ($value === null || $value === '') return null;
+        if ($value === null || $value === '') {
+            return null;
+        }
         return json_decode((string) $value, associative: true, flags: JSON_THROW_ON_ERROR);
     }
     public function set(mixed $value): mixed

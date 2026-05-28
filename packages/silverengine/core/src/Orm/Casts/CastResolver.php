@@ -33,7 +33,7 @@ final class CastResolver
      */
     public static function resolveFromType(?ReflectionNamedType $type): ?CastsAttribute
     {
-        if ($type === null) {
+        if (!$type instanceof \ReflectionNamedType) {
             return null;
         }
         $name = $type->getName();
@@ -48,7 +48,7 @@ final class CastResolver
             return self::cached('datetime');
         }
         if (class_exists($name) && self::isBackedEnum($name)) {
-            return self::cached('enum:' . $name, fn () => new EnumCast($name));
+            return self::cached('enum:' . $name, fn (): EnumCast => new EnumCast($name));
         }
         return null;
     }
@@ -98,7 +98,7 @@ final class CastResolver
         if (!enum_exists($class)) {
             return false;
         }
-        return (new ReflectionEnum($class))->isBacked();
+        return new ReflectionEnum($class)->isBacked();
     }
 
     /** Test helper: drop the memoization cache. */

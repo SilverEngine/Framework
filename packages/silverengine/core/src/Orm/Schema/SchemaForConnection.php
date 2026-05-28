@@ -21,34 +21,34 @@ final readonly class SchemaForConnection
 
     public function create(string $table, Closure $cb): void
     {
-        $this->cm->withConnection($this->connection, fn () => $this->scoped(fn () => Schema::create($table, $cb)));
+        $this->cm->withConnection($this->connection, fn (): mixed => $this->scoped(fn () => Schema::create($table, $cb)));
     }
 
     public function table(string $table, Closure $cb): void
     {
-        $this->cm->withConnection($this->connection, fn () => $this->scoped(fn () => Schema::table($table, $cb)));
+        $this->cm->withConnection($this->connection, fn (): mixed => $this->scoped(fn () => Schema::table($table, $cb)));
     }
 
     public function drop(string $table): void
     {
-        $this->cm->withConnection($this->connection, fn () => $this->scoped(fn () => Schema::drop($table)));
+        $this->cm->withConnection($this->connection, fn (): mixed => $this->scoped(fn () => Schema::drop($table)));
     }
 
     public function dropIfExists(string $table): void
     {
-        $this->cm->withConnection($this->connection, fn () => $this->scoped(fn () => Schema::dropIfExists($table)));
+        $this->cm->withConnection($this->connection, fn (): mixed => $this->scoped(fn () => Schema::dropIfExists($table)));
     }
 
     public function rename(string $from, string $to): void
     {
-        $this->cm->withConnection($this->connection, fn () => $this->scoped(fn () => Schema::rename($from, $to)));
+        $this->cm->withConnection($this->connection, fn (): mixed => $this->scoped(fn () => Schema::rename($from, $to)));
     }
 
     public function hasTable(string $table): bool
     {
         return $this->cm->withConnection(
             $this->connection,
-            fn () => $this->scoped(fn () => Schema::hasTable($table)),
+            fn (): mixed => $this->scoped(fn (): bool => Schema::hasTable($table)),
         );
     }
 
@@ -56,7 +56,7 @@ final readonly class SchemaForConnection
     {
         return $this->cm->withConnection(
             $this->connection,
-            fn () => $this->scoped(fn () => Schema::hasColumn($table, $column)),
+            fn (): mixed => $this->scoped(fn (): bool => Schema::hasColumn($table, $column)),
         );
     }
 

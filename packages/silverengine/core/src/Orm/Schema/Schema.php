@@ -83,12 +83,7 @@ final class Schema
     {
         $grammar = self::grammar();
         $stmt    = self::cm()->raw($grammar->compileHasColumn($table), [], self::$current);
-        foreach ($stmt->fetchAll(\PDO::FETCH_ASSOC) as $row) {
-            if (($row['name'] ?? null) === $column) {
-                return true;
-            }
-        }
-        return false;
+        return array_any($stmt->fetchAll(\PDO::FETCH_ASSOC), fn($row): bool => ($row['name'] ?? null) === $column);
     }
 
     // ---------- internals ----------
@@ -111,7 +106,7 @@ final class Schema
 
     private static function cm(): ConnectionManager
     {
-        if (self::$connections === null) {
+        if (!self::$connections instanceof ConnectionManager) {
             throw new \LogicException(
                 'Schema::bind(ConnectionManager) must be called before using the facade.'
             );
