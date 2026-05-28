@@ -95,6 +95,7 @@ class Template implements RenderInterface
         $render = $this->parseVite($render);
         $render = $this->parseViteCss($render);
         $render = $this->parseWisp($render);
+        $render = $this->parseCsrf($render);
         $render = $this->parseUrlName($render);
         $render = $this->parseComponent($render);
         $render = $this->parseBlocks($render);
@@ -304,6 +305,21 @@ class Template implements RenderInterface
         return preg_replace(
             '/{{ wisp\(\) }}/',
             '<?php echo \\Silver\\Engine\\Ghost\\Wisp::el($_wisp_page ?? []); ?>',
+            $body,
+        );
+    }
+
+    /**
+     * {{ csrf() }} -> hidden <input> with the current session CSRF
+     * token. Token comes from the framework's TokenStore at render
+     * time, so cache reuse is safe — the resolved value is always
+     * the request's current token, not whatever was baked at compile.
+     */
+    protected function parseCsrf(string $body): string
+    {
+        return preg_replace(
+            '/{{ csrf\(\) }}/',
+            '<?php echo csrf_field(); ?>',
             $body,
         );
     }

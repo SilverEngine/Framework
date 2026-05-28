@@ -7,6 +7,7 @@ use Silver\Core\Contracts\MiddlewareInterface;
 use Silver\Core\ErrorHandler as Handler;
 use Silver\Exception\NotFoundException;
 use Silver\Http\AuthorizationException;
+use Silver\Http\Csrf\CsrfTokenMismatchException;
 use Silver\Http\Request;
 use Silver\Http\Response;
 use Silver\Http\Session;
@@ -25,6 +26,8 @@ final class ErrorHandler implements MiddlewareInterface
             return $this->renderValidation($req, $res, $e);
         } catch (AuthorizationException $e) {
             return $this->renderAuthorization($req, $res, $e);
+        } catch (CsrfTokenMismatchException $e) {
+            return $this->renderCsrf($req, $res, $e);
         } catch (NotFoundException $e) {
             $res->setCode(404);
             return $this->handler->render($e);
@@ -70,6 +73,17 @@ final class ErrorHandler implements MiddlewareInterface
             return (string) json_encode(['message' => $e->getMessage()]);
         }
         $res->setCode(403);
+        return $this->handler->render($e);
+    }
+
+    private function renderCsrf(Request $req, Response $res, CsrfTokenMismatchException $e): mixed
+    {
+        if ($req->wantsJson()) {
+            $res->setCode(419);
+            $res->setHeader('Content-Type', 'application/json; charset=utf-8');
+            return (string) json_encode(['message' => $e->getMessage()]);
+        }
+        $res->setCode(419);
         return $this->handler->render($e);
     }
 }
