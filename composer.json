@@ -28,20 +28,24 @@
     },
     "autoload": {
         "psr-4": {
-            "App\\": "app/",
-            "Database\\": "database/",
+            "App\\":         "app/",
             "System\\App\\": "packages/silverengine/core/src/App/"
         }
     },
     "autoload-dev": {
-        "psr-4": {}
+        "psr-4": {
+            "Tests\\": "tests/"
+        }
     },
     "require-dev": {
+        "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^12"
     },
     "scripts": {
-        "dev": "npm run dev:all",
+        "dev":   "npm run dev:all",
         "serve": "php silver serve",
-        "test": "phpunit"
+        "test":  "phpunit",
+        "stan":  "phpstan analyse --memory-limit=512M",
+        "check": ["@test", "@stan"]
     }
 }

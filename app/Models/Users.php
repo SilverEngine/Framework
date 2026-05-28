@@ -1,29 +1,39 @@
 <?php
-
-/**
- * SilverEngine  - PHP MVC framework
- *
- * @package   SilverEngine
- * @author    SilverEngine Team
- * @copyright 2015-2017
- * @license   MIT
- * @link      https://github.com/SilverEngine/Framework
- */
+declare(strict_types=1);
 
 namespace App\Models;
 
-use Silver\Database\Model;
+use DateTimeImmutable;
+use Silver\Orm\Attributes\Hidden;
+use Silver\Orm\Attributes\PrimaryKey;
+use Silver\Orm\Attributes\Table;
+use Silver\Orm\Concerns\SoftDeletes;
+use Silver\Orm\Concerns\Timestamps;
+use Silver\Orm\Model\Model;
 
-/**
- * Users Model
- */
-class Users extends Model
+#[Table('users')]
+#[Timestamps]
+#[SoftDeletes]
+final class Users extends Model
 {
-    protected static $table = 'users';
+    protected static array $fillable   = ['username', 'email', 'active'];
+    protected static array $searchable = ['username', 'email'];
 
-    protected $hidden = [
-        'password',
-        'salt',
-        'delete_at',
-    ];
+    #[PrimaryKey]
+    public ?int $id = null;
+
+    public string $username = '';
+    public string $email    = '';
+
+    #[Hidden]
+    public string $password = '';
+
+    #[Hidden]
+    public string $salt = '';
+
+    public bool $active = true;
+
+    public ?DateTimeImmutable $created_at = null;
+    public ?DateTimeImmutable $updated_at = null;
+    public ?DateTimeImmutable $deleted_at = null;
 }

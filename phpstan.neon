@@ -1,0 +1,12 @@
+parameters:
+    # Phased ratchet per spec section 12.4:
+    #   level 5  — P4 baseline (runtime bug detection)
+    #   level 6  — P5/P6 gate  (docblock strictness)
+    #   level 9  — P7 gate     (full generic + iterable-value enforcement)
+    level: 5
+    paths:
+        - packages/silverengine/core/src/Orm
+    excludePaths:
+        # APCu functions are conditional — analysed under a separate
+        # config when CI runs with APCu enabled.
+        - packages/silverengine/core/src/Orm/Cache/ApcuStore.php
