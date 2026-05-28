@@ -6,6 +6,8 @@ namespace Silver\App\Middlewares;
 use Silver\Core\Contracts\MiddlewareInterface;
 use Silver\Core\ErrorHandler as Handler;
 use Silver\Exception\NotFoundException;
+use Silver\Auth\AuthenticationException;
+use Silver\Auth\ThrottleRequestsException;
 use Silver\Http\AuthorizationException;
 use Silver\Http\Csrf\CsrfTokenMismatchException;
 use Silver\Http\Request;
@@ -24,10 +26,14 @@ final class ErrorHandler implements MiddlewareInterface
             return $next();
         } catch (ValidationException $e) {
             return $this->renderValidation($req, $res, $e);
+        } catch (AuthenticationException $e) {
+            return $this->renderAuthentication($req, $res, $e);
         } catch (AuthorizationException $e) {
             return $this->renderAuthorization($req, $res, $e);
         } catch (CsrfTokenMismatchException $e) {
             return $this->renderCsrf($req, $res, $e);
+        } catch (ThrottleRequestsException $e) {
+            return $this->renderThrottle($req, $res, $e);
         } catch (NotFoundException $e) {
             $res->setCode(404);
             return $this->handler->render($e);
@@ -84,6 +90,29 @@ final class ErrorHandler implements MiddlewareInterface
             return (string) json_encode(['message' => $e->getMessage()]);
         }
         $res->setCode(419);
+        return $this->handler->render($e);
+    }
+
+    private function renderAuthentication(Request $req, Response $res, AuthenticationException $e): mixed
+    {
+        if ($req->wantsJson()) {
+            $res->setCode(401);
+            $res->setHeader('Content-Type', 'application/json; charset=utf-8');
+            return (string) json_encode(['message' => $e->getMessage()]);
+        }
+        $res->setCode(302);
+        $res->setHeader('Location', $e->redirectTo ?? '/login');
+        return '';
+    }
+
+    private function renderThrottle(Request $req, Response $res, ThrottleRequestsException $e): mixed
+    {
+        $res->setCode(429);
+        $res->setHeader('Retry-After', (string) $e->retryAfter);
+        if ($req->wantsJson()) {
+            $res->setHeader('Content-Type', 'application/json; charset=utf-8');
+            return (string) json_encode(['message' => $e->getMessage(), 'retry_after' => $e->retryAfter]);
+        }
         return $this->handler->render($e);
     }
 }

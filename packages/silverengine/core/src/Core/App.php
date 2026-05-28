@@ -48,6 +48,7 @@ class App implements InstanceInterface
         $this->instances->singleton(\Silver\Http\ViewRegistry::class);
         $this->instances->singleton(\Silver\Http\Validator::class);
         $this->instances->singleton(\Silver\Http\Csrf\TokenStore::class);
+        $this->instances->singleton(\Silver\Auth\AuthManager::class);
     }
 
     public function instances(): Container

@@ -135,6 +135,15 @@ if (!function_exists('wisp')) {
     }
 }
 
+if (!function_exists('auth')) {
+    /** AuthManager for advanced use (Auth::guard('api') etc.), or the
+     *  default guard via auth()->user(). */
+    function auth(): \Silver\Auth\AuthManager
+    {
+        return app(\Silver\Auth\AuthManager::class);
+    }
+}
+
 if (!function_exists('csrf_token')) {
     /** Current per-session CSRF token. Stable across requests until rotate(). */
     function csrf_token(): string
