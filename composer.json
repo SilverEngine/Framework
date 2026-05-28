@@ -38,11 +38,14 @@
         }
     },
     "require-dev": {
+        "phpstan/phpstan": "^2.1",
         "phpunit/phpunit": "^12"
     },
     "scripts": {
-        "dev": "npm run dev:all",
+        "dev":   "npm run dev:all",
         "serve": "php silver serve",
-        "test": "phpunit"
+        "test":  "phpunit",
+        "stan":  "phpstan analyse --memory-limit=512M",
+        "check": ["@test", "@stan"]
     }
 }
