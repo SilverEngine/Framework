@@ -131,9 +131,10 @@ scopes), E3 (whereHas/withCount), E4 (mutators/changes), E5
 
 ## Phase F — HTTP & routing features
 
-- [ ] **Route param injection + model binding**: typed controller params
-      resolved from route vars (`DI::call` extension); `User $user` →
-      `User::find($id)` → 404 on miss
+- [x] **Route param injection + model binding**: typed controller params
+      coerced from route vars (int/float/bool under strict_types);
+      `User $user` → `User::find($id)` → 404 on miss, nullable param →
+      null on miss; FQN-keyed container instances still win — DONE (F1)
 - [ ] **Middleware groups + per-route middleware with params**
       (`'throttle:60,1'`, `'auth'`) — route-level, not only the global stack
 - [ ] **General rate limiter**: store-backed (Apcu/array), sliding window;
