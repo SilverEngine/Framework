@@ -135,8 +135,13 @@ scopes), E3 (whereHas/withCount), E4 (mutators/changes), E5
       coerced from route vars (int/float/bool under strict_types);
       `User $user` → `User::find($id)` → 404 on miss, nullable param →
       null on miss; FQN-keyed container instances still win — DONE (F1)
-- [ ] **Middleware groups + per-route middleware with params**
-      (`'throttle:60,1'`, `'auth'`) — route-level, not only the global stack
+- [x] **Middleware groups + per-route middleware with params**:
+      routes carry a middleware list (legacy 'public' tag dropped),
+      `group(['middleware' => ...])` inherits/stacks, config
+      `Middleware.php` aliases+groups, `MiddlewareResolver` parses
+      `'throttle:60,1'` (positional params cast onto scalar ctor params,
+      service deps autowired), Kernel runs the chain around the action
+      — DONE (F2)
 - [ ] **General rate limiter**: store-backed (Apcu/array), sliding window;
       rebuild `Auth\Middleware\Throttle` on top (current one is in-memory
       per-process — useless behind php-fpm)

@@ -134,7 +134,7 @@ class DebugController extends Controller
                 'path'       => $route->route(),
                 'action'     => is_string($action) ? $action : '(Closure)',
                 'name'       => $route->name() ?? '-',
-                'middleware'  => $route->middleware(),
+                'middleware'  => implode(', ', $route->middleware()) ?: '-',
             ];
         }
         return $routes;

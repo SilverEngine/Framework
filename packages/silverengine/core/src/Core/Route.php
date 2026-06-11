@@ -23,7 +23,8 @@ final class Route
     private string $route = '';
     private mixed $action = null;
     private ?string $name = null;
-    private string $middleware = 'public';
+    /** @var list<string> Middleware specs ('auth', 'throttle:60,1', group or FQCN). */
+    private array $middleware = [];
     private ?string $type = null;
     /** @var array<string,mixed> */
     private array $variables = [];
@@ -34,6 +35,8 @@ final class Route
     /** @var array<string,self> */
     private array $routeIndex = [];
     private string $prefix = '';
+    /** @var list<string> Middleware inherited from enclosing group() calls. */
+    private array $groupMiddleware = [];
 
     /** @var array<string,string> */
     private array $types = [
@@ -59,7 +62,8 @@ final class Route
         return $this->name;
     }
 
-    public function middleware(): string
+    /** @return list<string> */
+    public function middleware(): array
     {
         return $this->middleware;
     }
@@ -192,12 +196,24 @@ final class Route
 
     public function group(array $args, callable $fn): void
     {
-        $oldPrefix = $this->prefix;
-        $this->prefix .= '/' . ($args['prefix'] ?? '');
+        $oldPrefix     = $this->prefix;
+        $oldMiddleware = $this->groupMiddleware;
+
+        // Only extend the prefix when one was given — middleware-only
+        // groups must not inject an empty path segment.
+        $prefix = trim((string) ($args['prefix'] ?? ''), '/');
+        if ($prefix !== '') {
+            $this->prefix .= '/' . $prefix;
+        }
+        $this->groupMiddleware = [
+            ...$this->groupMiddleware,
+            ...self::normalizeMiddleware($args['middleware'] ?? []),
+        ];
 
         $fn();
 
-        $this->prefix = $oldPrefix;
+        $this->prefix          = $oldPrefix;
+        $this->groupMiddleware = $oldMiddleware;
     }
 
     public function find(string $requestUrl, string $requestMethod): ?self
@@ -215,10 +231,11 @@ final class Route
         string $route,
         mixed $action,
         ?string $name = null,
-        string $middleware = 'public',
+        string|array $middleware = [],
         string $type = '',
     ): void {
         $route = $this->prefix . $route;
+        $middleware = [...$this->groupMiddleware, ...self::normalizeMiddleware($middleware)];
         foreach (explode('|', $method) as $m) {
             $r = new self();
             $r->method = strtolower($m);
@@ -234,27 +251,43 @@ final class Route
         }
     }
 
-    public function get(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
+    /**
+     * Accept both the list form and the legacy single-string form;
+     * the old 'public' visibility tag carries no behaviour and is
+     * dropped so pre-F2 route files keep working unchanged.
+     *
+     * @return list<string>
+     */
+    private static function normalizeMiddleware(string|array $middleware): array
+    {
+        $list = is_string($middleware) ? [$middleware] : $middleware;
+        return array_values(array_filter(
+            array_map(strval(...), $list),
+            static fn (string $m): bool => $m !== '' && $m !== 'public',
+        ));
+    }
+
+    public function get(string $route, mixed $action, ?string $name = null, string|array $middleware = []): void
     {
         $this->register('get', $route, $action, $name, $middleware, 'get');
     }
 
-    public function post(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
+    public function post(string $route, mixed $action, ?string $name = null, string|array $middleware = []): void
     {
         $this->register('post', $route, $action, $name, $middleware, 'post');
     }
 
-    public function put(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
+    public function put(string $route, mixed $action, ?string $name = null, string|array $middleware = []): void
     {
         $this->register('put', $route, $action, $name, $middleware, 'put');
     }
 
-    public function delete(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
+    public function delete(string $route, mixed $action, ?string $name = null, string|array $middleware = []): void
     {
         $this->register('delete', $route, $action, $name, $middleware, 'delete');
     }
 
-    public function resource(string $route, string $action, ?string $name = null, string $middleware = 'public'): void
+    public function resource(string $route, string $action, ?string $name = null, string|array $middleware = []): void
     {
         if (($pos = strpos($action, '@')) !== false) {
             $action = substr($action, 0, $pos);
@@ -270,7 +303,7 @@ final class Route
         }
     }
 
-    public function any(string $route, mixed $action, ?string $name = null, string $middleware = 'public'): void
+    public function any(string $route, mixed $action, ?string $name = null, string|array $middleware = []): void
     {
         $this->register('any', $route, $action, $name, $middleware, 'any');
     }
@@ -290,6 +323,7 @@ final class Route
         $this->routes = [];
         $this->routeIndex = [];
         $this->prefix = '';
+        $this->groupMiddleware = [];
     }
 
     /**
@@ -298,7 +332,7 @@ final class Route
      * (closures can't be cached) so the caller falls back to including
      * the route files — same policy as Laravel's route:cache.
      *
-     * @return list<array{0:string,1:string,2:string|array,3:?string,4:string,5:string}>|null
+     * @return list<array{0:string,1:string,2:string|array,3:?string,4:list<string>,5:string}>|null
      */
     public function definitions(): ?array
     {

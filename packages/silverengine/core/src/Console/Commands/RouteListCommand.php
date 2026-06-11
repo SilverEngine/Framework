@@ -50,7 +50,7 @@ final class RouteListCommand implements Command
                 $r->route(),
                 $action instanceof \Closure ? 'Closure' : (is_string($action) ? $action : get_debug_type($action)),
                 $r->name() ?? '',
-                $r->middleware(),
+                implode(', ', $r->middleware()),
             ];
         }
 

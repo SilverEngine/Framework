@@ -98,6 +98,25 @@ class Kernel
         $callable = $this->findCallable($route);
         dt()->end('controller resolve', 'controller');
 
+        $destination = fn (): mixed => $this->invokeAction($callable, $route);
+
+        // Route-level middleware ('auth', 'throttle:60,1', groups) runs
+        // inside the global stack, wrapped around the action only.
+        $specs = $route->middleware();
+        if ($specs !== []) {
+            $resolver = new MiddlewareResolver(
+                Env::get('middleware.aliases', []),
+                Env::get('middleware.groups', []),
+                $this->app->instances(),
+            );
+            return $this->executeMiddlewares($resolver->resolve($specs), $request, $response, $destination);
+        }
+
+        return $destination();
+    }
+
+    private function invokeAction(callable|array $callable, Route $route): mixed
+    {
         dt()->begin('controller action', 'controller');
         try {
             return app(DI::class)->call(
@@ -112,7 +131,7 @@ class Kernel
         }
     }
 
-    protected function executeMiddlewares(array $mws, Request $req, Response $res): mixed
+    protected function executeMiddlewares(array $mws, Request $req, Response $res, ?\Closure $destination = null): mixed
     {
         if (count($mws) > 0) {
             $mw = array_shift($mws);
@@ -124,14 +143,14 @@ class Kernel
                 return $mw->execute(
                     $req,
                     $res,
-                    fn () => $this->executeMiddlewares($mws, $req, $res),
+                    fn () => $this->executeMiddlewares($mws, $req, $res, $destination),
                 );
             } finally {
                 dt()->end($label, 'middleware');
             }
         }
 
-        return $this->handle($req, $res);
+        return $destination !== null ? $destination() : $this->handle($req, $res);
     }
 
     private function findCallable(Route $route): callable|array
