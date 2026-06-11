@@ -8,6 +8,9 @@ use Closure;
 use Silver\Orm\Connection\ConnectionManager;
 use Silver\Orm\Query\Builder;
 use Silver\Orm\Query\Compiler;
+use Silver\Orm\Query\Node\Expression;
+use Silver\Orm\Query\Node\Raw;
+use Silver\Orm\Query\Node\Subquery;
 use Silver\Orm\Query\QueryState;
 use Silver\Orm\Relations\Relation;
 
@@ -134,6 +137,18 @@ final class ModelBuilder extends Builder
         $this->applySoftDeleteScope();
     }
 
+    /**
+     * Apply deferred scopes now and expose the state for embedding as
+     * a subquery (the outer grammar compiles QueryState directly, so
+     * the sub-builder's lazy scope application would otherwise be
+     * skipped).
+     */
+    public function subqueryState(): QueryState
+    {
+        $this->applyQueryScopes();
+        return $this->state;
+    }
+
     #[\Override]
     public function toSqlAndBindings(): array
     {
@@ -171,6 +186,80 @@ final class ModelBuilder extends Builder
         throw new \BadMethodCallException(
             sprintf('Method %s::%s does not exist (and no #[Scope]-tagged method on %s matches).', self::class, $method, $this->modelClass),
         );
+    }
+
+    // ---- relation existence -------------------------------------------
+
+    /**
+     * Filter to parents having at least one related row:
+     *
+     *     User::query()->whereHas('posts')
+     *     User::query()->whereHas('posts', fn ($q) => $q->where('published', true))
+     *
+     * Compiles to a correlated EXISTS subquery. The related model's
+     * own scopes (soft deletes, global scopes) apply inside it.
+     */
+    public function whereHas(string $relation, ?Closure $constraint = null): static
+    {
+        $this->state->wheres[] = new Expression('EXISTS', [
+            new Subquery($this->relationSubquery($relation, $constraint)),
+        ]);
+        return $this;
+    }
+
+    /** Inverse of {@see whereHas()} — parents with NO related rows. */
+    public function whereDoesntHave(string $relation, ?Closure $constraint = null): static
+    {
+        $this->state->wheres[] = new Expression('NOT EXISTS', [
+            new Subquery($this->relationSubquery($relation, $constraint)),
+        ]);
+        return $this;
+    }
+
+    /**
+     * Project a correlated `COUNT(*)` per relation as
+     * `{relation}_count`. Lands in the model's extras bag, readable as
+     * `$user->posts_count`.
+     */
+    public function withCount(string ...$relations): static
+    {
+        foreach ($relations as $relation) {
+            $sub = $this->relationSubquery($relation, null);
+            $sub->select = [new Raw('COUNT(*)')];
+
+            // Keep the base columns: an empty select would otherwise
+            // stop meaning "*" once the count column is added.
+            if ($this->state->select === []) {
+                /** @var class-string<Model> $model */
+                $model = $this->modelClass;
+                $this->select([$model::table() . '.*']);
+            }
+            $this->state->select[] = new Subquery($sub, $relation . '_count');
+        }
+        return $this;
+    }
+
+    private function relationSubquery(string $relation, ?Closure $constraint): QueryState
+    {
+        $instance = new ($this->modelClass)();
+        if (!method_exists($instance, $relation)) {
+            throw new \BadMethodCallException(
+                sprintf('Relation %s::%s() does not exist.', $this->modelClass, $relation),
+            );
+        }
+
+        $rel = $instance->{$relation}();
+        if (!$rel instanceof Relation) {
+            throw new \LogicException(
+                sprintf('%s::%s() does not return a Relation.', $this->modelClass, $relation),
+            );
+        }
+
+        $sub = $rel->existenceQuery();
+        if ($constraint !== null) {
+            $constraint($sub);
+        }
+        return $sub->subqueryState();
     }
 
     /**

@@ -35,6 +35,21 @@ abstract class Relation
         return $cls::query();
     }
 
+    /**
+     * Correlated query on the related table tied to the OUTER parent
+     * table — embedded by whereHas()/withCount() as an EXISTS /
+     * COUNT(*) subquery. Relation kinds that support existence
+     * queries override this. Self-referencing relations (same table
+     * on both sides) are not supported — the correlation would be
+     * ambiguous without aliasing.
+     */
+    public function existenceQuery(): ModelBuilder
+    {
+        throw new \LogicException(
+            'whereHas()/withCount() is not supported for ' . static::class . ' yet.',
+        );
+    }
+
     /** Fetch for a single parent. */
     abstract public function getResults(): mixed;
 

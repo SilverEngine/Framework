@@ -23,6 +23,18 @@ final class BelongsTo extends Relation
         parent::__construct($parent, $relatedClass);
     }
 
+    #[\Override]
+    public function existenceQuery(): \Silver\Orm\Model\ModelBuilder
+    {
+        /** @var class-string<Model> $related */
+        $related = $this->relatedClass;
+        return $this->query()->whereColumn(
+            $related::table() . '.' . $this->ownerKey,
+            '=',
+            $this->parent::table() . '.' . $this->foreignKey,
+        );
+    }
+
     public function getResults(): ?Model
     {
         $value = $this->parent->{$this->foreignKey} ?? null;

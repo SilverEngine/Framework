@@ -34,6 +34,25 @@ final class BelongsToMany extends Relation
         parent::__construct($parent, $relatedClass);
     }
 
+    #[\Override]
+    public function existenceQuery(): \Silver\Orm\Model\ModelBuilder
+    {
+        /** @var class-string<Model> $related */
+        $related = $this->relatedClass;
+        return $this->query()
+            ->join(
+                $this->pivotTable,
+                $this->pivotTable . '.' . $this->relatedPivotKey,
+                '=',
+                $related::table() . '.' . $this->relatedKey,
+            )
+            ->whereColumn(
+                $this->pivotTable . '.' . $this->foreignPivotKey,
+                '=',
+                $this->parent::table() . '.' . $this->parentKey,
+            );
+    }
+
     public function withPivot(string ...$columns): self
     {
         foreach ($columns as $c) { $this->pivotColumns[] = $c; }

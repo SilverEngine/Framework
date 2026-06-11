@@ -24,6 +24,18 @@ class HasMany extends Relation
         parent::__construct($parent, $relatedClass);
     }
 
+    #[\Override]
+    public function existenceQuery(): \Silver\Orm\Model\ModelBuilder
+    {
+        /** @var class-string<Model> $related */
+        $related = $this->relatedClass;
+        return $this->query()->whereColumn(
+            $related::table() . '.' . $this->foreignKey,
+            '=',
+            $this->parent::table() . '.' . $this->localKey,
+        );
+    }
+
     public function getResults(): Collection
     {
         $value = $this->parent->{$this->localKey} ?? null;
