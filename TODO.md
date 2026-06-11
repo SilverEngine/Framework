@@ -241,8 +241,10 @@ Request::isSecure), F7 (signed URLs), F8 (validation v2).
       log / **file** (one .eml per message) / array (test fake)
       drivers, `Mailer` singleton + `mailer()` helper, config/mail.php
       v2 (legacy SMail keys kept) — DONE; unblocks password reset
-- [ ] Cache facade: one `CacheStore`-backed `Cache::get/put/remember` with
-      TTL + tags (Orm stores already exist — generalize, don't duplicate)
+- [x] Cache facade: `Silver\Support\Cache` over any ORM `CacheStore`
+      (get/put/has/remember with TTL + tags, forget/forgetTag/flush),
+      container singleton from config/cache.php (array | apcu),
+      `cache()` helper + `Facades\Cache` — DONE
 - [ ] Promote `Orm\Collection` to `Silver\Support\Collection` (general use)
 - [ ] Localization: parameter interpolation + pluralization in `trans()`,
       locale-switching middleware

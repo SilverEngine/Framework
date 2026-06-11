@@ -49,6 +49,14 @@ if (!function_exists('mailer')) {
     }
 }
 
+if (!function_exists('cache')) {
+    /** Shorthand for the {@see \Silver\Support\Cache} singleton. */
+    function cache(): \Silver\Support\Cache
+    {
+        return App::instance()->instances()->make(\Silver\Support\Cache::class);
+    }
+}
+
 if (!function_exists('gate')) {
     /** Shorthand for the {@see \Silver\Auth\Access\Gate} singleton. */
     function gate(): \Silver\Auth\Access\Gate

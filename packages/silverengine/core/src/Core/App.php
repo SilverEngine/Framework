@@ -80,6 +80,20 @@ class App implements InstanceInterface
             \Silver\Mail\Mailer::class,
             fn (): \Silver\Mail\Mailer => \Silver\Mail\Mailer::fromConfig(),
         );
+
+        // General cache — store from config/cache.php; reuses the ORM's
+        // CacheStore backends instead of a parallel cache stack.
+        $this->instances->singleton(
+            \Silver\Support\Cache::class,
+            fn (): \Silver\Support\Cache => new \Silver\Support\Cache(
+                match ((string) Env::get('cache.driver', 'array')) {
+                    'apcu'  => new \Silver\Orm\Cache\ApcuStore(
+                        (string) Env::get('cache.prefix', 'silver:cache:'),
+                    ),
+                    default => new \Silver\Orm\Cache\ArrayStore(),
+                },
+            ),
+        );
     }
 
     public function instances(): Container
