@@ -49,6 +49,36 @@ if (!function_exists('mailer')) {
     }
 }
 
+if (!function_exists('trans')) {
+    /**
+     * Translate "file.dot.path" with :placeholder interpolation.
+     * Missing keys come back verbatim (greppable).
+     *
+     * @param array<string, mixed> $replace
+     */
+    function trans(string $key, array $replace = [], ?string $locale = null): string
+    {
+        return App::instance()->instances()
+            ->make(\Silver\Support\Translator::class)
+            ->get($key, $replace, $locale);
+    }
+}
+
+if (!function_exists('trans_choice')) {
+    /**
+     * Pluralized translation — `'one apple|:count apples'` picked by
+     * $count (`{n}` / `[a,*]` conditions supported), :count injected.
+     *
+     * @param array<string, mixed> $replace
+     */
+    function trans_choice(string $key, int|float $count, array $replace = [], ?string $locale = null): string
+    {
+        return App::instance()->instances()
+            ->make(\Silver\Support\Translator::class)
+            ->choice($key, $count, $replace, $locale);
+    }
+}
+
 if (!function_exists('collect')) {
     /**
      * Wrap an iterable in a {@see \Silver\Support\Collection}.

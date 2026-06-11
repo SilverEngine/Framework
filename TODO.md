@@ -248,8 +248,14 @@ Request::isSecure), F7 (signed URLs), F8 (validation v2).
 - [x] `Orm\Collection` promoted to `Silver\Support\Collection`
       (general use, `collect()` helper); `Orm\Collection` stays as a
       BC subclass so existing hints/instanceof/chains keep working — DONE
-- [ ] Localization: parameter interpolation + pluralization in `trans()`,
-      locale-switching middleware
+- [x] Localization: `Silver\Support\Translator` (nested dot keys over
+      the legacy storage/Lang layout, `:name`/`:NAME`/`:Name`
+      interpolation, fallback locale, key-verbatim miss), `choice()`
+      pluralization (`singular|plural` + `{n}`/`[a,*]` conditions,
+      auto `:count`), `trans()`/`trans_choice()` helpers,
+      `SetLocale` middleware (?lang= → session → Accept-Language,
+      gated by `lang.supported`), config/lang.php v2 — DONE
+      **→ G3 complete**
 
 ---
 

@@ -81,6 +81,22 @@ class App implements InstanceInterface
             fn (): \Silver\Mail\Mailer => \Silver\Mail\Mailer::fromConfig(),
         );
 
+        // Localization — line path/locales from config/lang.php.
+        $this->instances->singleton(
+            \Silver\Support\Translator::class,
+            function (): \Silver\Support\Translator {
+                $path = (string) Env::get('lang.path', 'storage/Lang');
+                if (!str_starts_with($path, '/')) {
+                    $path = RuntimeContext::current()->root . $path;
+                }
+                return new \Silver\Support\Translator(
+                    $path,
+                    (string) Env::get('lang.locale', 'en'),
+                    (string) Env::get('lang.fallback', 'en'),
+                );
+            },
+        );
+
         // General cache — store from config/cache.php; reuses the ORM's
         // CacheStore backends instead of a parallel cache stack.
         $this->instances->singleton(
