@@ -136,4 +136,15 @@ class App implements InstanceInterface
         }
         return self::$current;
     }
+
+    /**
+     * Throw away the current app (and its container) and start fresh.
+     * Used by the testing kit between tests and by long-lived processes
+     * that want a clean slate between units of work.
+     */
+    public static function refresh(): static
+    {
+        self::$current = new static();
+        return self::$current;
+    }
 }

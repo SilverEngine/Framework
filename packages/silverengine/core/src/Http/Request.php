@@ -205,24 +205,38 @@ class Request implements RequestInterface
         return $_GET[$key] ?? $default;
     }
 
+    /** @var array<string, mixed>|null per-instance JSON body cache/overlay */
+    private ?array $jsonCache = null;
+
     /**
      * The decoded JSON request body, or a single dot-free key from it.
+     * (Cached per Request instance — a `static` cache here would leak
+     * between requests in persistent processes and between tests.)
      */
     public function json(?string $key = null, mixed $default = null): mixed
     {
-        static $decoded = null;
-
-        if ($decoded === null) {
+        if ($this->jsonCache === null) {
             $raw = file_get_contents('php://input') ?: '';
             $decoded = json_decode($raw, true);
-            $decoded = is_array($decoded) ? $decoded : [];
+            $this->jsonCache = is_array($decoded) ? $decoded : [];
         }
 
         if ($key === null) {
-            return $decoded;
+            return $this->jsonCache;
         }
 
-        return $decoded[$key] ?? $default;
+        return $this->jsonCache[$key] ?? $default;
+    }
+
+    /**
+     * Inject a fake JSON body (visible to {@see json()}) without touching
+     * php://input — the JSON counterpart of {@see mergeInput()}.
+     *
+     * @param array<string, mixed> $json
+     */
+    public function mergeJson(array $json): void
+    {
+        $this->jsonCache = array_replace($this->jsonCache ?? [], $json);
     }
 
     public function bool(string $key, bool $default = false): bool

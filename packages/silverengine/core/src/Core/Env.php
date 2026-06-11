@@ -118,6 +118,30 @@ final class Env
     }
 
     /**
+     * Set a config value at runtime (dot notation, creating intermediate
+     * levels). Lives alongside {@see self::get()} for the testing kit and
+     * for embedded/bootstrap code that needs to override config without a
+     * file — it does NOT write anything back to disk or the optimize cache.
+     */
+    public static function set(string $name, mixed $value): void
+    {
+        self::$envData ??= new stdClass();
+
+        $node  = self::$envData;
+        $parts = explode('.', $name);
+        $leaf  = array_pop($parts);
+
+        foreach ($parts as $part) {
+            if (!isset($node->{$part}) || !$node->{$part} instanceof stdClass) {
+                $node->{$part} = new stdClass();
+            }
+            $node = $node->{$part};
+        }
+
+        $node->{$leaf} = self::arrayToObject($value);
+    }
+
+    /**
      * Merge the framework config defaults (shipped in the core package)
      * with the application's `config/` overrides. For each config name
      * present in either layer, the app file deep-merges over the core

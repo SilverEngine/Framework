@@ -211,14 +211,27 @@ Request::isSecure), F7 (signed URLs), F8 (validation v2).
 - [x] Default lazy `auth.user` shared prop in the app Wisp middleware
       (toArray(), #[Hidden]-safe)
 
-### G2 — Testing kit
-- [ ] `Silver\Testing\TestCase`: boot app for tests, `get()/post()/json()`
-      returning a `TestResponse` with `assertStatus/assertSee/assertJson/
-      assertRedirect`
-- [ ] In-memory sqlite + migrate-fresh-per-class helpers; model factories (E)
-- [ ] Fakes: `Log`, `Mail` (assert-sent)
-- [ ] Backfill zero-coverage subsystems: FileSystem, Helpers, ErrorHandler,
-      Hookable
+### G2 — Testing kit — DONE
+- [x] `Silver\Testing\TestCase`: fresh app/router/Env/superglobals per
+      test, array session, `routes()` registration, `get/post/put/delete/
+      json()` through the real Kernel pipeline (global stack from
+      `middleware()` — ErrorHandler default — + route middleware + DI +
+      real `Response::send()` negotiation) → `TestResponse`
+      (`assertStatus/assertOk/assertNotFound/assertSee/assertJson
+      (subset)/assertJsonPath/assertRedirect/assertHeader`, dot-path
+      `json()`)
+- [x] In-memory sqlite via `useDatabase()` (Model::bind + container
+      swap) and `migrate($path)` (fresh sqlite + Migrator run); model
+      factories already landed in E5
+- [x] Fakes: `fakeLog()` → `LogFake` (`assertLogged($type, $needle)`),
+      `fakeMail()` → ArrayDriver + `assertMailSentTo()`
+- [x] Backfill: LocalFileSystem (incl. Hookable intercept); Helpers/
+      Hook/ErrorHandler already had coverage
+- [x] Supporting framework additions: `Env::set()` (dot-notation
+      runtime config), `App::refresh()`, `Request::json()` per-instance
+      cache (was a leaky `static`) + `mergeJson()` overlay,
+      `Response::send()` pass-through for custom Content-Types
+      (text/csv etc. no longer throw)
 
 ### G3 — Supporting services
 - [x] Mail v2: `Silver\Mail\Message` (MIME builder — multipart

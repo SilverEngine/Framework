@@ -18,7 +18,7 @@ final class WispSharedStateTest extends TestCase
     protected function setUp(): void
     {
         $_SESSION = [];
-        $_GET = $_SERVER['HTTP_X_INERTIA'] = '';
+        $_GET = [];
         unset($_SERVER['HTTP_X_INERTIA'], $_SERVER['HTTP_X_INERTIA_PARTIAL_COMPONENT'], $_SERVER['HTTP_X_INERTIA_PARTIAL_DATA']);
         $_SERVER['REQUEST_URI'] = '/page';
         View::flushShared();

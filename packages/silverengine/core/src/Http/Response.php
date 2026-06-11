@@ -246,7 +246,13 @@ class Response implements ResponseInterface
                 is_array($body), is_object($body) => $this->xml((array) $body),
                 default => throw new \Exception('Unsupported XML body type.'),
             }),
-            default => throw new \Exception('Unsupported content type: ' . $contentType),
+            // A controller that sets its own Content-Type (text/csv,
+            // image/svg+xml, …) with a pre-rendered body just streams it.
+            default => match (true) {
+                is_string($body)                 => print($body),
+                $body instanceof RenderInterface => print($body->render()),
+                default => throw new \Exception('Unsupported content type: ' . $contentType),
+            },
         };
     }
 }
