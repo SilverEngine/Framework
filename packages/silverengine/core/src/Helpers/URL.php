@@ -3,11 +3,95 @@ declare(strict_types=1);
 
 namespace Silver\Helpers;
 
+use Silver\Crypto\Crypter;
 use Silver\Exception\Exception;
+use Silver\Http\Request;
 
 class URL
 {
     private array $parts = [];
+
+    // ---------- signed URLs ----------------------------------------------
+    //
+    // The HMAC (Crypter::sign, APP_KEY-derived) covers the app-relative
+    // path + the full query string (including 'expires'), so neither
+    // params nor lifetime can be tampered with. The signature itself
+    // rides as the trailing 'signature' query param in the URL-safe
+    // base64 alphabet.
+
+    /**
+     * Sign a path (+ optional query). $expiresAt (unix ts) makes the
+     * link time-limited; it travels as an 'expires' param under the
+     * signature's protection.
+     */
+    public static function signed(string $path, array $query = [], ?int $expiresAt = null): string
+    {
+        [$base, $params] = self::splitQuery($path);
+        foreach ($query as $k => $v) {
+            $params[$k] = $v;
+        }
+        if ($expiresAt !== null) {
+            $params['expires'] = $expiresAt;
+        }
+        unset($params['signature']);
+
+        $canonical = $base . ($params !== [] ? '?' . http_build_query($params) : '');
+        $signature = Crypter::sign($canonical);
+
+        return $canonical . ($params !== [] ? '&' : '?') . 'signature=' . $signature;
+    }
+
+    /** Signed URL valid for the next $ttlSeconds. */
+    public static function temporarySigned(string $path, int $ttlSeconds, array $query = []): string
+    {
+        return self::signed($path, $query, time() + $ttlSeconds);
+    }
+
+    /**
+     * Verify a signed URL (string) or the current request. False on a
+     * missing/tampered signature or a past 'expires'.
+     */
+    public static function hasValidSignature(Request|string $url, ?int $now = null): bool
+    {
+        if ($url instanceof Request) {
+            $params = $_GET;
+            unset($params['uri']); // dev-server routing param, not part of the signed URL
+            $url = ($url->getUri() ?? '/')
+                . ($params !== [] ? '?' . http_build_query($params) : '');
+        }
+
+        [$base, $params] = self::splitQuery($url);
+        $signature = $params['signature'] ?? null;
+        if (!is_string($signature) || $signature === '') {
+            return false;
+        }
+        unset($params['signature']);
+
+        $canonical = $base . ($params !== [] ? '?' . http_build_query($params) : '');
+        if (!Crypter::verify($canonical, $signature)) {
+            return false;
+        }
+
+        if (isset($params['expires']) && (int) $params['expires'] < ($now ?? time())) {
+            return false;
+        }
+
+        return true;
+    }
+
+    /** @return array{0: string, 1: array<string, mixed>} [path-without-query, query params] */
+    private static function splitQuery(string $url): array
+    {
+        $queryString = parse_url($url, PHP_URL_QUERY);
+        if ($queryString === null || $queryString === false || $queryString === '') {
+            return [$url, []];
+        }
+        $params = [];
+        parse_str((string) $queryString, $params);
+        return [(string) strstr($url, '?', true), $params];
+    }
+
+    // ---------- fluent URL builder ----------------------------------------
 
     public function __construct(string $url)
     {

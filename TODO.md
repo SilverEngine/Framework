@@ -160,8 +160,9 @@ scopes), E3 (whereHas/withCount), E4 (mutators/changes), E5
       (`Request::isSecure()` added, proxy-aware), CSP/Permissions-Policy
       opt-in via `config/Security.php`, never clobbers per-route
       headers — DONE (F6)
-- [ ] **Signed URLs**: `URL::signed()` / `hasValidSignature()` —
-      `Crypter::sign/verify` already does the work
+- [x] **Signed URLs**: `URL::signed()` / `temporarySigned()` /
+      `hasValidSignature(Request|string)` — HMAC over path+query incl.
+      'expires', URL-safe signature param — DONE (F7)
 - [ ] **Validation v2**: conditional rules (`required_if`/`required_unless`),
       closure rules, file/image rules (ties into uploads)
 
