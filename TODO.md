@@ -155,8 +155,11 @@ scopes), E3 (whereHas/withCount), E4 (mutators/changes), E5
       `config/Cors.php` (paths/origins incl. fnmatch wildcards/methods/
       headers/expose/max_age/credentials); preflight short-circuits 204;
       credentials forces origin echo over '*' — DONE (F5)
-- [ ] **SecurityHeaders middleware** (CSP, HSTS, X-Frame-Options,
-      X-Content-Type-Options, Referrer-Policy — sane defaults)
+- [x] **SecurityHeaders middleware**: sane defaults (SAMEORIGIN/
+      nosniff/strict-origin-when-cross-origin), HSTS on HTTPS only
+      (`Request::isSecure()` added, proxy-aware), CSP/Permissions-Policy
+      opt-in via `config/Security.php`, never clobbers per-route
+      headers — DONE (F6)
 - [ ] **Signed URLs**: `URL::signed()` / `hasValidSignature()` —
       `Crypter::sign/verify` already does the work
 - [ ] **Validation v2**: conditional rules (`required_if`/`required_unless`),

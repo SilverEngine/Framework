@@ -166,6 +166,16 @@ class Request implements RequestInterface
         return $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
     }
 
+    /** True for HTTPS requests, including behind a TLS-terminating proxy. */
+    public function isSecure(): bool
+    {
+        $https = strtolower((string) ($_SERVER['HTTPS'] ?? ''));
+        if ($https !== '' && $https !== 'off') {
+            return true;
+        }
+        return strtolower((string) ($_SERVER['HTTP_X_FORWARDED_PROTO'] ?? '')) === 'https';
+    }
+
     public function route(): ?Route
     {
         return app(Route::class)
