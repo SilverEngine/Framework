@@ -40,6 +40,7 @@ class App implements InstanceInterface
         $this->instances->singleton(Route::class);
         $this->instances->singleton(Config::class);
         $this->instances->singleton(Hook::class);
+        $this->instances->singleton(\Silver\Events\Dispatcher::class);
         $this->instances->singleton(DI::class);
         $this->instances->singleton(\Silver\Orm\Connection\ConnectionManager::class);
         $this->instances->singleton(\Silver\Orm\Connection\TransactionManager::class);

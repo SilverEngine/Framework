@@ -23,16 +23,24 @@ class Kernel
 
     /**
      * Construct each Service Provider listed in config/Providers.php,
-     * register it in the container, then fire `before()` in declaration
-     * order. Matching `after()` calls run in {@see finalizeProviders()}
-     * after the response is flushed.
+     * then run the lifecycle in declaration order: `register()` for ALL
+     * providers (container bindings only), then `before()` for all (may
+     * resolve anything registered). Matching `after()` calls run in
+     * {@see finalizeProviders()} after the response is flushed.
      */
     public function loadProviders(Request $req, Response $res): void
     {
+        $this->app ??= App::instance();
+
         foreach (Env::get('providers', []) as $providerClass) {
             $provider = new $providerClass($this);
             $this->providers[] = $provider;
             $this->app->register($provider);
+        }
+
+        $container = App::instance()->instances();
+        foreach ($this->providers as $provider) {
+            $provider->register($container);
         }
 
         foreach ($this->providers as $provider) {

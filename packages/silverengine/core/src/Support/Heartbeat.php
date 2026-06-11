@@ -11,7 +11,7 @@ use Silver\Core\Env;
 use Silver\Core\Hook;
 use Silver\Core\Route;
 use Silver\Orm\Connection\ConnectionManager;
-use Silver\Engine\Events\EventManager;
+use Silver\Events\Dispatcher;
 use Silver\FileSystem\FileSystem;
 
 /**
@@ -137,7 +137,7 @@ final class Heartbeat
     {
         $c = App::instance()->instances();
         $c->make(Hook::class);
-        $c->make(EventManager::class);
+        $c->make(Dispatcher::class);
         $c->make(FileSystem::class);
         $c->make(\Silver\Core\Route::class);
     }
@@ -364,7 +364,7 @@ final class Heartbeat
             $container = App::instance()->instances();
             // Resolve a handful of services to prove autowiring works.
             $container->make(Hook::class);
-            $container->make(EventManager::class);
+            $container->make(Dispatcher::class);
             $container->make(FileSystem::class);
             $container->make(Route::class);
             return $this->ok('container', 'IoC resolves core services');
