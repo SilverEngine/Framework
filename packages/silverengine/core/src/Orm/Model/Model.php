@@ -12,6 +12,7 @@ use Silver\Orm\Relations\HasManyThrough;
 use Silver\Orm\Relations\Morph\MorphOne;
 use Silver\Orm\Relations\Morph\MorphMany;
 use Silver\Orm\Relations\Morph\MorphTo;
+use Silver\Orm\Relations\Morph\MorphToMany;
 use Silver\Orm\Relations\LazyLoadingViolation;
 use Silver\Orm\Connection\TransactionManager;
 use Silver\Orm\Query\Node\Raw;
@@ -294,6 +295,62 @@ abstract class Model implements JsonSerializable
     protected function morphTo(string $morph): MorphTo
     {
         return new MorphTo($this, $morph);
+    }
+
+    /**
+     * post->labels via pivot `{$morph}s` (labelable → labelables):
+     * the pivot's `{$morph}_id` + `{$morph}_type` point at $this.
+     *
+     * @param class-string<Model> $related
+     */
+    protected function morphToMany(
+        string $related,
+        string $morph,
+        ?string $pivotTable      = null,
+        ?string $foreignPivotKey = null,
+        ?string $relatedPivotKey = null,
+        ?string $parentKey       = null,
+        ?string $relatedKey      = null,
+    ): MorphToMany {
+        return new MorphToMany(
+            $this,
+            $related,
+            $pivotTable      ?? $morph . 's',
+            $foreignPivotKey ?? $morph . '_id',
+            $relatedPivotKey ?? Relation::defaultForeignKey($related),
+            $parentKey       ?? Relation::defaultLocalKey(static::class),
+            $relatedKey      ?? Relation::defaultLocalKey($related),
+            $morph . '_type',
+            static::class,
+        );
+    }
+
+    /**
+     * Inverse of morphToMany — label->posts: the pivot's
+     * `{$morph}_id` + `{$morph}_type` point at the RELATED models.
+     *
+     * @param class-string<Model> $related
+     */
+    protected function morphedByMany(
+        string $related,
+        string $morph,
+        ?string $pivotTable      = null,
+        ?string $foreignPivotKey = null,
+        ?string $relatedPivotKey = null,
+        ?string $parentKey       = null,
+        ?string $relatedKey      = null,
+    ): MorphToMany {
+        return new MorphToMany(
+            $this,
+            $related,
+            $pivotTable      ?? $morph . 's',
+            $foreignPivotKey ?? Relation::defaultForeignKey(static::class),
+            $relatedPivotKey ?? $morph . '_id',
+            $parentKey       ?? Relation::defaultLocalKey(static::class),
+            $relatedKey      ?? Relation::defaultLocalKey($related),
+            $morph . '_type',
+            $related,
+        );
     }
 
     /**

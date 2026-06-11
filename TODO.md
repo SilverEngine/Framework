@@ -99,27 +99,24 @@ only as thin facades. Characterization tests pinned before each change.
 
 ## Phase E — ORM completion (highest feature ROI, infra mostly exists)
 
-- [ ] **Soft-delete scopes**: `withTrashed()` / `onlyTrashed()` /
-      `restore()` (concern exists, scopes missing)
-- [ ] **`paginate(int $perPage)`** → `Paginator` value object (data, total,
-      page, lastPage, links) — JSON- and Wisp-friendly out of the box
-- [ ] **Locking**: `forUpdate()` / `sharedLock()` (`QueryState::$lock`
-      already defined — expose + compile per grammar)
-- [ ] **Unions**: `union()` / `unionAll()` (`QueryState::$unions` already
-      defined — same)
-- [ ] **Upsert**: `upsert()` / `insertOrIgnore()` per driver
-      (ON CONFLICT / ON DUPLICATE KEY)
-- [ ] **Relation queries**: `whereHas()` / `whereDoesntHave()` /
-      `whereExists()`, `withCount()`
-- [ ] **Mutators + change tracking**: `setFooAttribute()` symmetry with
-      accessors; `getOriginal()` / `getChanges()`
-- [ ] **Relations**: `MorphToMany`, `associate()`/`dissociate()` on
-      BelongsTo, `touch()` cascade
+- [x] **Soft-delete scopes**: `withTrashed()` / `onlyTrashed()` /
+      `restore()` — DONE (E2)
+- [x] **`paginate(int $perPage)`** → `Paginator` value object (data, total,
+      page, lastPage, links) — DONE (E1)
+- [x] **Locking**: `forUpdate()` / `sharedLock()` — DONE (E1)
+- [x] **Unions**: `union()` / `unionAll()` — DONE (E1)
+- [x] **Upsert**: `upsert()` / `insertOrIgnore()` per driver — DONE (E1)
+- [x] **Relation queries**: `whereHas()` / `whereDoesntHave()` /
+      `whereExists()`, `withCount()` — DONE (E3)
+- [x] **Mutators + change tracking**: `setFooAttribute()` symmetry with
+      accessors; `getOriginal()` / `getChanges()` — DONE (E4)
+- [x] **Relations**: `MorphToMany`/`morphedByMany` (E7),
+      `associate()`/`dissociate()` on BelongsTo, `touch()` cascade (E6)
 - [ ] **Schema**: `change()`/`modifyColumn()` (sqlite = table-rebuild path)
-- [ ] **Seeders**: `Seeder` base + runner wired to existing
-      `database/Seeds/`; `php silver db:seed`, `migrate:fresh --seed`
-- [ ] **Factories**: minimal model factory (`definition()` + `count()` +
-      `create()/make()`) — unblocks testing kit (G2)
+- [x] **Seeders**: `Seeder` base + runner wired to existing
+      `database/Seeds/`; `php silver db:seed`, `migrate:fresh --seed` — DONE (E5)
+- [x] **Factories**: minimal model factory (`definition()` + `count()` +
+      `create()/make()`) — DONE (E5)
 - [ ] Nice-to-have: JSON where clauses (`whereJsonContains`), Castable
       interface for domain objects, AsCollection cast
 

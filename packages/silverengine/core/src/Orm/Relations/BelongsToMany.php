@@ -17,7 +17,7 @@ use Silver\Orm\Query\Builder;
  * @template TRelated of Model
  * @extends Relation<TParent, TRelated>
  */
-final class BelongsToMany extends Relation
+class BelongsToMany extends Relation
 {
     /** @var list<string> Extra pivot columns to project onto the result models. */
     private array $pivotColumns = [];
@@ -34,12 +34,23 @@ final class BelongsToMany extends Relation
         parent::__construct($parent, $relatedClass);
     }
 
+    /**
+     * Fixed pivot column => value constraints applied to every pivot
+     * read/write. MorphToMany overrides this with the morph-type pair.
+     *
+     * @return array<string, mixed>
+     */
+    protected function extraPivotWhere(): array
+    {
+        return [];
+    }
+
     #[\Override]
     public function existenceQuery(): \Silver\Orm\Model\ModelBuilder
     {
         /** @var class-string<Model> $related */
         $related = $this->relatedClass;
-        return $this->query()
+        $q = $this->query()
             ->join(
                 $this->pivotTable,
                 $this->pivotTable . '.' . $this->relatedPivotKey,
@@ -51,6 +62,10 @@ final class BelongsToMany extends Relation
                 '=',
                 $this->parent::table() . '.' . $this->parentKey,
             );
+        foreach ($this->extraPivotWhere() as $col => $value) {
+            $q = $q->where($this->pivotTable . '.' . $col, $value);
+        }
+        return $q;
     }
 
     public function withPivot(string ...$columns): self
@@ -61,19 +76,20 @@ final class BelongsToMany extends Relation
 
     public function attach(mixed ...$ids): int
     {
-        $rows = [];
+        $extra = $this->extraPivotWhere();
+        $rows  = [];
         foreach ($ids as $id) {
             $rows[] = [
                 $this->foreignPivotKey => $this->parent->{$this->parentKey},
                 $this->relatedPivotKey => $id,
-            ];
+            ] + $extra;
         }
         return $rows === [] ? 0 : $this->pivot()->insert($rows);
     }
 
     public function detach(mixed ...$ids): int
     {
-        $b = $this->pivot()->where($this->foreignPivotKey, $this->parent->{$this->parentKey});
+        $b = $this->constrainedPivot();
         if ($ids !== []) {
             $b = $b->whereIn($this->relatedPivotKey, array_values($ids));
         }
@@ -83,9 +99,7 @@ final class BelongsToMany extends Relation
     /** @param list<mixed> $ids */
     public function sync(array $ids): array
     {
-        $current = $this->pivot()
-            ->where($this->foreignPivotKey, $this->parent->{$this->parentKey})
-            ->all();
+        $current = $this->constrainedPivot()->all();
         $currentIds = [];
         foreach ($current as $row) {
             $currentIds[] = $row[$this->relatedPivotKey];
@@ -145,6 +159,16 @@ final class BelongsToMany extends Relation
         )->from($this->pivotTable);
     }
 
+    /** Pivot builder scoped to this parent + the fixed pivot constraints. */
+    private function constrainedPivot(): Builder
+    {
+        $b = $this->pivot()->where($this->foreignPivotKey, $this->parent->{$this->parentKey});
+        foreach ($this->extraPivotWhere() as $col => $value) {
+            $b = $b->where($col, $value);
+        }
+        return $b;
+    }
+
     /**
      * SELECT related.* plus the pivot's foreign-parent column projected
      * as `__pivot_parent`, so the matcher can group results back.
@@ -155,7 +179,7 @@ final class BelongsToMany extends Relation
         $cls = $this->relatedClass;
         $relatedTable = $cls::table();
 
-        return $cls::query()
+        $q = $cls::query()
             ->select([
                 $relatedTable . '.*',
                 new Identifier(
@@ -169,5 +193,9 @@ final class BelongsToMany extends Relation
                 '=',
                 "{$relatedTable}.{$this->relatedKey}",
             );
+        foreach ($this->extraPivotWhere() as $col => $value) {
+            $q = $q->where("{$this->pivotTable}.{$col}", $value);
+        }
+        return $q;
     }
 }
