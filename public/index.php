@@ -100,6 +100,11 @@ $connections = Silver\Core\App::instance()->instances()
 \Silver\Orm\Schema\DatabaseBootstrap::boot($connections, ROOT);
 dt()->end('database connect', 'boot');
 
+// Promote last request's flash data (validation errors, old input,
+// intended URL) to readable old-flash and clear the new-flash bucket —
+// flashed values live for exactly one following request.
+Silver\Http\Session::construct();
+
 /*
 |--------------------------------------------------------------------------
 | Run
