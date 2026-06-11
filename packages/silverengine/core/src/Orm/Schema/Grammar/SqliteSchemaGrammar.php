@@ -49,6 +49,24 @@ final class SqliteSchemaGrammar extends SchemaGrammar
         return parent::compileColumn($c);
     }
 
+    #[\Override]
+    public function supportsChangeColumn(): bool
+    {
+        return false;
+    }
+
+    /**
+     * Sqlite has no ALTER COLUMN. Schema detects this via
+     * supportsChangeColumn() and routes change() columns through
+     * {@see \Silver\Orm\Schema\SqliteTableRebuilder} — compileAlter
+     * must simply skip them here.
+     */
+    #[\Override]
+    protected function compileChangeColumn(string $table, ColumnDefinition $c): array
+    {
+        return [];
+    }
+
     public function compileHasTable(string $table): string
     {
         return 'SELECT 1 FROM sqlite_master WHERE type = ' . $this->literal('table')

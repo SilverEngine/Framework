@@ -81,9 +81,15 @@ abstract class SchemaGrammar implements SchemaGrammarInterface
     {
         $out = [];
 
-        foreach ($b->columns as $col) {
+        foreach ($b->addedColumns() as $col) {
             $out[] = 'ALTER TABLE ' . $this->quote($b->table)
                 . ' ADD COLUMN ' . $this->compileColumn($col);
+        }
+
+        foreach ($b->changedColumns() as $col) {
+            foreach ($this->compileChangeColumn($b->table, $col) as $sql) {
+                $out[] = $sql;
+            }
         }
 
         foreach ($b->renamedColumns as [$old, $new]) {
@@ -105,6 +111,35 @@ abstract class SchemaGrammar implements SchemaGrammarInterface
         }
 
         return $out;
+    }
+
+    /**
+     * Whether the driver can redefine a column natively (MODIFY /
+     * ALTER COLUMN). Sqlite can't — Schema routes its change() columns
+     * through the table-rebuild path instead.
+     */
+    public function supportsChangeColumn(): bool
+    {
+        return true;
+    }
+
+    /**
+     * Native column redefinition for one ->change() column.
+     *
+     * @return list<string>
+     */
+    protected function compileChangeColumn(string $table, ColumnDefinition $c): array
+    {
+        throw new \LogicException(static::class . ' does not implement change().');
+    }
+
+    /**
+     * Public passthrough so the sqlite table rebuilder can compile a
+     * single column definition without re-implementing the grammar.
+     */
+    public function compileColumnDefinition(ColumnDefinition $c): string
+    {
+        return $this->compileColumn($c);
     }
 
     // ---------- introspection (driver-specific) ----------

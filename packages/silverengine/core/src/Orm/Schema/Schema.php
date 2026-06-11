@@ -102,6 +102,14 @@ final class Schema
         foreach ($stmts as $sql) {
             self::cm()->exec($sql, self::$current);
         }
+
+        // Drivers without native ALTER COLUMN (sqlite) realise change()
+        // via a full table rebuild, after the regular alters ran.
+        if ($action === Blueprint::ACTION_ALTER
+            && $bp->changedColumns() !== []
+            && !$grammar->supportsChangeColumn()) {
+            new SqliteTableRebuilder(self::cm(), self::$current)->rebuild($bp);
+        }
     }
 
     private static function cm(): ConnectionManager

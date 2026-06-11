@@ -52,6 +52,30 @@ final class PgsqlSchemaGrammar extends SchemaGrammar
         return parent::compileColumn($c);
     }
 
+    /**
+     * Postgres has no single MODIFY — type, nullability and default
+     * are separate ALTER COLUMN clauses. change() supplies the full
+     * new shape, so all three are always emitted (the DROP forms reset
+     * whatever the new shape doesn't declare).
+     */
+    #[\Override]
+    protected function compileChangeColumn(string $table, ColumnDefinition $c): array
+    {
+        $prefix = 'ALTER TABLE ' . $this->quote($table) . ' ALTER COLUMN ' . $this->quote($c->name);
+
+        $default = $c->hasDefault()
+            ? ' SET DEFAULT ' . $this->defaultValue($c)
+            : ($c->useCurrent && in_array($c->type, ['timestamp', 'datetime'], true)
+                ? ' SET DEFAULT CURRENT_TIMESTAMP'
+                : ' DROP DEFAULT');
+
+        return [
+            $prefix . ' TYPE ' . $this->typeFor($c),
+            $prefix . ($c->nullable ? ' DROP NOT NULL' : ' SET NOT NULL'),
+            $prefix . $default,
+        ];
+    }
+
     public function compileHasTable(string $table): string
     {
         return 'SELECT 1 FROM information_schema.tables WHERE table_schema = current_schema()'

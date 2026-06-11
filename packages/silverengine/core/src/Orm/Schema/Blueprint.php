@@ -229,6 +229,20 @@ final class Blueprint
     public function engine(string $name): self  { $this->engine = $name; return $this; }
     public function charset(string $name): self { $this->charset = $name; return $this; }
 
+    // ---------- column partitions (ALTER) ----------
+
+    /** @return list<ColumnDefinition> Columns to ADD (not marked change()). */
+    public function addedColumns(): array
+    {
+        return array_values(array_filter($this->columns, fn (ColumnDefinition $c): bool => !$c->change));
+    }
+
+    /** @return list<ColumnDefinition> Columns marked ->change(). */
+    public function changedColumns(): array
+    {
+        return array_values(array_filter($this->columns, fn (ColumnDefinition $c): bool => $c->change));
+    }
+
     // ---------- internals ----------
 
     private function add(string $name, string $type): ColumnDefinition

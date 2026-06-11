@@ -28,6 +28,8 @@ final class ColumnDefinition
     public bool   $unsigned      = false;
     public bool   $useCurrent    = false;
     public bool   $useCurrentOnUpdate = false;
+    /** ALTER only: redefine an existing column instead of adding one. */
+    public bool   $change        = false;
 
     /** Sentinel for "no DEFAULT clause", distinct from null which means DEFAULT NULL. */
     public const string NO_DEFAULT = "\x00__NO_DEFAULT__\x00";
@@ -47,6 +49,13 @@ final class ColumnDefinition
     public function after(string $column): self              { $this->after = $column; return $this; }
     public function useCurrent(bool $on = true): self        { $this->useCurrent = $on; return $this; }
     public function useCurrentOnUpdate(bool $on = true): self{ $this->useCurrentOnUpdate = $on; return $this; }
+
+    /**
+     * Mark this definition as a modification of an existing column
+     * (Schema::table only). The full new shape must be given — the
+     * grammar emits MODIFY/ALTER COLUMN; sqlite rebuilds the table.
+     */
+    public function change(bool $on = true): self { $this->change = $on; return $this; }
 
     public function generatedAs(string $expression, string $kind = 'STORED'): self
     {

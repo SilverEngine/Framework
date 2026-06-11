@@ -21,6 +21,9 @@ interface SchemaGrammarInterface
     /** @return list<string> */
     public function compileAlter(Blueprint $blueprint): array;
 
+    /** Whether the driver supports native column redefinition (change()). */
+    public function supportsChangeColumn(): bool;
+
     public function compileDrop(string $table): string;
 
     public function compileDropIfExists(string $table): string;

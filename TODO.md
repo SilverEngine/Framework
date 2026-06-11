@@ -112,7 +112,8 @@ only as thin facades. Characterization tests pinned before each change.
       accessors; `getOriginal()` / `getChanges()` — DONE (E4)
 - [x] **Relations**: `MorphToMany`/`morphedByMany` (E7),
       `associate()`/`dissociate()` on BelongsTo, `touch()` cascade (E6)
-- [ ] **Schema**: `change()`/`modifyColumn()` (sqlite = table-rebuild path)
+- [x] **Schema**: `change()` — native MODIFY/ALTER COLUMN on mysql/pgsql,
+      table-rebuild path on sqlite (`SqliteTableRebuilder`) — DONE (E8)
 - [x] **Seeders**: `Seeder` base + runner wired to existing
       `database/Seeds/`; `php silver db:seed`, `migrate:fresh --seed` — DONE (E5)
 - [x] **Factories**: minimal model factory (`definition()` + `count()` +

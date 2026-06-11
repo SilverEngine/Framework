@@ -42,6 +42,15 @@ final class MysqlSchemaGrammar extends SchemaGrammar
     }
 
     #[\Override]
+    protected function compileChangeColumn(string $table, ColumnDefinition $c): array
+    {
+        return [
+            'ALTER TABLE ' . $this->quote($table)
+                . ' MODIFY COLUMN ' . $this->compileColumn($c),
+        ];
+    }
+
+    #[\Override]
     protected function compileColumn(ColumnDefinition $c): string
     {
         // MySQL emits column-level AUTO_INCREMENT alongside the type.
