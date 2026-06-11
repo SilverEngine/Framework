@@ -35,6 +35,29 @@ final class BelongsTo extends Relation
         );
     }
 
+    /**
+     * Point the parent's FK at $model. Mutates the parent in memory —
+     * call save() to persist.
+     */
+    public function associate(Model $model): Model
+    {
+        $this->parent->{$this->foreignKey} = $model->{$this->ownerKey};
+        return $this->parent;
+    }
+
+    /** Null the parent's FK. Call save() to persist. */
+    public function dissociate(): Model
+    {
+        $this->parent->{$this->foreignKey} = null;
+        return $this->parent;
+    }
+
+    /** Touch the related model's updated_at (no-op when unrelated/untimestamped). */
+    public function touch(): bool
+    {
+        return $this->getResults()?->touch() ?? false;
+    }
+
     public function getResults(): ?Model
     {
         $value = $this->parent->{$this->foreignKey} ?? null;

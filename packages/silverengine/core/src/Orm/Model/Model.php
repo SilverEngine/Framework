@@ -628,6 +628,30 @@ abstract class Model implements JsonSerializable
         return true;
     }
 
+    /**
+     * Bump updated_at to now and persist just that column. No-op
+     * (false) for unsaved models or models without #[Timestamps].
+     */
+    public function touch(): bool
+    {
+        $meta = static::metadata();
+        if (!$this->exists || !$meta->hasTimestamps()) {
+            return false;
+        }
+
+        $col = $meta->timestamps->updatedAt;
+        $this->{$col} = $this->nowUtc();
+
+        $pkValue = $this->primaryKeyValue();
+        $this->writer()
+            ->where(self::primaryKey(), $pkValue)
+            ->update([$col => $this->columnValue($col)]);
+        $this->original[$col] = $this->columnValue($col);
+        ModelCache::forgetPk(static::class, $pkValue);
+
+        return true;
+    }
+
     /** True when the model is soft-deleted (deleted_at set). */
     public function trashed(): bool
     {
@@ -834,12 +858,23 @@ abstract class Model implements JsonSerializable
     {
         $out  = [];
         $meta = static::metadata();
+        // get_object_vars (not isset): a property assigned NULL is a
+        // legitimate pending change (e.g. BelongsTo::dissociate()),
+        // while an UNINITIALIZED typed property must still be skipped.
+        $initialized = get_object_vars($this);
         foreach (array_keys($meta->properties) as $name) {
-            if (!isset($this->{$name})) {
+            if (!array_key_exists($name, $initialized)) {
                 continue;
             }
-            $value = $this->columnValue($name);
-            if (!array_key_exists($name, $this->original) || $this->original[$name] !== $value) {
+            $value       = $this->columnValue($name);
+            $hasBaseline = array_key_exists($name, $this->original);
+            // No baseline + null value means "still untouched" (the
+            // insert never wrote the column); anything else that
+            // differs from the baseline is a pending change — INCLUDING
+            // null over a non-null baseline (dissociate, clearing).
+            if (($hasBaseline && $this->original[$name] !== $value)
+                || (!$hasBaseline && $value !== null)
+            ) {
                 $out[$name] = $value;
             }
         }
