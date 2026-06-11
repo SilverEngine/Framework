@@ -14,4 +14,6 @@ final class UserObserver
     public function updated(User $u):  void { self::$events[] = 'updated:'   . $u->email; }
     public function deleting(User $u): void { self::$events[] = 'deleting:'  . $u->email; }
     public function deleted(User $u):  void { self::$events[] = 'deleted:'   . $u->email; }
+    public function restoring(User $u): void { self::$events[] = 'restoring:' . $u->email; }
+    public function restored(User $u):  void { self::$events[] = 'restored:'  . $u->email; }
 }

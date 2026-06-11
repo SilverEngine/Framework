@@ -30,6 +30,14 @@ final class ModelBuilder extends Builder
 
     private bool $globalScopesApplied = false;
 
+    /** Soft-delete column when the model opted in via #[SoftDeletes]. */
+    private ?string $softDeleteColumn = null;
+
+    /** @var 'exclude'|'with'|'only' */
+    private string $trashedMode = 'exclude';
+
+    private bool $softDeleteApplied = false;
+
     /** @param class-string<T> $modelClass */
     public function __construct(
         ConnectionManager $connections,
@@ -75,6 +83,76 @@ final class ModelBuilder extends Builder
             $scope = function_exists('app') ? app($cls) : new $cls();
             $scope->apply($this);
         }
+    }
+
+    // ---- soft deletes -------------------------------------------------
+
+    /** Registered by Model::query() when the model has #[SoftDeletes]. */
+    public function softDeletes(string $column): static
+    {
+        $this->softDeleteColumn = $column;
+        return $this;
+    }
+
+    /** Include trashed rows in the results. */
+    public function withTrashed(): static
+    {
+        $this->trashedMode = 'with';
+        return $this;
+    }
+
+    /** Only trashed rows. */
+    public function onlyTrashed(): static
+    {
+        $this->trashedMode = 'only';
+        return $this;
+    }
+
+    private function applySoftDeleteScope(): void
+    {
+        if ($this->softDeleteColumn === null || $this->softDeleteApplied) {
+            return;
+        }
+        $this->softDeleteApplied = true;
+        match ($this->trashedMode) {
+            'exclude' => $this->whereNull($this->softDeleteColumn),
+            'only'    => $this->whereNotNull($this->softDeleteColumn),
+            'with'    => null,
+        };
+    }
+
+    /**
+     * Apply every deferred scope (global scopes + soft-delete filter)
+     * exactly once, right before SQL is built. Hooked into ALL
+     * terminals via the toSqlAndBindings()/update()/delete()
+     * overrides, so count(), aggregates, paginate() totals and bulk
+     * writes are scoped the same as get().
+     */
+    private function applyQueryScopes(): void
+    {
+        $this->applyGlobalScopes();
+        $this->applySoftDeleteScope();
+    }
+
+    #[\Override]
+    public function toSqlAndBindings(): array
+    {
+        $this->applyQueryScopes();
+        return parent::toSqlAndBindings();
+    }
+
+    #[\Override]
+    public function update(array $values): int
+    {
+        $this->applyQueryScopes();
+        return parent::update($values);
+    }
+
+    #[\Override]
+    public function delete(): int
+    {
+        $this->applyQueryScopes();
+        return parent::delete();
     }
 
     /**
@@ -131,7 +209,7 @@ final class ModelBuilder extends Builder
     #[\Override]
     public function get(): array
     {
-        $this->applyGlobalScopes();
+        $this->applyQueryScopes();
 
         $rows = parent::get();
         $out  = [];

@@ -356,10 +356,12 @@ abstract class Model implements JsonSerializable
             $b->select($cols !== [] ? $cols : ['*']);
         }
 
-        // Soft-delete scope: filter out trashed rows by default.
+        // Soft-delete scope: registered on the builder and applied
+        // just before SQL is built, so ->withTrashed()/->onlyTrashed()
+        // can flip the mode first.
         $meta = static::metadata();
         if ($meta->hasSoftDeletes()) {
-            $b->whereNull($meta->softDeletes->column);
+            $b->softDeletes($meta->softDeletes->column);
         }
 
         // Global scopes are deferred — registered on the builder, then
@@ -598,6 +600,44 @@ abstract class Model implements JsonSerializable
         }
 
         $this->events()->dispatch('deleted', $this);
+        return true;
+    }
+
+    /** True when the model is soft-deleted (deleted_at set). */
+    public function trashed(): bool
+    {
+        $meta = static::metadata();
+        return $meta->hasSoftDeletes()
+            && $this->columnValue($meta->softDeletes->column) !== null;
+    }
+
+    /**
+     * Un-delete a soft-deleted row. Dispatches restoring/restored to
+     * observers. Returns false when the model doesn't use soft
+     * deletes; restoring a non-trashed row is a no-op success.
+     */
+    public function restore(): bool
+    {
+        $meta = static::metadata();
+        if (!$meta->hasSoftDeletes()) {
+            return false;
+        }
+        if (!$this->trashed()) {
+            return true;
+        }
+
+        $col = $meta->softDeletes->column;
+        $this->events()->dispatch('restoring', $this);
+
+        $this->{$col} = null;
+        $pkValue = $this->primaryKeyValue();
+        $this->writer()
+            ->where(self::primaryKey(), $pkValue)
+            ->update([$col => null]);
+        $this->original[$col] = null;
+        ModelCache::forgetPk(static::class, $pkValue);
+
+        $this->events()->dispatch('restored', $this);
         return true;
     }
 
