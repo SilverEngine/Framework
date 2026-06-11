@@ -21,7 +21,12 @@ namespace Silver\Http;
  * Supported rules:
  *   required, nullable, min:N, max:N, between:A,B, match:<field>,
  *   confirmed, in:a,b,c, email, url, integer, numeric, string,
- *   alpha, alphanumeric, regex:/pattern/, same:<field>, different:<field>.
+ *   alpha, alphanumeric, regex:/pattern/, same:<field>, different:<field>,
+ *   file, image, mimes:ext1,ext2.
+ *
+ * File values ({@see UploadedFile}) flip min:/max: to kilobytes of
+ * file size; image/mimes judge the REAL mime (finfo), not the
+ * client-supplied name or type.
  *
  * Unknown rule names fail loudly (method-not-found) so callers can't
  * silently rely on rules that aren't implemented.
@@ -113,6 +118,11 @@ final class Validator
     private function checkMin(mixed $value, array $data, string $min = '0'): string|false
     {
         unset($data);
+        if ($value instanceof UploadedFile) {
+            return $value->size() < (int) $min * 1024
+                ? "KEY must be at least {$min} kilobytes."
+                : false;
+        }
         return strlen((string) $value) < (int) $min
             ? "KEY must have at least {$min} characters."
             : false;
@@ -122,9 +132,53 @@ final class Validator
     private function checkMax(mixed $value, array $data, string $max = '0'): string|false
     {
         unset($data);
+        if ($value instanceof UploadedFile) {
+            return $value->size() > (int) $max * 1024
+                ? "KEY may not be larger than {$max} kilobytes."
+                : false;
+        }
         return strlen((string) $value) > (int) $max
             ? "KEY must have less than {$max} characters."
             : false;
+    }
+
+    /** @param array<string,mixed> $data */
+    private function checkFile(mixed $value, array $data): string|false
+    {
+        unset($data);
+        return ($value instanceof UploadedFile && $value->isValid())
+            ? false
+            : 'KEY must be a successfully uploaded file.';
+    }
+
+    /** @param array<string,mixed> $data */
+    private function checkImage(mixed $value, array $data): string|false
+    {
+        unset($data);
+        // Content-derived mime — a renamed .gif full of text fails here.
+        return ($value instanceof UploadedFile && $value->isValid() && $value->isImage())
+            ? false
+            : 'KEY must be an image.';
+    }
+
+    /**
+     * Allowed extensions, matched against the extension derived from
+     * the file's REAL mime type (not the client-supplied name).
+     *
+     * @param array<string,mixed> $data
+     */
+    private function checkMimes(mixed $value, array $data, string ...$extensions): string|false
+    {
+        unset($data);
+        $allowed = array_map(
+            static fn (string $e): string => $e === 'jpeg' ? 'jpg' : strtolower($e),
+            $extensions,
+        );
+        return ($value instanceof UploadedFile
+                && $value->isValid()
+                && in_array($value->extension(), $allowed, true))
+            ? false
+            : 'KEY must be a file of type: ' . implode(', ', $extensions) . '.';
     }
 
     /** @param array<string,mixed> $data */

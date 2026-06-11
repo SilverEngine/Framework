@@ -90,6 +90,55 @@ class Request implements RequestInterface
         $this->merged = array_replace($this->merged, $input);
     }
 
+    /** @var array<string, UploadedFile> instance-scoped file overlay ({@see mergeFiles()}) */
+    private array $mergedFiles = [];
+
+    /**
+     * The uploaded file for $key, or null. Overlay (tests / fakes)
+     * wins over $_FILES.
+     */
+    public function file(string $key): ?UploadedFile
+    {
+        if (isset($this->mergedFiles[$key])) {
+            return $this->mergedFiles[$key];
+        }
+        $spec = $_FILES[$key] ?? null;
+        return is_array($spec) && !is_array($spec['name'] ?? null)
+            ? UploadedFile::fromSpec($spec)
+            : null;
+    }
+
+    /** True when $key holds a successfully uploaded file. */
+    public function hasFile(string $key): bool
+    {
+        return $this->file($key)?->isValid() ?? false;
+    }
+
+    /** @return array<string, UploadedFile> every single-file upload on the request */
+    public function files(): array
+    {
+        $out = [];
+        foreach (array_keys($_FILES) as $key) {
+            $f = $this->file((string) $key);
+            if ($f !== null) {
+                $out[(string) $key] = $f;
+            }
+        }
+        return [...$out, ...$this->mergedFiles];
+    }
+
+    /**
+     * Inject pre-built UploadedFile instances (visible to {@see file()},
+     * {@see hasFile()}, {@see files()}) without touching $_FILES —
+     * the file counterpart of {@see mergeInput()}.
+     *
+     * @param array<string, UploadedFile> $files
+     */
+    public function mergeFiles(array $files): void
+    {
+        $this->mergedFiles = array_replace($this->mergedFiles, $files);
+    }
+
     public function param(string $name, mixed $default = null): mixed
     {
         return $this->all()[$name] ?? $default;

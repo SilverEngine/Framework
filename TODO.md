@@ -146,8 +146,11 @@ scopes), E3 (whereHas/withCount), E4 (mutators/changes), E5
       window over any `CacheStore` (APCu default, process-shared array
       fallback), injectable clock; `Throttle` rebuilt on top with
       Retry-After + X-RateLimit-* headers — DONE (F3)
-- [ ] **File uploads**: `UploadedFile` object on Request, validation rules
-      (`file`, `image`, `mimes`, `max`), store via `FileSystem`
+- [x] **File uploads**: `UploadedFile` value object (real mime via
+      finfo, test mode for fakes), `Request::file()/hasFile()/
+      mergeFiles()`, validation rules `file`/`image`/`mimes:` +
+      file-aware `min:`/`max:` (KB), `store()` via `FileSystem` with
+      random-name default — DONE (F4)
 - [ ] **CORS middleware** (config-driven origins/methods/headers, preflight)
 - [ ] **SecurityHeaders middleware** (CSP, HSTS, X-Frame-Options,
       X-Content-Type-Options, Referrer-Policy — sane defaults)
