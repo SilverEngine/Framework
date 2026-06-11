@@ -74,6 +74,12 @@ class App implements InstanceInterface
             \Silver\Http\NativeSessionStore::class,
         );
         $this->instances->singleton(\Silver\Http\CookieJar::class);
+
+        // Mail — driver + default From resolved from config/mail.php.
+        $this->instances->singleton(
+            \Silver\Mail\Mailer::class,
+            fn (): \Silver\Mail\Mailer => \Silver\Mail\Mailer::fromConfig(),
+        );
     }
 
     public function instances(): Container

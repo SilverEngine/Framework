@@ -216,8 +216,13 @@ Request::isSecure), F7 (signed URLs), F8 (validation v2).
       Hookable
 
 ### G3 — Supporting services
-- [ ] Mail v2: attachments, Ghost-templated bodies, driver contract
-      (sendmail/SMTP/log) — prerequisite for password reset
+- [x] Mail v2: `Silver\Mail\Message` (MIME builder — multipart
+      alternative/mixed, base64 attachments, Ghost `view()` bodies,
+      header-injection stripping), `MailDriver` contract with
+      sendmail / smtp (hand-rolled socket client, STARTTLS/ssl) /
+      log / **file** (one .eml per message) / array (test fake)
+      drivers, `Mailer` singleton + `mailer()` helper, config/mail.php
+      v2 (legacy SMail keys kept) — DONE; unblocks password reset
 - [ ] Cache facade: one `CacheStore`-backed `Cache::get/put/remember` with
       TTL + tags (Orm stores already exist — generalize, don't duplicate)
 - [ ] Promote `Orm\Collection` to `Silver\Support\Collection` (general use)

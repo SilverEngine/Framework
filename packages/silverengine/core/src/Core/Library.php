@@ -41,6 +41,14 @@ if (!function_exists('app')) {
     }
 }
 
+if (!function_exists('mailer')) {
+    /** Shorthand for the {@see \Silver\Mail\Mailer} singleton. */
+    function mailer(): \Silver\Mail\Mailer
+    {
+        return App::instance()->instances()->make(\Silver\Mail\Mailer::class);
+    }
+}
+
 if (!function_exists('gate')) {
     /** Shorthand for the {@see \Silver\Auth\Access\Gate} singleton. */
     function gate(): \Silver\Auth\Access\Gate
