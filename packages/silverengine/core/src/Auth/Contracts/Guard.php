@@ -14,12 +14,12 @@ interface Guard
     public function id(): int|string|null;
 
     /** @param array<string, mixed> $credentials */
-    public function attempt(array $credentials): bool;
+    public function attempt(array $credentials, bool $remember = false): bool;
 
     /** @param array<string, mixed> $credentials */
     public function validate(array $credentials): bool;
 
-    public function login(Authenticatable $user): void;
+    public function login(Authenticatable $user, bool $remember = false): void;
 
     public function logout(): void;
 }

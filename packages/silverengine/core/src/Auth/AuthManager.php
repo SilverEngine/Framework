@@ -54,9 +54,31 @@ class AuthManager
             'session' => new SessionGuard(
                 $provider,
                 App::instance()->instances()->make(TokenStore::class),
+                $this->rememberMe(),
             ),
             default   => throw new RuntimeException("Unknown auth guard driver: {$driver}"),
         };
+    }
+
+    /**
+     * Remember-me wiring for session guards (config `auth.remember`).
+     * Disabled config → null → the guard never touches cookies or the
+     * remember_tokens table.
+     */
+    private function rememberMe(): ?RememberMe
+    {
+        $cfg = (array) (Env::get('auth.remember') ?? []);
+        if (!(bool) ($cfg['enabled'] ?? true)) {
+            return null;
+        }
+        return new RememberMe(
+            new RememberTokenRepository(
+                App::instance()->instances()->make(\Silver\Orm\Connection\ConnectionManager::class),
+                (string) ($cfg['table'] ?? 'remember_tokens'),
+            ),
+            (string) ($cfg['cookie'] ?? 'remember_token'),
+            (int) ($cfg['ttl'] ?? 2_592_000),
+        );
     }
 
     private function resolveProvider(string $name): UserProvider

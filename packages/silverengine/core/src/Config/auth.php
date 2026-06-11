@@ -25,5 +25,15 @@ return [
     'login_url' => '/login',
     'home_url'  => '/',
 
+    // Remember-me (session guards). Requires the remember_tokens table:
+    //   selector (string, PK) / token_hash (string) /
+    //   user_id (unsignedBigInt, index) / expires_at (bigInt).
+    'remember' => [
+        'enabled' => true,
+        'cookie'  => 'remember_token',
+        'table'   => 'remember_tokens',
+        'ttl'     => 2_592_000, // 30 days
+    ],
+
     'throttle' => ['max' => 5, 'decay' => 60],
 ];

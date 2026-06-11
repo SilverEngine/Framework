@@ -33,6 +33,7 @@ final class SessionGuard implements Guard
     public function __construct(
         private readonly UserProvider $provider,
         private readonly ?TokenStore $csrf = null,
+        private readonly ?RememberMe $remember = null,
     ) {}
 
     public function check(): bool
@@ -53,9 +54,27 @@ final class SessionGuard implements Guard
         $this->resolvedThisRequest = true;
         $id = Session::get(self::SESSION_KEY);
         if ($id === null) {
-            return $this->resolved = null;
+            return $this->resolved = $this->userFromRememberCookie();
         }
         return $this->resolved = $this->provider->retrieveById($id);
+    }
+
+    /**
+     * Session miss → try the remember cookie. resolveUserId() already
+     * rotated the token, so this only promotes the user into the
+     * session (no second cookie issue).
+     */
+    private function userFromRememberCookie(): ?Authenticatable
+    {
+        $id = $this->remember?->resolveUserId();
+        if ($id === null) {
+            return null;
+        }
+        $user = $this->provider->retrieveById($id);
+        if ($user !== null) {
+            $this->establishSession($user);
+        }
+        return $user;
     }
 
     public function id(): int|string|null
@@ -64,7 +83,7 @@ final class SessionGuard implements Guard
     }
 
     /** @param array<string, mixed> $credentials */
-    public function attempt(array $credentials): bool
+    public function attempt(array $credentials, bool $remember = false): bool
     {
         $user = $this->provider->retrieveByCredentials($credentials);
         if ($user === null) {
@@ -73,7 +92,7 @@ final class SessionGuard implements Guard
         if (!$this->provider->validateCredentials($user, $credentials)) {
             return false;
         }
-        $this->login($user);
+        $this->login($user, $remember);
         return true;
     }
 
@@ -85,15 +104,12 @@ final class SessionGuard implements Guard
             && $this->provider->validateCredentials($user, $credentials);
     }
 
-    public function login(Authenticatable $user): void
+    public function login(Authenticatable $user, bool $remember = false): void
     {
-        if (session_status() === PHP_SESSION_ACTIVE) {
-            @session_regenerate_id(true);
+        $this->establishSession($user);
+        if ($remember) {
+            $this->remember?->remember($user);
         }
-        Session::set(self::SESSION_KEY, $user->getAuthIdentifier());
-        $this->csrf?->rotate();
-        $this->resolved            = $user;
-        $this->resolvedThisRequest = true;
     }
 
     public function logout(): void
@@ -103,7 +119,19 @@ final class SessionGuard implements Guard
         }
         Session::delete(self::SESSION_KEY);
         $this->csrf?->rotate();
+        $this->remember?->forget();
         $this->resolved            = null;
+        $this->resolvedThisRequest = true;
+    }
+
+    private function establishSession(Authenticatable $user): void
+    {
+        if (session_status() === PHP_SESSION_ACTIVE) {
+            @session_regenerate_id(true);
+        }
+        Session::set(self::SESSION_KEY, $user->getAuthIdentifier());
+        $this->csrf?->rotate();
+        $this->resolved            = $user;
         $this->resolvedThisRequest = true;
     }
 }
