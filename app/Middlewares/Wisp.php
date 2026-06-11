@@ -24,6 +24,21 @@ final class Wisp implements MiddlewareInterface
     {
         $isWisp = $req->hasHeader('X-Inertia');
 
+        // Default shared props — the HandleInertiaRequests equivalent.
+        // Lazy closure: the guard only resolves when a page actually
+        // renders. Model::toArray() honours #[Hidden], so password
+        // hashes never reach the client JSON.
+        \Silver\Http\View::share('auth', static function (): array {
+            $user = auth()->user();
+            return [
+                'user' => match (true) {
+                    $user === null                  => null,
+                    method_exists($user, 'toArray') => $user->toArray(),
+                    default                         => get_object_vars($user),
+                },
+            ];
+        });
+
         if ($isWisp && $req->method() === 'get') {
             $current = WispEngine::version();
             $client  = $req->headerValue('X-Inertia-Version');

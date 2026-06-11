@@ -51,18 +51,23 @@ final class ErrorHandlerValidationTest extends TestCase
         $this->assertSame(['email is required.'], $decoded['errors']['email']);
     }
 
-    public function testInertiaClientGetsJsonEnvelope(): void
+    public function testInertiaClientGetsRedirectBackWithFlash(): void
     {
+        // Wisp polish: Inertia clients follow the redirect-back dance
+        // (errors arrive as the page's `errors` prop), NOT a 422 JSON
+        // envelope — useForm doesn't consume those.
         $_SERVER['HTTP_X_INERTIA'] = 'true';
+        $_SERVER['HTTP_REFERER']   = '/register';
 
-        $body = $this->mw->execute(
+        $this->mw->execute(
             $this->req,
             $this->res,
             fn () => throw new ValidationException(['name' => ['KEY is required.']])
         );
 
-        $this->assertSame(422, $this->res->getCode());
-        $this->assertStringContainsString('application/json', (string) $this->res->getHeader('Content-Type'));
+        $this->assertSame(303, $this->res->getCode());
+        $this->assertSame('/register', $this->res->getHeader('Location'));
+        $this->assertSame(['name' => ['KEY is required.']], $_SESSION['flash']['_errors'] ?? null);
     }
 
     public function testHtmlClientGetsRedirectAndFlash(): void

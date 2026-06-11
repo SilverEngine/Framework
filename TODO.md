@@ -195,6 +195,17 @@ Request::isSecure), F7 (signed URLs), F8 (validation v2).
       `tokenCan()`), AuthManager 'token' driver + `api` guard config
       — DONE
 
+### Wisp/View integration polish — DONE
+- [x] Wisp-aware error negotiation: validation → flash + 303 back
+      (useForm-compatible), authentication → redirect to login; plain
+      JSON clients keep 422/401 envelopes
+- [x] Always-present `errors` prop on Wisp pages (field → first
+      flashed message; page-supplied prop wins)
+- [x] Ghost helpers `errors(?$field)` / `old($field, $default)` reading
+      the same flash; `auth()` helper now returns the resolved Guard
+- [x] Default lazy `auth.user` shared prop in the app Wisp middleware
+      (toArray(), #[Hidden]-safe)
+
 ### G2 — Testing kit
 - [ ] `Silver\Testing\TestCase`: boot app for tests, `get()/post()/json()`
       returning a `TestResponse` with `assertStatus/assertSee/assertJson/

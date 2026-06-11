@@ -83,6 +83,13 @@ final class WispResponse implements RenderInterface
             $props[$key] = ($value instanceof Closure) ? $value() : $value;
         }
 
+        // Inertia contract: `errors` is always present — resolved from
+        // the validation flash (field → FIRST message, the shape
+        // useForm expects) unless the page supplied its own.
+        if (!array_key_exists('errors', $props)) {
+            $props['errors'] = (object) $this->flashedErrors();
+        }
+
         $page = [
             'component' => $this->component,
             'props'     => (object) $props,
@@ -102,6 +109,27 @@ final class WispResponse implements RenderInterface
         $shell = RuntimeContext::current()->root . 'app/Resources/views/app.ghost.tpl';
 
         return (new Template($shell, ['_wisp_page' => $this->data()]))->render();
+    }
+
+    /** @return array<string, string> field → first flashed message */
+    private function flashedErrors(): array
+    {
+        try {
+            $flashed = \Silver\Http\Session::get('_errors');
+        } catch (\Throwable) {
+            return []; // no session backend (CLI / bare tests)
+        }
+        if (!is_array($flashed)) {
+            return [];
+        }
+        $out = [];
+        foreach ($flashed as $field => $messages) {
+            $first = is_array($messages) ? ($messages[0] ?? null) : $messages;
+            if (is_string($first) && $first !== '') {
+                $out[(string) $field] = $first;
+            }
+        }
+        return $out;
     }
 
     private function requested(string $key, ?array $only): bool

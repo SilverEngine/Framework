@@ -51,6 +51,17 @@ final class ErrorHandler implements MiddlewareInterface
 
     private function renderValidation(Request $req, Response $res, ValidationException $e): mixed
     {
+        // Wisp (Inertia) wants the redirect-back dance, NOT a JSON
+        // envelope: errors travel via the session flash and surface as
+        // the page object's `errors` prop on the follow-up GET — that's
+        // what useForm consumes. 303 so mutating verbs re-request as GET.
+        if ($this->isWisp($req)) {
+            $this->flashValidation($e);
+            $res->setCode(303);
+            $res->setHeader('Location', $_SERVER['HTTP_REFERER'] ?? '/');
+            return '';
+        }
+
         if ($req->wantsJson()) {
             $res->setCode(422);
             $res->setHeader('Content-Type', 'application/json; charset=utf-8');
@@ -60,15 +71,23 @@ final class ErrorHandler implements MiddlewareInterface
             ]);
         }
 
+        $this->flashValidation($e);
+        $res->setCode(302);
+        $res->setHeader('Location', $_SERVER['HTTP_REFERER'] ?? '/');
+        return '';
+    }
+
+    private function flashValidation(ValidationException $e): void
+    {
         Session::flash('_errors', $e->errors());
         if ($e->oldInput !== null) {
             Session::flash('_old', $e->oldInput);
         }
+    }
 
-        $back = $_SERVER['HTTP_REFERER'] ?? '/';
-        $res->setCode(302);
-        $res->setHeader('Location', $back);
-        return '';
+    private function isWisp(Request $req): bool
+    {
+        return $req->hasHeader('X-Inertia');
     }
 
     private function renderAuthorization(Request $req, Response $res, AuthorizationException $e): mixed
@@ -95,6 +114,14 @@ final class ErrorHandler implements MiddlewareInterface
 
     private function renderAuthentication(Request $req, Response $res, AuthenticationException $e): mixed
     {
+        // Wisp clients follow redirects natively — send them to the
+        // login page instead of a 401 JSON they'd render as a modal.
+        if ($this->isWisp($req)) {
+            $res->setCode(302);
+            $res->setHeader('Location', $e->redirectTo ?? '/login');
+            return '';
+        }
+
         if ($req->wantsJson()) {
             $res->setCode(401);
             $res->setHeader('Content-Type', 'application/json; charset=utf-8');

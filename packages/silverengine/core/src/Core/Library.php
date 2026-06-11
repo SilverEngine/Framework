@@ -146,11 +146,42 @@ if (!function_exists('wisp')) {
 }
 
 if (!function_exists('auth')) {
-    /** AuthManager for advanced use (Auth::guard('api') etc.), or the
-     *  default guard via auth()->user(). */
-    function auth(): \Silver\Auth\AuthManager
+    /**
+     * The resolved auth guard — `auth()->user()`, `auth()->check()`,
+     * or a named one via `auth('api')`. (The AuthManager itself is
+     * available as app(AuthManager::class) for advanced wiring.)
+     */
+    function auth(?string $guard = null): \Silver\Auth\Contracts\Guard
     {
-        return app(\Silver\Auth\AuthManager::class);
+        return app(\Silver\Auth\AuthManager::class)->guard($guard);
+    }
+}
+
+if (!function_exists('errors')) {
+    /**
+     * Validation errors flashed by the last request. With no argument
+     * returns the full field → list-of-messages map; with a field name
+     * returns that field's first message or null. Pairs with the
+     * always-present `errors` prop on Wisp pages.
+     */
+    function errors(?string $field = null): array|string|null
+    {
+        $all = \Silver\Http\Session::get('_errors');
+        $all = is_array($all) ? $all : [];
+        if ($field === null) {
+            return $all;
+        }
+        $messages = $all[$field] ?? [];
+        return is_array($messages) ? ($messages[0] ?? null) : (string) $messages;
+    }
+}
+
+if (!function_exists('old')) {
+    /** Input flashed by the last failed validation: `old('email')`. */
+    function old(string $field, mixed $default = null): mixed
+    {
+        $old = \Silver\Http\Session::get('_old');
+        return is_array($old) ? ($old[$field] ?? $default) : $default;
     }
 }
 
