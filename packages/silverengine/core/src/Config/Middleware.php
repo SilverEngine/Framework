@@ -16,6 +16,9 @@
 return [
     'aliases' => [
         'throttle' => Silver\Auth\Middleware\Throttle::class,
+        'auth'     => Silver\Auth\Middleware\Authenticate::class,
+        'guest'    => Silver\Auth\Middleware\Guest::class,
+        'can'      => Silver\Auth\Middleware\Authorize::class,
     ],
     'groups' => [],
 ];

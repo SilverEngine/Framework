@@ -41,6 +41,14 @@ if (!function_exists('app')) {
     }
 }
 
+if (!function_exists('gate')) {
+    /** Shorthand for the {@see \Silver\Auth\Access\Gate} singleton. */
+    function gate(): \Silver\Auth\Access\Gate
+    {
+        return App::instance()->instances()->make(\Silver\Auth\Access\Gate::class);
+    }
+}
+
 if (!function_exists('dd')) {
     function dd(mixed $data, bool $dump = false): never
     {

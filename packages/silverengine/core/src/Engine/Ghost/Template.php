@@ -84,6 +84,7 @@ class Template implements RenderInterface
         $render = $this->parseDebug($render);
         $render = $this->parseComments($render);
         $render = $this->parseIncludes($render);
+        $render = $this->parseCan($render);
         $render = $this->filterControl($render, 'if');
         $render = $this->filterControl($render, 'foreach');
         $render = $this->filterControl($render, 'for');
@@ -195,6 +196,29 @@ class Template implements RenderInterface
             fn(array $m) => '{{{ $_block_' . trim($m[1]) . ' }}}',
             $body,
         );
+    }
+
+    /**
+     * Authorization blocks. Runs BEFORE filterControl('if') so that
+     * #endcan / #endcannot aren't half-eaten by the #end-if rewrite.
+     *
+     *   #can('update', $post) … #endcan
+     *   #cannot('update', $post) … #endcannot
+     */
+    private function parseCan(string $body): string
+    {
+        $body = (string) preg_replace(
+            '/#can\((.*)\)/',
+            '<?php if (gate()->allows($1)) { ?>',
+            $body,
+        );
+        $body = (string) preg_replace(
+            '/#cannot\((.*)\)/',
+            '<?php if (gate()->denies($1)) { ?>',
+            $body,
+        );
+        $body = (string) preg_replace('/#endcannot/', '<?php } ?>', $body);
+        return (string) preg_replace('/#endcan/', '<?php } ?>', $body);
     }
 
     /**

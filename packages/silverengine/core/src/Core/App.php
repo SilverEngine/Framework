@@ -56,6 +56,16 @@ class App implements InstanceInterface
         $this->instances->singleton(\Silver\Http\Csrf\TokenStore::class);
         $this->instances->singleton(\Silver\Auth\AuthManager::class);
 
+        // Authorization gate — the default user resolver reads the
+        // active guard lazily so defining abilities never boots auth.
+        $this->instances->singleton(
+            \Silver\Auth\Access\Gate::class,
+            fn (): \Silver\Auth\Access\Gate => new \Silver\Auth\Access\Gate(
+                fn (): ?\Silver\Auth\Contracts\Authenticatable => $this->instances
+                    ->make(\Silver\Auth\AuthManager::class)->guard()->user(),
+            ),
+        );
+
         // Session + cookie backends. The Session/Cookie static classes
         // are facades over these; tests swap the session store for
         // ArraySessionStore via `Container::instance(...)`.
