@@ -9,23 +9,27 @@ use Silver\Core\Contracts\MiddlewareInterface;
 use Silver\Core\Env;
 use Silver\Http\Request;
 use Silver\Http\Response;
+use Silver\Support\RateLimiter;
 
 /**
- * In-memory login throttle.
+ * Request throttle on the shared {@see RateLimiter} (sliding window,
+ * APCu-backed when enabled — so it works behind php-fpm, unlike the
+ * old per-process $_SESSION counter).
  *
- * Counter lives in $_SESSION (no generic Cache backend yet — Branch B
- * will swap this for a Cache::store('rate-limiter') call). Keyed by
- * ip + email so two users behind one NAT don't lock each other out,
- * and one attacker on N IPs can't dodge the limit on a single email.
+ * Keyed by ip + email so two users behind one NAT don't lock each
+ * other out, and one attacker on N IPs can't dodge the limit on a
+ * single email.
  *
- * Reaching the limit throws ThrottleRequestsException (429) with the
- * remaining-seconds in Retry-After.
+ * Route-middleware friendly: `'throttle:60,1'` maps 60 → maxAttempts,
+ * 1 → decaySeconds via MiddlewareResolver; the RateLimiter service
+ * dep autowires. Zero/omitted params fall back to auth.throttle.*
+ * config. Over the limit throws ThrottleRequestsException (429) with
+ * the remaining window seconds in Retry-After.
  */
 final class Throttle implements MiddlewareInterface
 {
-    private const SESSION_KEY = '_auth_throttle';
-
     public function __construct(
+        private readonly RateLimiter $limiter,
         private readonly int $maxAttempts = 0,
         private readonly int $decaySeconds = 0,
     ) {}
@@ -35,22 +39,16 @@ final class Throttle implements MiddlewareInterface
         $max   = $this->maxAttempts > 0 ? $this->maxAttempts : (int) Env::get('auth.throttle.max', 5);
         $decay = $this->decaySeconds > 0 ? $this->decaySeconds : (int) Env::get('auth.throttle.decay', 60);
 
-        $key   = $this->key($req);
-        $now   = time();
-        $state = $_SESSION[self::SESSION_KEY][$key] ?? ['hits' => 0, 'reset' => $now + $decay];
+        $key = $this->key($req);
 
-        if ($state['reset'] <= $now) {
-            $state = ['hits' => 0, 'reset' => $now + $decay];
-        }
-
-        if ($state['hits'] >= $max) {
-            $retry = max(1, $state['reset'] - $now);
+        if (!$this->limiter->attempt($key, $max, $decay)) {
+            $retry = max(1, $this->limiter->availableIn($key, $decay));
             $res->setHeader('Retry-After', (string) $retry);
             throw new ThrottleRequestsException($retry);
         }
 
-        $state['hits']++;
-        $_SESSION[self::SESSION_KEY][$key] = $state;
+        $res->setHeader('X-RateLimit-Limit', (string) $max);
+        $res->setHeader('X-RateLimit-Remaining', (string) $this->limiter->remaining($key, $max, $decay));
 
         return $next();
     }

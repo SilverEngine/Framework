@@ -101,33 +101,57 @@ final class MiddlewareTest extends TestCase
         $this->assertSame('ok', $mw->execute($this->req, $this->res, fn () => 'ok'));
     }
 
+    private float $clock = 1_000_000.0;
+
+    private function throttle(int $max, int $decay): Throttle
+    {
+        $limiter = new \Silver\Support\RateLimiter(
+            new \Silver\Orm\Cache\ArrayStore(),
+            fn (): float => $this->clock,
+        );
+        return new Throttle($limiter, $max, $decay);
+    }
+
     public function testThrottleAllowsBelowLimit(): void
     {
-        $mw = new Throttle(maxAttempts: 3, decaySeconds: 60);
+        $mw = $this->throttle(3, 60);
         $this->assertSame('ok', $mw->execute($this->req, $this->res, fn () => 'ok'));
         $this->assertSame('ok', $mw->execute($this->req, $this->res, fn () => 'ok'));
     }
 
-    public function testThrottleRejectsAtLimit(): void
+    public function testThrottleRejectsAtLimitWithRetryAfter(): void
     {
-        $mw = new Throttle(maxAttempts: 2, decaySeconds: 60);
+        $mw = $this->throttle(2, 60);
         $mw->execute($this->req, $this->res, fn () => 'ok');
-        $mw->execute($this->req, $this->res, fn () => 'ok');
-        $this->expectException(ThrottleRequestsException::class);
-        $mw->execute($this->req, $this->res, fn () => 'ok');
-    }
-
-    public function testThrottleResetsAfterWindow(): void
-    {
-        $mw = new Throttle(maxAttempts: 1, decaySeconds: 60);
         $mw->execute($this->req, $this->res, fn () => 'ok');
 
-        // Manually expire the throttle bucket.
-        foreach ($_SESSION['_auth_throttle'] as $k => &$v) {
-            $v['reset'] = time() - 1;
+        try {
+            $mw->execute($this->req, $this->res, fn () => 'ok');
+            self::fail('Expected ThrottleRequestsException.');
+        } catch (ThrottleRequestsException $e) {
+            $this->assertGreaterThan(0, $e->retryAfter);
+            $this->assertLessThanOrEqual(60, $e->retryAfter);
+            $this->assertNotNull($this->res->getHeader('Retry-After'));
         }
-        unset($v);
+    }
 
+    public function testThrottleWindowSlides(): void
+    {
+        $mw = $this->throttle(1, 60);
+        $mw->execute($this->req, $this->res, fn () => 'ok');
+
+        $this->clock += 61; // the hit slid out of the window
         $this->assertSame('ok', $mw->execute($this->req, $this->res, fn () => 'ok'));
+    }
+
+    public function testThrottleKeysByIpAndEmail(): void
+    {
+        $mw = $this->throttle(1, 60);
+        $mw->execute($this->req, $this->res, fn () => 'ok');
+
+        // Different client IP ⇒ separate bucket, not throttled.
+        $_SERVER['REMOTE_ADDR'] = '10.0.0.9';
+        $other = new Request();
+        $this->assertSame('ok', $mw->execute($other, $this->res, fn () => 'ok'));
     }
 }

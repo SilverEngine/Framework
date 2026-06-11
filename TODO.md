@@ -142,9 +142,10 @@ scopes), E3 (whereHas/withCount), E4 (mutators/changes), E5
       `'throttle:60,1'` (positional params cast onto scalar ctor params,
       service deps autowired), Kernel runs the chain around the action
       — DONE (F2)
-- [ ] **General rate limiter**: store-backed (Apcu/array), sliding window;
-      rebuild `Auth\Middleware\Throttle` on top (current one is in-memory
-      per-process — useless behind php-fpm)
+- [x] **General rate limiter**: `Silver\Support\RateLimiter` — sliding
+      window over any `CacheStore` (APCu default, process-shared array
+      fallback), injectable clock; `Throttle` rebuilt on top with
+      Retry-After + X-RateLimit-* headers — DONE (F3)
 - [ ] **File uploads**: `UploadedFile` object on Request, validation rules
       (`file`, `image`, `mimes`, `max`), store via `FileSystem`
 - [ ] **CORS middleware** (config-driven origins/methods/headers, preflight)
