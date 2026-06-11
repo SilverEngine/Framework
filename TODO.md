@@ -163,8 +163,14 @@ scopes), E3 (whereHas/withCount), E4 (mutators/changes), E5
 - [x] **Signed URLs**: `URL::signed()` / `temporarySigned()` /
       `hasValidSignature(Request|string)` — HMAC over path+query incl.
       'expires', URL-safe signature param — DONE (F7)
-- [ ] **Validation v2**: conditional rules (`required_if`/`required_unless`),
-      closure rules, file/image rules (ties into uploads)
+- [x] **Validation v2**: `required_if:`/`required_unless:` conditional
+      rules, Closure rules + array rule syntax (file/image rules landed
+      with F4) — DONE (F8)
+
+**Phase F complete** — F1 (route param coercion + model binding), F2
+(middleware groups/per-route+params), F3 (RateLimiter + Throttle
+rebuild), F4 (file uploads), F5 (CORS), F6 (SecurityHeaders +
+Request::isSecure), F7 (signed URLs), F8 (validation v2).
 
 ---
 

@@ -22,7 +22,9 @@ namespace Silver\Http;
  *   required, nullable, min:N, max:N, between:A,B, match:<field>,
  *   confirmed, in:a,b,c, email, url, integer, numeric, string,
  *   alpha, alphanumeric, regex:/pattern/, same:<field>, different:<field>,
- *   file, image, mimes:ext1,ext2.
+ *   file, image, mimes:ext1,ext2,
+ *   required_if:<field>,<value>, required_unless:<field>,<value>,
+ *   plus Closure rules via the array syntax (see check()).
  *
  * File values ({@see UploadedFile}) flip min:/max: to kilobytes of
  * file size; image/mimes judge the REAL mime (finfo), not the
@@ -36,22 +38,32 @@ final class Validator
     /**
      * Run every rule against $data and return the immutable result.
      *
-     * @param array<string, mixed>          $data     field => value
-     * @param array<string, string>         $rules    field => 'rule1|rule2:arg|…'
-     * @param array<string, string>         $messages optional message overrides keyed by
-     *                                                'field' or 'field.rule'
+     * Rules come as a pipe string ('required|email|max:255') or as a
+     * list mixing single rule strings and Closures:
+     *
+     *   'slug' => ['required', 'max:64',
+     *              fn (mixed $value, array $data): string|false =>
+     *                  taken($value) ? 'KEY is taken.' : false]
+     *
+     * A closure returns the failure message (string, 'KEY' is replaced
+     * with the field name) or false/null to pass.
+     *
+     * @param array<string, mixed>                       $data     field => value
+     * @param array<string, string|array<string|\Closure>> $rules    field => rules
+     * @param array<string, string>                      $messages optional message overrides
+     *                                                            keyed by 'field' or 'field.rule'
      */
     public function check(array $data, array $rules, array $messages = []): ValidationResult
     {
         $errors = [];
 
-        foreach ($rules as $key => $ruleString) {
+        foreach ($rules as $key => $ruleSpec) {
             $value = $data[$key] ?? null;
 
             // `nullable` lets a missing/blank value bypass the remaining rules
             // (except for explicit `required`, which is always evaluated first
             // anyway by virtue of usually appearing first in the chain).
-            $clauses  = explode('|', (string) $ruleString);
+            $clauses    = is_string($ruleSpec) ? explode('|', $ruleSpec) : $ruleSpec;
             $isNullable = in_array('nullable', $clauses, true);
             $isBlank    = $value === null || $value === '';
 
@@ -60,6 +72,14 @@ final class Validator
             }
 
             foreach ($clauses as $clause) {
+                if ($clause instanceof \Closure) {
+                    $msg = $clause($value, $data);
+                    if (is_string($msg) && $msg !== '') {
+                        $errors[$key][] = str_replace('KEY', $key, $msg);
+                    }
+                    continue;
+                }
+
                 if ($clause === '' || $clause === 'nullable') {
                     continue;
                 }
@@ -69,7 +89,8 @@ final class Validator
                 $argStr = $parts[1] ?? '';
                 $args   = $argStr === '' ? [] : explode(',', $argStr);
 
-                $method = 'check' . ucfirst($name);
+                // 'required_if' → checkRequiredIf (snake → studly).
+                $method = 'check' . str_replace('_', '', ucwords($name, '_'));
                 if (!method_exists($this, $method)) {
                     throw new \InvalidArgumentException("Unknown validation rule: {$name}");
                 }
@@ -112,6 +133,37 @@ final class Validator
             return $value === [] ? 'KEY is required.' : false;
         }
         return ($value === null) ? 'KEY is required.' : false;
+    }
+
+    /**
+     * Required only when $data[$field] equals $expected (loose string
+     * compare — form data arrives as strings).
+     *
+     * @param array<string,mixed> $data
+     */
+    private function checkRequiredIf(mixed $value, array $data, string $field = '', string $expected = ''): string|false
+    {
+        if ((string) ($data[$field] ?? '') !== $expected) {
+            return false;
+        }
+        return $this->checkRequired($value, $data) === false
+            ? false
+            : "KEY is required when {$field} is {$expected}.";
+    }
+
+    /**
+     * Required unless $data[$field] equals $expected.
+     *
+     * @param array<string,mixed> $data
+     */
+    private function checkRequiredUnless(mixed $value, array $data, string $field = '', string $expected = ''): string|false
+    {
+        if ((string) ($data[$field] ?? '') === $expected) {
+            return false;
+        }
+        return $this->checkRequired($value, $data) === false
+            ? false
+            : "KEY is required unless {$field} is {$expected}.";
     }
 
     /** @param array<string,mixed> $data */
