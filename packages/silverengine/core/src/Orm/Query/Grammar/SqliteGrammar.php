@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Silver\Orm\Query\Grammar;
 
 use Silver\Orm\Connection\Driver;
+use Silver\Orm\Query\QueryState;
 
 final class SqliteGrammar extends Grammar
 {
@@ -19,4 +20,14 @@ final class SqliteGrammar extends Grammar
     public function explainPrefix(): string { return 'EXPLAIN QUERY PLAN '; }
     #[\Override]
     public function analyzePrefix(): string { return 'EXPLAIN QUERY PLAN '; }
+
+    /**
+     * Sqlite locks the whole database file — FOR UPDATE / FOR SHARE
+     * don't exist and would be syntax errors. Emit nothing.
+     */
+    #[\Override]
+    protected function compileLock(QueryState $state): string
+    {
+        return '';
+    }
 }

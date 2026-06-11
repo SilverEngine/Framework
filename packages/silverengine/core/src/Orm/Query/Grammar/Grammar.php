@@ -87,6 +87,48 @@ abstract class Grammar implements GrammarInterface
         return [$sql, $bindings];
     }
 
+    /**
+     * INSERT that skips conflicting rows. ANSI-ish default uses the
+     * `ON CONFLICT DO NOTHING` clause (sqlite ≥ 3.24 + postgres);
+     * MySQL overrides with `INSERT IGNORE`.
+     *
+     * @return array{0: string, 1: list<mixed>}
+     */
+    public function compileInsertOrIgnore(string $table, array $rows): array
+    {
+        [$sql, $bindings] = $this->compileInsert($table, $rows);
+        return [$sql . ' ON CONFLICT DO NOTHING', $bindings];
+    }
+
+    /**
+     * Upsert. Default emits `ON CONFLICT (…) DO UPDATE SET col =
+     * excluded.col` (sqlite ≥ 3.24 + postgres); MySQL overrides with
+     * `ON DUPLICATE KEY UPDATE`.
+     *
+     * @param list<array<string, mixed>> $rows
+     * @param list<string>               $uniqueBy
+     * @param list<string>               $updateColumns
+     * @return array{0: string, 1: list<mixed>}
+     */
+    public function compileUpsert(string $table, array $rows, array $uniqueBy, array $updateColumns): array
+    {
+        if ($uniqueBy === [] || $updateColumns === []) {
+            throw new \InvalidArgumentException('Upsert requires uniqueBy and update columns.');
+        }
+
+        [$sql, $bindings] = $this->compileInsert($table, $rows);
+
+        $conflict = implode(', ', array_map($this->quote(...), $uniqueBy));
+        $sets     = [];
+        foreach ($updateColumns as $col) {
+            $sets[] = $this->quote($col) . ' = excluded.' . $this->quote($col);
+        }
+
+        $sql .= ' ON CONFLICT (' . $conflict . ') DO UPDATE SET ' . implode(', ', $sets);
+
+        return [$sql, $bindings];
+    }
+
     /** @return array{0: string, 1: list<mixed>} */
     public function compileUpdate(object $state, array $values): array
     {
@@ -278,9 +320,20 @@ abstract class Grammar implements GrammarInterface
         return implode(' ', $parts);
     }
 
+    /**
+     * Lock clause. The Builder stores the semantic markers 'update' /
+     * 'share'; anything else is treated as a raw driver-specific
+     * clause and emitted verbatim. Sqlite (whole-database locking)
+     * overrides this to emit nothing.
+     */
     protected function compileLock(QueryState $state): string
     {
-        return $state->lock ?? '';
+        return match ($state->lock) {
+            null     => '',
+            'update' => 'FOR UPDATE',
+            'share'  => 'FOR SHARE',
+            default  => $state->lock,
+        };
     }
 
     // ---------- node compile ----------

@@ -37,6 +37,17 @@ class Builder
 
     public function state(): QueryState { return $this->state; }
 
+    /**
+     * Deep-copy the accumulated state. Without this, `clone $builder`
+     * shares one QueryState, so terminals that clone-and-mutate
+     * (first(), count(), paginate()) would corrupt the original
+     * builder's select/limit/orders.
+     */
+    public function __clone(): void
+    {
+        $this->state = clone $this->state;
+    }
+
     public function onConnection(string $name): static
     {
         $this->state->connection = $name;
@@ -261,6 +272,33 @@ class Builder
         return $this;
     }
 
+    // ---------- UNION / LOCK ----------
+
+    public function union(Builder|Closure $query, bool $all = false): static
+    {
+        $this->state->unions[] = [$this->resolveSub($query)->state, $all];
+        return $this;
+    }
+
+    public function unionAll(Builder|Closure $query): static
+    {
+        return $this->union($query, true);
+    }
+
+    /** Exclusive row lock (`FOR UPDATE`). No-op on sqlite. */
+    public function forUpdate(): static
+    {
+        $this->state->lock = 'update';
+        return $this;
+    }
+
+    /** Shared row lock (`FOR SHARE` / `LOCK IN SHARE MODE`). No-op on sqlite. */
+    public function sharedLock(): static
+    {
+        $this->state->lock = 'share';
+        return $this;
+    }
+
     // ---------- compile + run ----------
 
     /** @return array{0: string, 1: list<mixed>} */
@@ -391,6 +429,52 @@ class Builder
         return $this->connections->lastInsertId($this->state->connection);
     }
 
+    /**
+     * INSERT that silently skips rows violating a unique constraint.
+     * Returns the number of rows actually inserted.
+     *
+     * @param array<string, mixed>|list<array<string, mixed>> $values
+     */
+    public function insertOrIgnore(array $values): int
+    {
+        $table = $this->requireTableName('INSERT');
+        $rows  = $this->isAssoc($values) ? [$values] : array_values($values);
+        if ($rows === []) {
+            return 0;
+        }
+        [$sql, $bindings] = $this->compiler->for($this->state->connection)
+            ->compileInsertOrIgnore($table, $rows);
+        return $this->connections->raw($sql, $bindings, $this->state->connection)->rowCount();
+    }
+
+    /**
+     * Insert-or-update on conflict. $uniqueBy names the conflict
+     * target columns; $updateColumns defaults to every inserted column
+     * except the conflict target.
+     *
+     * Returns the driver-reported affected row count (MySQL counts an
+     * updated row as 2 — driver semantics are passed through).
+     *
+     * @param array<string, mixed>|list<array<string, mixed>> $rows
+     * @param string|list<string>                             $uniqueBy
+     * @param list<string>|null                               $updateColumns
+     */
+    public function upsert(array $rows, array|string $uniqueBy, ?array $updateColumns = null): int
+    {
+        $table = $this->requireTableName('UPSERT');
+        $rows  = $this->isAssoc($rows) ? [$rows] : array_values($rows);
+        if ($rows === []) {
+            return 0;
+        }
+
+        $uniqueBy        = is_string($uniqueBy) ? [$uniqueBy] : $uniqueBy;
+        $updateColumns ??= array_values(array_diff(array_keys($rows[0]), $uniqueBy));
+
+        [$sql, $bindings] = $this->compiler->for($this->state->connection)
+            ->compileUpsert($table, $rows, $uniqueBy, $updateColumns);
+        return $this->connections->raw($sql, $bindings, $this->state->connection)->rowCount();
+    }
+
     /** @param array<string, mixed> $values */
     public function update(array $values): int
     {
@@ -404,6 +488,24 @@ class Builder
         [$sql, $bindings] = $this->compiler->for($this->state->connection)
             ->compileDelete($this->state);
         return $this->connections->raw($sql, $bindings, $this->state->connection)->rowCount();
+    }
+
+    /**
+     * Page through the result set: one COUNT query + one window query.
+     * $page defaults to the `page` query-string parameter (1-based).
+     * In a ModelBuilder context the items are hydrated models.
+     */
+    public function paginate(int $perPage = 15, ?int $page = null): Paginator
+    {
+        $perPage = max(1, $perPage);
+        $page    = max(1, $page ?? (int) ($_GET['page'] ?? 1));
+
+        $total = $this->count();
+        $items = $total > 0
+            ? (clone $this)->limit($perPage)->offset(($page - 1) * $perPage)->get()
+            : [];
+
+        return new Paginator(array_values($items), $total, $perPage, $page);
     }
 
     /** @param Closure(array<string, mixed>): mixed $fn */
