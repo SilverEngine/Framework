@@ -177,13 +177,23 @@ Request::isSecure), F7 (signed URLs), F8 (validation v2).
 ## Phase G — Auth completion & DX
 
 ### G1 — Auth features
-- [ ] Remember-me (hashed token table + cookie, rotate on use)
-- [ ] Password reset flow (token via `Random`, mail, expiry) — needs G3 mail
-- [ ] Email verification (signed-URL based — reuses Phase F)
-- [ ] **Authorization**: `Gate::define()` + policy classes +
-      `$user->can()` + middleware + Ghost `#can` directive
-- [ ] API token guard (bearer; hashed tokens, abilities) — the `AuthManager`
-      v2 comment
+- [x] Remember-me: `RememberTokenRepository` (split selector:validator,
+      sha256 stored, expiry purge) + `RememberMe` (rotate-on-use cookie),
+      `SessionGuard` fallback + `attempt/login(remember:)`,
+      config `auth.remember` — DONE
+- [ ] Password reset flow (token via `Random`, mail, expiry) — needs G3
+      mail (the only G1 item left; signed-URL + token infra now exists)
+- [x] Email verification: `MustVerifyEmail` contract,
+      `EmailVerification` service (signed URL + sha1(email) binding,
+      idempotent verify), `'verified'` middleware — DONE
+- [x] **Authorization**: `Silver\Auth\Access\Gate` (define/policy/
+      allows/denies/authorize/forUser), `Authorizable` trait
+      (`$user->can()`), `'can:ability[,routeParam]'` middleware, Ghost
+      `#can`/`#cannot` directives, `gate()` helper — DONE
+- [x] API token guard: `ApiTokenRepository` (hashed split tokens,
+      abilities json, optional expiry) + `TokenGuard` (bearer header,
+      `tokenCan()`), AuthManager 'token' driver + `api` guard config
+      — DONE
 
 ### G2 — Testing kit
 - [ ] `Silver\Testing\TestCase`: boot app for tests, `get()/post()/json()`

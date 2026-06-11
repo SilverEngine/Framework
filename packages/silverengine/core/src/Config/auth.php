@@ -5,6 +5,9 @@ return [
 
     'guards' => [
         'web' => ['driver' => 'session', 'provider' => 'users'],
+        // Stateless bearer tokens (Authorization: Bearer selector:validator).
+        // Requires the api_tokens table — see ApiTokenRepository docblock.
+        'api' => ['driver' => 'token', 'provider' => 'users', 'table' => 'api_tokens'],
     ],
 
     'providers' => [

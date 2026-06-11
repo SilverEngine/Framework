@@ -19,6 +19,7 @@ return [
         'auth'     => Silver\Auth\Middleware\Authenticate::class,
         'guest'    => Silver\Auth\Middleware\Guest::class,
         'can'      => Silver\Auth\Middleware\Authorize::class,
+        'verified' => Silver\Auth\Middleware\EnsureEmailIsVerified::class,
     ],
     'groups' => [],
 ];

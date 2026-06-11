@@ -56,6 +56,13 @@ class AuthManager
                 App::instance()->instances()->make(TokenStore::class),
                 $this->rememberMe(),
             ),
+            'token'   => new TokenGuard(
+                $provider,
+                new ApiTokenRepository(
+                    App::instance()->instances()->make(\Silver\Orm\Connection\ConnectionManager::class),
+                    (string) ($cfg['table'] ?? 'api_tokens'),
+                ),
+            ),
             default   => throw new RuntimeException("Unknown auth guard driver: {$driver}"),
         };
     }
