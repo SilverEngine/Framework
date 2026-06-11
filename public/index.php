@@ -19,28 +19,37 @@ if (session_status() === PHP_SESSION_NONE) {
     session_start();
 }
 
-$PREFIX = preg_replace('{/index.php$}', '', str_replace('\\', '/', $_SERVER['SCRIPT_NAME']));
-$HOST = 'http' . (isset($_SERVER['HTTPS']) ? 's' : '')
-    . '://' . $_SERVER['SERVER_NAME']
-    . ($_SERVER['SERVER_PORT'] != 80 ? ':' . $_SERVER['SERVER_PORT'] : '');
-
-define('DS', DIRECTORY_SEPARATOR);
-define('BASEPATH', $PREFIX);
-define('URL', $HOST . $PREFIX);
-define('CURRENT_URL', $HOST . $_SERVER['REQUEST_URI']);
-define('ROOT', dirname(__DIR__) . DS);
-define('EXT', '.php');
+$root = dirname(__DIR__) . DIRECTORY_SEPARATOR;
 
 /*
 |--------------------------------------------------------------------------
 | Autoloader
 |--------------------------------------------------------------------------
 */
-if (!is_dir(ROOT . 'vendor')) {
+if (!is_dir($root . 'vendor')) {
     exit('Vendor folder missing. Run: composer install');
 }
 
-require_once ROOT . 'vendor/autoload.php';
+require_once $root . 'vendor/autoload.php';
+
+/*
+|--------------------------------------------------------------------------
+| Runtime context
+|--------------------------------------------------------------------------
+| Source of truth for paths + URL shape, registered in the container.
+| The constants below are BC shims derived from it — new code should
+| read RuntimeContext::current() instead.
+*/
+$context = Silver\Core\RuntimeContext::forWeb($root, $_SERVER);
+Silver\Core\App::instance()->instances()
+    ->instance(Silver\Core\RuntimeContext::class, $context);
+
+define('DS', DIRECTORY_SEPARATOR);
+define('BASEPATH', $context->basePath);
+define('URL', $context->url);
+define('CURRENT_URL', $context->currentUrl);
+define('ROOT', $context->root);
+define('EXT', '.php');
 
 chdir(ROOT);
 

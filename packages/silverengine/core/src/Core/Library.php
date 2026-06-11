@@ -85,13 +85,15 @@ if (!function_exists('view')) {
 if (!function_exists('url')) {
     function url(string $path = '/', array $query = []): URL
     {
+        $context = Silver\Core\RuntimeContext::current();
+
         if (str_starts_with($path, '/')) {
             $url = URL::make($path, $query);
-            $url->merge(URL . $url->part('absPath'));
+            $url->merge($context->url . $url->part('absPath'));
             return $url;
         }
 
-        $url = URL::make(CURRENT_URL, $query);
+        $url = URL::make($context->currentUrl, $query);
         $url->merge($path);
         return $url;
     }
@@ -101,7 +103,7 @@ if (!function_exists('asset')) {
     function asset(string $url, array $query = []): URL
     {
         $u = URL::make($url, $query);
-        $u->merge(URL . '/public' . $u->part('absPath', ''));
+        $u->merge(Silver\Core\RuntimeContext::current()->url . '/public' . $u->part('absPath', ''));
         return $u;
     }
 }

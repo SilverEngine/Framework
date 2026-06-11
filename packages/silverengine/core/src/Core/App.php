@@ -29,6 +29,11 @@ class App implements InstanceInterface
             \Silver\FileSystem\LocalFileSystem::class,
         );
 
+        // Runtime context fallback — the web/CLI entrypoints overwrite
+        // this with a properly built instance via Container::instance();
+        // tests and embedded use get the constant/cwd-derived default.
+        $this->instances->singleton(RuntimeContext::class, fn() => RuntimeContext::detect());
+
         // Route, Config, Hook are stateful framework services resolved as
         // singletons so every caller (router, kernel, controllers, route
         // files) sees the same instance instead of the old static state.

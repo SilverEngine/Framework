@@ -5,6 +5,7 @@ namespace Silver\Engine\Ghost;
 
 use Closure;
 use Silver\Core\Contracts\RenderInterface;
+use Silver\Core\RuntimeContext;
 use Silver\Http\Request;
 use Silver\Http\View;
 
@@ -98,7 +99,7 @@ final class WispResponse implements RenderInterface
 
     public function render(): string
     {
-        $shell = ROOT . 'app/Resources/views/app.ghost.tpl';
+        $shell = RuntimeContext::current()->root . 'app/Resources/views/app.ghost.tpl';
 
         return (new Template($shell, ['_wisp_page' => $this->data()]))->render();
     }
@@ -112,8 +113,9 @@ final class WispResponse implements RenderInterface
     {
         $uri = $_SERVER['REQUEST_URI'] ?? '/';
 
-        if (defined('BASEPATH') && BASEPATH !== '' && str_starts_with($uri, BASEPATH)) {
-            $uri = substr($uri, strlen(BASEPATH));
+        $base = RuntimeContext::current()->basePath;
+        if ($base !== '' && str_starts_with($uri, $base)) {
+            $uri = substr($uri, strlen($base));
         }
 
         return '/' . ltrim($uri, '/');

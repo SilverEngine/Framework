@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Silver\Engine\Ghost;
 
+use Silver\Core\RuntimeContext;
+
 /**
  * Resolves Vite assets for the `{{ vite() }}` Ghost directive.
  *
@@ -24,12 +26,12 @@ final class Vite
 
     public static function hotFile(): string
     {
-        return ROOT . 'public/build/hot';
+        return RuntimeContext::current()->root . 'public/build/hot';
     }
 
     public static function manifestFile(): string
     {
-        return ROOT . 'public/build/.vite/manifest.json';
+        return RuntimeContext::current()->root . 'public/build/.vite/manifest.json';
     }
 
     public static function isHot(): bool
@@ -111,7 +113,7 @@ final class Vite
             return '<!-- vite: entry "' . self::ENTRY . '" missing from manifest -->';
         }
 
-        $base = (defined('URL') ? URL : '') . '/build/';
+        $base = RuntimeContext::current()->url . '/build/';
         $tags = [];
 
         foreach ($entry['css'] ?? [] as $css) {
@@ -146,7 +148,7 @@ final class Vite
             return '';
         }
 
-        $base = (defined('URL') ? URL : '') . '/build/';
+        $base = RuntimeContext::current()->url . '/build/';
         $tags = [];
 
         foreach ($entry['css'] ?? [] as $css) {

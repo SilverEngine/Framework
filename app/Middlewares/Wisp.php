@@ -30,7 +30,7 @@ final class Wisp implements MiddlewareInterface
 
             if ($current !== null && $client !== null && $client !== $current) {
                 $res->setCode(409);
-                $res->setHeader('X-Inertia-Location', defined('CURRENT_URL') ? CURRENT_URL : ($req->getUri() ?? '/'));
+                $res->setHeader('X-Inertia-Location', \Silver\Core\RuntimeContext::current()->currentUrl ?: ($req->getUri() ?? '/'));
 
                 return null;
             }

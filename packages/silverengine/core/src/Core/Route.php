@@ -102,7 +102,7 @@ final class Route
             }
         }
 
-        return BASEPATH . '/' . implode('/', $url);
+        return RuntimeContext::current()->basePath . '/' . implode('/', $url);
     }
 
     public function segment(int $index): mixed

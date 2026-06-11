@@ -19,7 +19,7 @@ final class Log
     private function create(string $message, LogType $type): void
     {
         $ip = $_SERVER['REMOTE_ADDR'] ?? '0.0.0.0';
-        $path = ROOT . 'storage/Logs/' . date('Y-m-d') . '.log';
+        $path = \Silver\Core\RuntimeContext::current()->root . 'storage/Logs/' . date('Y-m-d') . '.log';
 
         $fp = fopen($path, 'a+');
         if (!$fp) {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace Silver\Engine\Ghost;
 
 use Silver\Core\Contracts\RenderInterface;
+use Silver\Core\RuntimeContext;
 use Silver\Http\Session;
 use Silver\Http\Request;
 
@@ -268,7 +269,7 @@ class Template implements RenderInterface
 
     protected function parseAssets(string $body): string
     {
-        return $this->processLines($body, "/{{ asset\('(.*)'\) }}/s", fn(string $path) => URL . '/assets/' . $path);
+        return $this->processLines($body, "/{{ asset\('(.*)'\) }}/s", fn(string $path) => RuntimeContext::current()->url . '/assets/' . $path);
     }
 
     /**
@@ -326,12 +327,12 @@ class Template implements RenderInterface
 
     protected function parseAssetsCss(string $body): string
     {
-        return $this->processLines($body, "/{{ css\('(.*)'\) }}/s", fn(string $path) => '<link rel="stylesheet" href="' . URL . '/assets/css/' . $path . '.css">');
+        return $this->processLines($body, "/{{ css\('(.*)'\) }}/s", fn(string $path) => '<link rel="stylesheet" href="' . RuntimeContext::current()->url . '/assets/css/' . $path . '.css">');
     }
 
     protected function parseAssetsJs(string $body): string
     {
-        return $this->processLines($body, "/{{ js\('(.*)'\) }}/s", fn(string $path) => '<script src="' . URL . '/assets/js/' . $path . '.js"></script>');
+        return $this->processLines($body, "/{{ js\('(.*)'\) }}/s", fn(string $path) => '<script src="' . RuntimeContext::current()->url . '/assets/js/' . $path . '.js"></script>');
     }
 
     protected function parseLang(string $body): string
@@ -383,7 +384,7 @@ class Template implements RenderInterface
     {
         $parts = explode('.', $relativePath);
         $lang = Session::exists('lang') ? Session::get('lang') : 'en';
-        $file = include ROOT . 'storage/Lang/' . $lang . '/' . $parts[0] . '.php';
+        $file = include RuntimeContext::current()->root . 'storage/Lang/' . $lang . '/' . $parts[0] . '.php';
         return (string) ($file[$parts[1]] ?? '');
     }
 
@@ -417,7 +418,7 @@ class Template implements RenderInterface
     {
         $relative = str_replace('.', '/', $alias);
         foreach (['.ghost.php', '.ghost.tpl'] as $ext) {
-            $path = ROOT . 'app/Views/' . $subdir . $relative . $ext;
+            $path = RuntimeContext::current()->root . 'app/Views/' . $subdir . $relative . $ext;
             if (is_file($path)) {
                 return $path;
             }

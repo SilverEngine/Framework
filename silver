@@ -19,4 +19,7 @@ if (!function_exists('dd')) {
 
 require_once ROOT . 'vendor/autoload.php';
 
+Silver\Core\App::instance()->instances()
+    ->instance(Silver\Core\RuntimeContext::class, Silver\Core\RuntimeContext::forCli(ROOT));
+
 return new CLI($argv);

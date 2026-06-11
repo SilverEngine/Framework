@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 namespace System\App\Controllers;
+use Silver\Core\RuntimeContext;
 
 use Silver\Core\Controller;
 use Silver\Core\Env;
@@ -219,7 +220,7 @@ class DebugController extends Controller
 
     private function packages(): array
     {
-        $lockFile = ROOT . 'composer.lock';
+        $lockFile = RuntimeContext::current()->root . 'composer.lock';
         if (!file_exists($lockFile)) {
             return ['(composer.lock not found)' => ''];
         }
@@ -239,10 +240,10 @@ class DebugController extends Controller
             'OS'             => PHP_OS . ' ' . php_uname('r'),
             'Architecture'   => php_uname('m'),
             'Server software'=> $_SERVER['SERVER_SOFTWARE'] ?? 'CLI',
-            'Document root'  => $_SERVER['DOCUMENT_ROOT'] ?? ROOT . 'public',
+            'Document root'  => $_SERVER['DOCUMENT_ROOT'] ?? RuntimeContext::current()->root . 'public',
             'Framework root' => ROOT,
             'PHP binary'     => PHP_BINARY,
-            'Composer'       => file_exists(ROOT . 'composer.lock') ? 'present' : 'missing',
+            'Composer'       => file_exists(RuntimeContext::current()->root . 'composer.lock') ? 'present' : 'missing',
         ];
     }
 

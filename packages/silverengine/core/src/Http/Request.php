@@ -33,8 +33,9 @@ class Request implements RequestInterface
             $uri = substr($uri, 0, $q);
         }
 
-        if (defined('BASEPATH') && BASEPATH !== '' && str_starts_with($uri, BASEPATH)) {
-            $uri = substr($uri, strlen(BASEPATH));
+        $base = \Silver\Core\RuntimeContext::current()->basePath;
+        if ($base !== '' && str_starts_with($uri, $base)) {
+            $uri = substr($uri, strlen($base));
         }
 
         return '/' . ltrim(rawurldecode($uri), '/');

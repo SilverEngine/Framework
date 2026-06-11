@@ -2,6 +2,7 @@
 declare(strict_types=1);
 
 namespace Silver\Support;
+use Silver\Core\RuntimeContext;
 
 use PDO;
 use Throwable;
@@ -248,7 +249,7 @@ final class Heartbeat
      */
     private function lastCompletedRequest(): array
     {
-        $dir = \ROOT . 'storage/debug/recordings';
+        $dir = RuntimeContext::current()->root . 'storage/debug/recordings';
         if (!is_dir($dir)) {
             return ['enabled' => false];
         }
@@ -380,7 +381,7 @@ final class Heartbeat
             if ($count === 0) {
                 return $this->warn('routes', 'no routes registered');
             }
-            $cached = is_file(\ROOT . 'storage/cache/routes.php');
+            $cached = is_file(RuntimeContext::current()->root . 'storage/cache/routes.php');
             // Cache miss is fine in local (you're editing routes constantly);
             // outside local it means `php silver optimize` wasn't run on
             // deploy, leaving boot ~0.25ms slower than it needs to be.
@@ -428,8 +429,8 @@ final class Heartbeat
     private function checkStorage(): array
     {
         $paths = [
-            'storage/cache'             => \ROOT . 'storage/cache',
-            'storage/debug/recordings'  => \ROOT . 'storage/debug/recordings',
+            'storage/cache'             => RuntimeContext::current()->root . 'storage/cache',
+            'storage/debug/recordings'  => RuntimeContext::current()->root . 'storage/debug/recordings',
         ];
         foreach ($paths as $label => $abs) {
             if (!is_dir($abs)) {
@@ -467,7 +468,7 @@ final class Heartbeat
 
     private function checkAssets(): array
     {
-        $manifest = \ROOT . 'public/build/.vite/manifest.json';
+        $manifest = RuntimeContext::current()->root . 'public/build/.vite/manifest.json';
         if (Env::name() === 'local') {
             return $this->ok('assets', 'dev mode — manifest not required');
         }

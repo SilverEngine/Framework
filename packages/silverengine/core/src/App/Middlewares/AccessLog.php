@@ -12,7 +12,7 @@ final class AccessLog implements MiddlewareInterface
 {
     public function execute(Request $req, Response $res, Closure $next): mixed
     {
-        $path = ROOT . 'storage/Logs/' . date('Y-m-d') . '-access.log';
+        $path = \Silver\Core\RuntimeContext::current()->root . 'storage/Logs/' . date('Y-m-d') . '-access.log';
         $line = sprintf("%20s [%s] %s: %s\n", $req->ip(), date('Y-m-d H:i:s'), $req->method(), $req->getUri());
 
         $fp = fopen($path, 'a+');

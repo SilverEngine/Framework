@@ -3,6 +3,8 @@ declare(strict_types=1);
 
 namespace Silver\Engine\Ghost;
 
+use Silver\Core\RuntimeContext;
+
 /**
  * On-disk compile cache for Ghost templates.
  *
@@ -30,7 +32,7 @@ final class Compiler
 
     public static function cacheDir(): string
     {
-        $root = defined('ROOT') ? \ROOT : (getcwd() . '/');
+        $root = RuntimeContext::current()->root;
         return rtrim($root, '/') . '/storage/cache/views/';
     }
 
