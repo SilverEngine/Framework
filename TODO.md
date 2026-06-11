@@ -151,7 +151,10 @@ scopes), E3 (whereHas/withCount), E4 (mutators/changes), E5
       mergeFiles()`, validation rules `file`/`image`/`mimes:` +
       file-aware `min:`/`max:` (KB), `store()` via `FileSystem` with
       random-name default — DONE (F4)
-- [ ] **CORS middleware** (config-driven origins/methods/headers, preflight)
+- [x] **CORS middleware**: `Silver\Http\Middleware\Cors` + core
+      `config/Cors.php` (paths/origins incl. fnmatch wildcards/methods/
+      headers/expose/max_age/credentials); preflight short-circuits 204;
+      credentials forces origin echo over '*' — DONE (F5)
 - [ ] **SecurityHeaders middleware** (CSP, HSTS, X-Frame-Options,
       X-Content-Type-Options, Referrer-Policy — sane defaults)
 - [ ] **Signed URLs**: `URL::signed()` / `hasValidSignature()` —
