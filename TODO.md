@@ -63,27 +63,37 @@ only as thin facades. Characterization tests pinned before each change.
       callers — flashed values never expired. Now wired at request boot;
       flash lives exactly one following request.
 
-### D3 — Kill bootstrap globals
-- [ ] `BASEPATH`/`URL`/`ROOT`/`EXT`/`DS` → a `RuntimePaths`/`AppContext`
-      value object built in `index.php`/`silver`, registered in the
-      container; constants stay as BC shims that read from it
-- [ ] `Route::url()` reads context, not the constant (removes the
-      `phpunit.xml` `BASEPATH=""` hack)
+### D3 — Kill bootstrap globals — DONE
+- [x] `Silver\Core\RuntimeContext` readonly value object (root, basePath,
+      url, currentUrl); `forWeb()` in index.php, `forCli()` in silver,
+      `detect()` container fallback for tests; constants remain as BC
+      shims derived from it — no framework code reads them anymore
+- [x] `Route::url()` + Request/WispResponse/Template/Vite/Compiler/
+      Library/Log/AccessLog/Heartbeat/DebugController converted;
+      `phpunit.xml` `BASEPATH=""` hack removed
 
-### D4 — Provider & events unification
-- [ ] `ServiceProvider`: add `register()` (container bindings, called for
-      all providers before any `before()`); document lifecycle
-- [ ] One event story: merge `Engine\Events\EventManager` into / on top of
-      `Core\Hook` (or a small typed `EventDispatcher`); ORM observer
-      dispatch plugs into the same thing; deprecate the loser
+### D4 — Provider & events unification — DONE
+- [x] `ServiceProvider::register($container)` phase — runs for ALL
+      providers before any `before()`; `AbstractProvider` no-op base
+- [x] One event story: deleted legacy `Engine\Events\EventManager`
+      (hardcoded class lookup, no real callers); new
+      `Silver\Events\Dispatcher` typed pub-sub container singleton.
+      `Hook` stays the method-interception primitive; ORM observer
+      `EventDispatcher` stays specialised (revisit only if someone
+      needs global model events).
 
-### D5 — Console kernel
-- [ ] App-defined commands: `Silver\Console\Command` contract +
-      registration via `config/commands.php`; `Command` enum keeps builtin
-      dispatch, unknown tokens fall through to the registry
-- [ ] Minimal `Input`/`Output` objects (args/flags parsing already exists
-      in CLI — extract it); exit codes
-- [ ] `php silver route:list`, `db:show`, `db:table <name>`
+### D5 — Console kernel — DONE
+- [x] `Silver\Console\Contracts\Command` + `Registry`; app commands via
+      `config/commands.php` (token => class, overrides builtins);
+      unknown enum tokens fall through to the registry, exit 1 on miss
+- [x] `Input` (args/flags) + `Output` (stdout/stderr streams, table
+      renderer); exit codes from `handle()`
+- [x] `php silver route:list`, `db:show`, `db:table <name>
+      [--connection=]` — all three verified live
+
+> **Phase D complete.** Core is decoupled: services are container-
+> resolved, statics are facades, globals are shims, providers have a
+> bindings phase, the CLI is extensible.
 
 ---
 
