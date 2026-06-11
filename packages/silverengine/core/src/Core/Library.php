@@ -49,6 +49,20 @@ if (!function_exists('mailer')) {
     }
 }
 
+if (!function_exists('collect')) {
+    /**
+     * Wrap an iterable in a {@see \Silver\Support\Collection}.
+     *
+     * @template T
+     * @param iterable<int|string, T> $items
+     * @return \Silver\Support\Collection<T>
+     */
+    function collect(iterable $items = []): \Silver\Support\Collection
+    {
+        return \Silver\Support\Collection::make($items);
+    }
+}
+
 if (!function_exists('cache')) {
     /** Shorthand for the {@see \Silver\Support\Cache} singleton. */
     function cache(): \Silver\Support\Cache

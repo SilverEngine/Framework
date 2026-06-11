@@ -245,7 +245,9 @@ Request::isSecure), F7 (signed URLs), F8 (validation v2).
       (get/put/has/remember with TTL + tags, forget/forgetTag/flush),
       container singleton from config/cache.php (array | apcu),
       `cache()` helper + `Facades\Cache` — DONE
-- [ ] Promote `Orm\Collection` to `Silver\Support\Collection` (general use)
+- [x] `Orm\Collection` promoted to `Silver\Support\Collection`
+      (general use, `collect()` helper); `Orm\Collection` stays as a
+      BC subclass so existing hints/instanceof/chains keep working — DONE
 - [ ] Localization: parameter interpolation + pluralization in `trans()`,
       locale-switching middleware
 
