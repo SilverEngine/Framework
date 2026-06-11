@@ -31,18 +31,12 @@
 
 ---
 
-## In flight (uncommitted working tree) — finish first
+## In flight — DONE (committed)
 
-- [ ] **DatabaseBootstrap unification.** `Orm/Schema/DatabaseBootstrap.php`
-      (new) replaces `CliBootstrap` with two entry points: `build()` (CLI)
-      and `boot()` (web). `public/index.php` previously still called the
-      **deleted** `Silver\Database\DbDriver`/`Query::connect` — this diff
-      removes the last legacy remnant and fixes the cold-CLI
-      *"Not default connection found"* limitation.
-      - [ ] add tests (legacy + new config shapes, `databases.on` off,
-            missing-default fallback)
-      - [ ] commit; update CLAUDE.md (gotcha about cold-CLI migrate is now
-            stale, boot sequence step 6 changed)
+- [x] **DatabaseBootstrap unification.** `build()` (CLI) + `boot()` (web)
+      share one normalisation core; removed the last `Silver\Database\`
+      remnant from `public/index.php`; fixed the cold-CLI *"Not default
+      connection found"* limitation. 8 tests; CLAUDE.md updated.
 
 ---
 
@@ -51,20 +45,23 @@
 Goal: every core service instance-based + container-resolved; statics remain
 only as thin facades. Characterization tests pinned before each change.
 
-### D1 — Dead code sweep (cheap, do first)
-- [ ] Delete `Core/Model.php` (legacy PDO model, **zero references** — verified)
-- [ ] Delete `Support/Fake.php` / re-evaluate `FakeFactory` (no references found)
-- [ ] Remove deprecated `Route` jails remnants, `Compiler::isFresh()`,
-      `Config/Alias.php` (marked deprecated)
-- [ ] Tidy `Query\Delete` double-space `DELETE  FROM` (cosmetic, pinned test)
+### D1 — Dead code sweep — DONE
+- [x] Deleted `Core/Model.php` (legacy PDO model, zero references)
+- [x] Deleted `Support/Fake.php` (unreferenced; `FakeFactory` was already gone)
+- [x] Removed deprecated `Route` jails, `Compiler::isFresh()` +
+      deprecated `depsFrom()`, `Config/Alias.php`
+- [x] ~~`Query\Delete` double-space~~ — already gone with the legacy tree
 
-### D2 — Session & Cookie as services
-- [ ] `SessionStore` interface + native driver + in-memory array driver
-      (tests); register in container; keep `Session::` static API as facade
-- [ ] Same for `Cookie` (service owns encrypt/decrypt via `Crypter`,
-      static API delegates)
-- [ ] `FormRequest::merge()` must stop mutating `$_REQUEST`/`$_POST` —
-      merge into the Request instance's own bag
+### D2 — Session & Cookie as services — DONE
+- [x] `SessionStore` contract + `NativeSessionStore` + `ArraySessionStore`;
+      container singletons; `Session::` static API kept as facade
+- [x] `CookieJar` instance service; `Cookie::` facade delegates,
+      `set()->encrypt()` chain preserved
+- [x] `FormRequest::merge()` now writes a per-instance overlay on Request
+      (`mergeInput()`); superglobals untouched
+- [x] **Bonus fix:** flash rotation (`Session::construct()`) had zero
+      callers — flashed values never expired. Now wired at request boot;
+      flash lives exactly one following request.
 
 ### D3 — Kill bootstrap globals
 - [ ] `BASEPATH`/`URL`/`ROOT`/`EXT`/`DS` → a `RuntimePaths`/`AppContext`
