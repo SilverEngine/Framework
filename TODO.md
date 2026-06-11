@@ -1,366 +1,202 @@
-# SilverEngine Core Package Migration
+# SilverEngine — Roadmap
 
-## Goal
-
-Extract `System/` into a standalone Composer package `silverengine/core` living in
-`Packages/silverengine/core/`, the same way `silverengine/error-handler` already works.
-Modernise every migrated file to PHP 8.4+ idioms as it moves.
-
-**Strategy:** incremental migration — move files to package, modernize to PHP 8.4+,
-delete from `System/`. Unmigrated files stay in `System/` via root PSR-4 fallback.
-Framework stays bootable at every step.
-
-**Dependencies added:** `vlucas/phpdotenv`, `nejcc/php-datatypes`
-
-**Naming:** `Blueprints` renamed to `Contracts`, `MigrationCore` to `MigrationInterface`
+> Rewritten 2026-06-11. The old TODO (System→package migration, phases 0–10,
+> A/B/C) is fully complete and lives in git history. This file is the
+> forward roadmap: finish the core rebuild, then ship features.
 
 ---
 
-## Phase 0 — Scaffold the package [DONE]
+## Where we are (verified against code, not docs)
 
-- [x] Create `Packages/silverengine/core/composer.json` (php >=8.4, vlucas/phpdotenv)
-- [x] Create `Packages/silverengine/core/src/` directory tree
-- [x] Add `silverengine/core` + `nejcc/php-datatypes` as deps in root `composer.json`
-- [x] Run `composer update` — autoload resolves from package
-- [x] Root `Silver\\` PSR-4 kept as fallback for unmigrated files
+**Done and green** — 293 tests, 602 assertions, 1 skipped; `composer check`
+(PHPUnit + PHPStan lvl 5 over `Silver\Orm\`) passes.
 
----
-
-## Phase 1 — Core kernel [DONE]
-
-- [x] `Core/Env.php` — rewritten for vlucas/phpdotenv, typed properties
-- [x] `Core/Config.php` — typed returns
-- [x] `Core/App.php` — typed properties, implements `InstanceInterface`
-- [x] `Core/Instances.php` — fully typed container
-- [x] `Core/DI.php` — `ReflectionNamedType` (replaces deprecated `getClass()`)
-- [x] `Core/Kernel.php` — `never` return, arrow fn middleware chain
-- [x] `Core/Route.php` — `str_starts_with`/`str_ends_with`, throw expressions
-- [x] `Core/Controller.php` — declared `$controllerName`, fixed types
-- [x] `Core/Model.php` — declared all subclass properties, removed unused
-- [x] `Core/Library.php` — typed params, `never` return on `dd()`
-- [x] `Core/ErrorHandler.php` — handles `\Throwable`, `never` on `finalize()`
-- [x] `Core/Bootstrap.php` — `readonly` property
-- [x] `Core/AppInstanceTrait.php` — `static` return type
-- [x] `Core/helpers.php` — `env()` helper with `match` expression
-- [x] Old `System/Core/` files deleted, package loads confirmed
-- [x] `.env` file created (replaces `local.env.php` approach)
-- [x] `public/index.php` rewritten (dotenv, first-class callables for error handlers)
-- [x] `silver` CLI entry point modernized
+- Package migration + PHP 8.4 modernization (phases 0–10, A) — complete
+- Design-pattern audit (B1–B6) — complete, **including B5**: `Core\Container`
+  has `bind()/singleton()/instance()/make()` with recursive autowiring;
+  Kernel constructor-injects controllers + middleware; `Facade` routes
+  through the container (no second cache)
+- Perf phase C — measured; opcache is the lever, `optimize-autoloader` on
+- `Silver\Orm\` — full typed ORM (connection/query/schema/model/relations/
+  casts/cache), replaced `Silver\Database\` entirely
+- Wisp (Inertia-protocol Vue 3 stack) + Ghost templating + shared data/composers
+- Error pages (self-contained HTML + JSON envelope) + debug timeline/recorder
+- `Silver\Crypto` — AES-256-GCM Crypter, HMAC sign/verify, Random tokens
+- CSRF — TokenStore + VerifyCsrfToken + Ghost/Wisp wiring
+- Auth — SessionGuard, Argon2id `Hash`, OrmUserProvider, Authenticate/Guest/
+  Throttle middleware, `Auth` facade
+- Validation — Validator (23+ rules), `ValidationResult`, `FormRequest` with
+  content-negotiated failure
+- `FileSystem` contract + `LocalFileSystem` (hookable), `Hook` AOP system
 
 ---
 
-## Phase 2 — Contracts (was Blueprints) [DONE]
+## In flight (uncommitted working tree) — finish first
 
-- [x] `Core/Contracts/InstanceInterface.php` — `static` return type
-- [x] `Core/Contracts/MiddlewareInterface.php` — `: mixed` return
-- [x] `Core/Contracts/RenderInterface.php` — `: string`, `: array` returns
-- [x] `Core/Contracts/Http/RequestInterface.php` — typed returns
-- [x] `Core/Contracts/Http/ResponseInterface.php`
-- [x] `Core/Contracts/Database/MigrationInterface.php` — renamed from `MigrationCore`
-- [x] All `System/` and `App/` implementors updated to use `Contracts` namespace
-- [x] Old `System/Core/Blueprints/` deleted
-
----
-
-## Phase 3 — Bootstrap & Facades [DONE]
-
-- [x] `Core/Bootstrap/Autoload.php` — `str_starts_with()`
-- [x] `Core/Bootstrap/ServiceProvider.php` — typed params
-- [x] `Core/Bootstrap/Facades/Request.php` — `final`, typed return
-- [x] `Core/Bootstrap/Facades/Response.php` — `final`, typed return
-- [x] `Core/Bootstrap/Facades/Log.php` — `final`, typed return
-- [x] `Core/Bootstrap/Facades/FakeFactory.php` — `final`, typed return
-- [x] `Core/Storage/Cache.php` — `final`, typed properties, fixed `$time_or_predictor` bug
-- [x] `Core/Http/Lang.php` — `final`, null-safe
+- [ ] **DatabaseBootstrap unification.** `Orm/Schema/DatabaseBootstrap.php`
+      (new) replaces `CliBootstrap` with two entry points: `build()` (CLI)
+      and `boot()` (web). `public/index.php` previously still called the
+      **deleted** `Silver\Database\DbDriver`/`Query::connect` — this diff
+      removes the last legacy remnant and fixes the cold-CLI
+      *"Not default connection found"* limitation.
+      - [ ] add tests (legacy + new config shapes, `databases.on` off,
+            missing-default fallback)
+      - [ ] commit; update CLAUDE.md (gotcha about cold-CLI migrate is now
+            stale, boot sequence step 6 changed)
 
 ---
 
-## Phase 8 — Exceptions [DONE — moved early, no deps]
+## Phase D — Core rebuild: decouple, delete, unify
 
-- [x] `Exception/Exception.php` — `?\Throwable` previous param
-- [x] `Exception/ErrorException.php` — `final`
-- [x] `Exception/NotFoundException.php` — `final`
+Goal: every core service instance-based + container-resolved; statics remain
+only as thin facades. Characterization tests pinned before each change.
 
----
+### D1 — Dead code sweep (cheap, do first)
+- [ ] Delete `Core/Model.php` (legacy PDO model, **zero references** — verified)
+- [ ] Delete `Support/Fake.php` / re-evaluate `FakeFactory` (no references found)
+- [ ] Remove deprecated `Route` jails remnants, `Compiler::isFresh()`,
+      `Config/Alias.php` (marked deprecated)
+- [ ] Tidy `Query\Delete` double-space `DELETE  FROM` (cosmetic, pinned test)
 
-## `final` keyword applied to [DONE]
+### D2 — Session & Cookie as services
+- [ ] `SessionStore` interface + native driver + in-memory array driver
+      (tests); register in container; keep `Session::` static API as facade
+- [ ] Same for `Cookie` (service owns encrypt/decrypt via `Crypter`,
+      static API delegates)
+- [ ] `FormRequest::merge()` must stop mutating `$_REQUEST`/`$_POST` —
+      merge into the Request instance's own bag
 
-Env, Config, DI, Instances, Bootstrap, ErrorHandler, Cache, Lang,
-all 4 Facades, ErrorException, NotFoundException
+### D3 — Kill bootstrap globals
+- [ ] `BASEPATH`/`URL`/`ROOT`/`EXT`/`DS` → a `RuntimePaths`/`AppContext`
+      value object built in `index.php`/`silver`, registered in the
+      container; constants stay as BC shims that read from it
+- [ ] `Route::url()` reads context, not the constant (removes the
+      `phpunit.xml` `BASEPATH=""` hack)
 
----
+### D4 — Provider & events unification
+- [ ] `ServiceProvider`: add `register()` (container bindings, called for
+      all providers before any `before()`); document lifecycle
+- [ ] One event story: merge `Engine\Events\EventManager` into / on top of
+      `Core\Hook` (or a small typed `EventDispatcher`); ORM observer
+      dispatch plugs into the same thing; deprecate the loser
 
-## Phase 4 — HTTP layer [DONE]
-
-- [x] `Http/Request.php` — typed properties, `str_starts_with`, `?Route` return
-- [x] `Http/Response.php` — nested `match` for content dispatch, `RenderInterface`
-- [x] `Http/Session.php` — `final`, removed side-effect auto-call
-- [x] `Http/Cookie.php` — `final`, `match` for return types
-- [x] `Http/Curl.php` — `final`, removed deprecated `curl_close()`
-- [x] `Http/Redirect.php` — `final`, `never` return types
-- [x] `Http/Validator.php` — `final`, `string|false` return types
-- [x] `Http/View.php` — DRY template extension loop, `str_starts_with`
-
----
-
-## Phase 5 — Database / Query Builder [DONE]
-
-- [x] 55 files migrated: Db, Query, Model, Compiler, QueryObject, Relation, Source, DBCreator
-- [x] Parts/* (20 files), Query/* (10 files), Traits/* (8 files), Source/* (3 files)
-- [x] DB-specific variants: Mysql/, Pgsql/, Sqlite/
-- [x] `declare(strict_types=1)` added to all files
-- [x] Fixed `$self::isDebug()` typo in Db.php
-- [x] SQLite connection verified
-
----
-
-## Phase 6 — Support & Helpers [DONE]
-
-- [x] `Support/Facade.php` — `abstract` base, lazy singleton `??=`
-- [x] `Support/Fake.php` — `final`, DRY via `__callStatic` + const array
-- [x] `Support/FakeFactory.php` — `const array` data, `random_int()`
-- [x] `Support/Log.php` — `final`, typed `const array TYPES`
-- [x] `Support/Crypter.php` — `final`, `match` for alphabet, `random_int()`
-- [x] `Support/Git.php` — `final`, `readonly` branch property
-- [x] `Support/SMail.php` — `final`, typed properties, fluent builder
-- [x] `Helpers/Str.php` — renamed from `String` (reserved word), wraps builtins
-- [x] `Helpers/Path.php` — `final`, `str_starts_with`
-- [x] `Helpers/URL.php` — `str_starts_with`/`str_ends_with`
-- [x] `Helpers/HTMLElement.php` — typed constructor, union types
+### D5 — Console kernel
+- [ ] App-defined commands: `Silver\Console\Command` contract +
+      registration via `config/commands.php`; `Command` enum keeps builtin
+      dispatch, unknown tokens fall through to the registry
+- [ ] Minimal `Input`/`Output` objects (args/flags parsing already exists
+      in CLI — extract it); exit codes
+- [ ] `php silver route:list`, `db:show`, `db:table <name>`
 
 ---
 
-## Phase 7 — Engines [DONE]
+## Phase E — ORM completion (highest feature ROI, infra mostly exists)
 
-- [x] `Engine/CLI.php` — `match` expressions, `never` return, DRY `resolvePaths`
-- [x] `Engine/Events/EventManager.php` — fixed namespace, typed, removed debug echo
-- [x] `Engine/Ghost/Template.php` — DRY `processLines()` helper, arrow fns
-
----
-
-## Phase 9 — System App (framework defaults) [DONE]
-
-- [x] `App/Controllers/SystemController.php` — typed return
-- [x] `App/Controllers/MigrationsController.php` — `string|false` union type
-- [x] `App/Middlewares/*` — all `final`, `MiddlewareInterface`, `\Throwable` catch
-- [x] `App/Routes.php` — strict comparison
-- [x] `App/Views/*` — copied to package
-- [x] Config/Routes.php updated to point to package path
-
----
-
-## Phase 10 — Cleanup & finalize [DONE]
-
-- [x] `System/` directory deleted entirely
-- [x] `"Silver\\": "System/"` removed from root `composer.json`
-- [x] `Config/Providers.php` — removed stale `Silver => System` mapping
-- [x] `Config/Routes.php` — updated system routes path
-- [x] Clean boot verified (zero warnings)
-- [x] Run full test suite (`Tests/`) — PHPUnit ^12 added as **require-dev**
-      (dev-only, runtime stays dependency-light). Suite green:
-      14 tests, 19 assertions, 1 skipped (network-only Curl test).
-- [x] ~~Update `error-handler` to `php >=8.4`~~ — resolved by removal:
-      package absorbed into `silverengine/core`
-      (`Silver\ErrorHandler\Reporter`), second path repo dropped
-- [ ] Tag `silverengine/core` v0.1.0 — **intentionally deferred** (tag
-      step skipped by request; code is tag-ready)
+- [ ] **Soft-delete scopes**: `withTrashed()` / `onlyTrashed()` /
+      `restore()` (concern exists, scopes missing)
+- [ ] **`paginate(int $perPage)`** → `Paginator` value object (data, total,
+      page, lastPage, links) — JSON- and Wisp-friendly out of the box
+- [ ] **Locking**: `forUpdate()` / `sharedLock()` (`QueryState::$lock`
+      already defined — expose + compile per grammar)
+- [ ] **Unions**: `union()` / `unionAll()` (`QueryState::$unions` already
+      defined — same)
+- [ ] **Upsert**: `upsert()` / `insertOrIgnore()` per driver
+      (ON CONFLICT / ON DUPLICATE KEY)
+- [ ] **Relation queries**: `whereHas()` / `whereDoesntHave()` /
+      `whereExists()`, `withCount()`
+- [ ] **Mutators + change tracking**: `setFooAttribute()` symmetry with
+      accessors; `getOriginal()` / `getChanges()`
+- [ ] **Relations**: `MorphToMany`, `associate()`/`dissociate()` on
+      BelongsTo, `touch()` cascade
+- [ ] **Schema**: `change()`/`modifyColumn()` (sqlite = table-rebuild path)
+- [ ] **Seeders**: `Seeder` base + runner wired to existing
+      `database/Seeds/`; `php silver db:seed`, `migrate:fresh --seed`
+- [ ] **Factories**: minimal model factory (`definition()` + `count()` +
+      `create()/make()`) — unblocks testing kit (G2)
+- [ ] Nice-to-have: JSON where clauses (`whereJsonContains`), Castable
+      interface for domain objects, AsCollection cast
 
 ---
 
-## Future Enhancements
+## Phase F — HTTP & routing features
 
-- [x] Shared view data — unified `View::share()` store, available in Ghost views AND Wisp pages (`Wisp::share()` delegates to it)
-- [x] View composers — `View::composer($pattern, $cb)`, exact + fnmatch wildcard, merged at render via `View::sharedFor()`
-- [x] Request improvements — typed `headerValue()`, `hasHeader()`, `query()`, `json()`, `bool()`, `int()`, `wantsJson()`; WispResponse + Wisp middleware refactored off raw `$_SERVER`
-
-### Frontend (Wisp) — DONE
-
-- [x] Vite + Vue 3 + TypeScript + Tailwind 4, official `@inertiajs/vue3` client
-- [x] First-party `Silver\Engine\Ghost\{Wisp,WispResponse,Vite,LazyProp,DeferProp}`, `{{ wisp() }}` / `{{ vite() }}` directives, `wisp()` helper
-- [x] Inertia wire protocol (X-Inertia headers), version 409 / 303 handshake middleware
-- [x] Lazy + deferred props, partial reloads, prefetch-ready `deferredProps`
-- [x] `composer dev` runs PHP + Vite concurrently; `composer serve` = PHP only
-
----
-
-## PHP 8.4+ Refactoring Checklist (apply to every migrated file)
-
-- [x] `declare(strict_types=1);`
-- [x] Typed / readonly properties
-- [x] Constructor promotion
-- [x] `match` instead of `switch`
-- [x] `str_starts_with` / `str_ends_with` / `str_contains`
-- [x] Union / intersection / nullable types
-- [x] `final` on leaf classes
-- [x] First-class callable syntax (`$this->method(...)`)
-- [x] `never` return type
-- [x] Enums for finite value sets — `Silver\Http\HttpMethod`,
-      `Silver\Database\DbDriver`, `Silver\Support\LogType`,
-      `Silver\Support\PasswordCharset`
-- [x] `array_find`, `array_any`, `array_all` (PHP 8.4+) —
-      `Response::send()` (array_find), `View::sharedFor()` (array_any);
-      remaining loops are accumulation/transform, not idiomatic candidates
-- [~] Property hooks where they simplify getters/setters — **no
-      behaviour-preserving application in core**: every get/set is
-      public method API (converting breaks callers), and the only magic
-      accessors (`QueryObject`) are a dynamic property bag hooks can't
-      model. Deferred to Phase B (where API changes are in scope).
-- [x] Remove remaining legacy phpdoc that duplicates native types —
-      Db/Query/Model/DBCreator stripped of zero-info tags; provably-safe
-      native return types added; informative phpdoc kept
+- [ ] **Route param injection + model binding**: typed controller params
+      resolved from route vars (`DI::call` extension); `User $user` →
+      `User::find($id)` → 404 on miss
+- [ ] **Middleware groups + per-route middleware with params**
+      (`'throttle:60,1'`, `'auth'`) — route-level, not only the global stack
+- [ ] **General rate limiter**: store-backed (Apcu/array), sliding window;
+      rebuild `Auth\Middleware\Throttle` on top (current one is in-memory
+      per-process — useless behind php-fpm)
+- [ ] **File uploads**: `UploadedFile` object on Request, validation rules
+      (`file`, `image`, `mimes`, `max`), store via `FileSystem`
+- [ ] **CORS middleware** (config-driven origins/methods/headers, preflight)
+- [ ] **SecurityHeaders middleware** (CSP, HSTS, X-Frame-Options,
+      X-Content-Type-Options, Referrer-Policy — sane defaults)
+- [ ] **Signed URLs**: `URL::signed()` / `hasValidSignature()` —
+      `Crypter::sign/verify` already does the work
+- [ ] **Validation v2**: conditional rules (`required_if`/`required_unless`),
+      closure rules, file/image rules (ties into uploads)
 
 ---
 
-## Phase A — Quality pass (checklist completion) [DONE, untagged]
+## Phase G — Auth completion & DX
 
-Mechanical-first, behaviour-preserving. PHPUnit ^12 dev-only baseline.
-5 commits. **Flagged for follow-up (Phase B / separate fix):**
+### G1 — Auth features
+- [ ] Remember-me (hashed token table + cookie, rotate on use)
+- [ ] Password reset flow (token via `Random`, mail, expiry) — needs G3 mail
+- [ ] Email verification (signed-URL based — reuses Phase F)
+- [ ] **Authorization**: `Gate::define()` + policy classes +
+      `$user->can()` + middleware + Ghost `#can` directive
+- [ ] API token guard (bearer; hashed tokens, abilities) — the `AuthManager`
+      v2 comment
 
-- `Database/DBCreator.php` — dead code, zero references; candidate for deletion
-- ~~`ColumnDef::compileReference()` `ON UPDATE` spacing bug~~ — **fixed**
-  (`fix(db)`); referential actions still an enum candidate for Phase B
-- Ambiguous return types left untyped: `Db::{toSql,isDebug,quote,commit,
-  transaction,driverName,fetch}`, `QueryObject::__get/__set`
+### G2 — Testing kit
+- [ ] `Silver\Testing\TestCase`: boot app for tests, `get()/post()/json()`
+      returning a `TestResponse` with `assertStatus/assertSee/assertJson/
+      assertRedirect`
+- [ ] In-memory sqlite + migrate-fresh-per-class helpers; model factories (E)
+- [ ] Fakes: `Log`, `Mail` (assert-sent)
+- [ ] Backfill zero-coverage subsystems: FileSystem, Helpers, ErrorHandler,
+      Hookable
 
----
-
-## Phase B — Design-pattern audit (full audit, API changes allowed)
-
-Test-first: characterization tests pin observable behaviour BEFORE each
-structural change. Per-batch gate (tests → refactor → suite green →
-commit). PHPUnit baseline grew 8 → 35 tests, 62 assertions, 1 skipped.
-
-### Done
-
-- [x] **B6 — drop legacy `$_` member prefix.** `Route` private/static
-      members `$_foo → $foo` (`$jails`/static→`$jailStack`; PHP forbids
-      same-name instance+static). `QueryObject::$_table/$_primary →
-      $table/$primaryKey` (typed `?string`, kept `static` — static
-      active-record needs table/PK without an instance); migrated
-      `App/Models/Users.php`. Tests: `RouteTest`, `QueryObjectTest`.
-- [x] **B1 — dialect Strategy.** Extracted `Silver\Database\Dialect`
-      (`segment()`/`classFor()`) from the inline `Compiler::toSql()`
-      `ucfirst+substr_replace+class_exists`; uses `DbDriver` enum,
-      identical fallback. Tests: `DialectCompileTest` (SQL pinned
-      pre-refactor), `DialectTest`.
-- [x] **B2 — Query factory + `QueryType` enum.** Replaced stringly
-      `Query::instance()`; `queryClass()`/`make()` resolve the identical
-      FQN. Test: `QueryTypeTest` (enum map + insert/update/delete/drop
-      SQL pinned).
-- [x] **B3 — CLI `Command` enum.** Replaced `match($this->cmd)`
-      literals; alias-aware `parse()` (`c`→Generate, unknown→null).
-      Proportionate — no class-per-command framework. Test:
-      `CommandTest`.
-
-- [x] **B4 — split the `Db` God class.** Extracted `ConnectionManager`
-      (registry/lazy-PDO/raw/exec/quote/lastInsertId/driverName) and
-      `TransactionManager` (depth counter + nested BEGIN/COMMIT/ROLLBACK
-      + SAVEPOINT levels, savepoint SQL still via `Db::exec()` for the
-      debug echo). `Db` is now a thin BC facade keeping only the
-      per-instance fetch/debug side; every `Db::`/`Query::`/`Model::`
-      static entry point unchanged. Found + fixed a **pre-existing**
-      bug first (separate `fix(db)`): `class_exists($style)` before a
-      string check threw `TypeError` under `strict_types` — all builder
-      result-fetch with default style was broken. Tests: `DbBehaviorTest`
-      (10, characterization pinned pre-refactor), `DbFetchTest` (5,
-      TDD red→green for the bug). Ambiguous returns
-      (`Db::{toSql,isDebug,quote,commit,transaction,driverName,fetch}`)
-      left untyped — separate optional polish, see backlog.
-
-### Remaining — large, high-blast-radius (checkpoint: do as focused sessions)
-
-- [ ] **B5 — real IoC container.** Today `Instances` is a registry, not
-      a container. Add `bind()` / `singleton()` / interface→impl /
-      closure factories / recursive autowiring + constructor injection
-      for controllers & middleware. Plan: (1) characterization of the
-      current shallow `DI::call` contract (method injection by class
-      name + route vars); (2) introduce `Container` (autowiring +
-      bindings) keeping `DI::call` semantics as the method-injection
-      front end; (3) constructor-inject controllers in
-      `Kernel::findCallable` and `new $mw()` in `loadMiddlewares`;
-      (4) unify the 3 singleton mechanisms; route `Facade` through the
-      container; (5) fix the `ServiceProvider` contract.
-
-### Findings backlog (surfaced during A/B, not silently changed)
-
-- `Database/DBCreator.php` — dead code, zero refs; delete candidate.
-- ~~Builder fetch `class_exists(int)` TypeError~~ — **fixed** (`fix(db)`,
-  TDD, `DbFetchTest`).
-- Ambiguous return types still untyped (optional polish, low value):
-  `Db::{toSql,isDebug,quote,commit,transaction,driverName,fetch}`,
-  `QueryObject::__get/__set` (dynamic property bag — not a
-  property-hook candidate).
-- `Route::url()` depends on the global `BASEPATH` constant defined only
-  by `public/index.php` — should come via config/container (B5). Test
-  env defines `BASEPATH=''`.
-- **Dual `Model` lineage:** `Silver\Database\Model` (static active-
-  record, extends `QueryObject`) vs `Silver\Core\Model` (instance,
-  `protected string $primaryKey`). Reconcile/clarify in B4.
-- `ServiceProvider` interface (`before(mixed $kernel)`/`register(mixed
-  $app)`/`after()`) does not match how `Kernel` invokes providers
-  (`before($req,$res)`/`after($req,$res)`, `register()` never called).
-  Fix in B5.
-- Dead `Kernel::call()` static (duplicates `DI`, no callers) — remove
-  in B5.
-- `Facade` keeps its own `static $objects` cache outside `Instances` —
-  same class can exist twice. Unify in B5.
-- Cosmetic: `Query\Delete` compiles `DELETE  FROM` (double space) —
-  valid SQL, left verbatim (behaviour-preserving); tidy opportunistically.
+### G3 — Supporting services
+- [ ] Mail v2: attachments, Ghost-templated bodies, driver contract
+      (sendmail/SMTP/log) — prerequisite for password reset
+- [ ] Cache facade: one `CacheStore`-backed `Cache::get/put/remember` with
+      TTL + tags (Orm stores already exist — generalize, don't duplicate)
+- [ ] Promote `Orm\Collection` to `Silver\Support\Collection` (general use)
+- [ ] Localization: parameter interpolation + pluralization in `trans()`,
+      locale-switching middleware
 
 ---
 
-## Phase C — Runtime performance [measure-first; DONE]
+## Explicit non-goals (decided, revisit only with a reason)
 
-Profiled with the in-repo DebugTimer/RequestRecorder over 50 recorded
-requests (`/`, `/wisp-demo`, `/demo`) on the `php -S` dev server.
+- **PSR-7/15/11 compliance** — first-party contracts are the design;
+  dependency-light beats interop here. If interop is ever needed, write
+  adapters, don't rewrite Request/Response.
+- **Queue + scheduler** — out of scope until a real app needs them; design
+  the console kernel (D5) so a worker command is possible later.
+- **classmap-authoritative** — still forbidden (dynamic `class_exists`
+  resolution in Kernel/Dialect/QueryType).
 
-### Measured baseline (median ms)
+---
 
-| phase | dev server | warm process |
-|---|---|---|
-| `Env::construct` | **6.32** | **0.77** |
-| view render | 1.53 | — |
-| per middleware (×5) | ~1.2–1.5 | — |
-| database connect | 1.38 | — |
-| controller resolve | 0.74 | — |
-| controller action | 0.38 | — |
-| route resolve | 0.014 | — |
-| services | 0.008 | — |
-| boot header (autoload→mw) | 21.65 | — |
+## Suggested order
 
-### Conclusion (data, not guesswork)
+1. Commit the in-flight DatabaseBootstrap work (tests + CLAUDE.md update)
+2. **D1** dead-code sweep (one small PR)
+3. **E** ORM completion — biggest user-visible win, infra half-built
+4. **D2–D5** core decoupling, interleaved as focused PRs
+5. **F** HTTP features (uploads/rate-limit/CORS/headers as separate PRs)
+6. **G** auth completion + testing kit (G2 can start any time after E
+   factories land)
 
-- The apparent `Env::construct` hot spot is **a no-opcache artifact**:
-  this runtime has **no opcache at all**, so `php -S` recompiles every
-  file every request. Warm (single long-lived process, mimicking
-  php-fpm+opcache) `Env::construct` is **0.77 ms**, and the
-  `json_decode(json_encode())` config clone I suspected is **0.035 ms**
-  — hypothesis rejected by measurement.
-- **No code path is algorithmically slow.** Route match 0.014 ms,
-  services 0.008 ms, controller action 0.38 ms. Speculative code
-  micro-optimisation would add risk for zero proven gain — explicitly
-  against measure-first.
+## Quality gates (unchanged)
 
-### Changes (zero behaviour risk)
-
-- `composer.json` → `config.optimize-autoloader: true` (+ sort-packages):
-  every `composer install` now emits a classmap **with PSR-4 fallback**.
-  Dev boot 21.65 → 20.62 ms; the real benefit is production scale
-  (no per-class PSR-4 stat walk).
-
-### Deployment levers (the actual wins — documentation, not code)
-
-- **opcache is the dominant production lever.** With php-fpm + opcache
-  the boot collapses toward the warm numbers (~3–5 ms total vs ~21 ms).
-  No code change can match this; it is a deploy requirement.
-- **Do NOT use `classmap-authoritative`** with this framework. It would
-  break correctness: `Kernel::findCallable()` resolves App controllers
-  by file convention (`include_once` + `new $class`), and
-  `Dialect::classFor()` / `QueryType` rely on `class_exists()` for
-  optional dialect/query variants — an authoritative classmap returns
-  false for anything not pre-listed (user controllers, dialect
-  variants), breaking dynamic resolution. `optimize-autoloader` is the
-  correct, safe choice (classmap + PSR-4 fallback).
-
-> All phases (A, B, C) complete. Remaining items live in the findings
-> backlog above (dead `DBCreator`, optional `Db` facade return-typing).
+- Characterization tests pinned **before** structural refactors
+- Per-PR: `composer check` green (PHPUnit + PHPStan); extend stan beyond
+  `Silver\Orm\` as phases touch new trees (target: whole `src/` at lvl 5)
+- Behaviour changes and refactors in separate commits (`fix(...)` vs
+  `refactor(...)`)
