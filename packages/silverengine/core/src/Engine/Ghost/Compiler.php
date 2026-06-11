@@ -113,24 +113,6 @@ final class Compiler
         return $deps;
     }
 
-    /** Convenience predicate over {@see freshDeps()}. */
-    public static function isFresh(string $cacheFile, string $sourceFile): bool
-    {
-        return self::freshDeps($cacheFile, $sourceFile) !== null;
-    }
-
-    /**
-     * @deprecated since the freshDeps() refactor — prefer that since it
-     * reuses the freshness check's header read. Kept for callers that only
-     * want deps without the freshness check.
-     * @return array<string,int>|null
-     */
-    public static function depsFrom(string $cacheFile): ?array
-    {
-        $header = self::readHeader($cacheFile);
-        return $header['deps'] ?? null;
-    }
-
     /**
      * Write compiled body to its cache file atomically (rename) with a
      * header listing the compiler version and tracked deps.

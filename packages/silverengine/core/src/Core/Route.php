@@ -12,7 +12,7 @@ namespace Silver\Core;
  *  - As a value object (constructed internally by `register()`), it
  *    holds one route's method/path/action plus matched variables.
  *
- * Registry state (routes, routeIndex, prefix, jailStack, types) is only
+ * Registry state (routes, routeIndex, prefix, types) is only
  * populated on the singleton; value-object instances created by
  * `register()` ignore those fields.
  */
@@ -22,8 +22,6 @@ final class Route
     private string $method = '';
     private string $route = '';
     private mixed $action = null;
-    /** @var list<string> */
-    private array $jails = [];
     private ?string $name = null;
     private string $middleware = 'public';
     private ?string $type = null;
@@ -36,8 +34,6 @@ final class Route
     /** @var array<string,self> */
     private array $routeIndex = [];
     private string $prefix = '';
-    /** @var list<string> */
-    private array $jailStack = [];
 
     /** @var array<string,string> */
     private array $types = [
@@ -183,19 +179,6 @@ final class Route
             return false;
         }
 
-        // Check jails (deprecated)
-        foreach ($this->jails as $jail) {
-            $jailParts = explode('@', $jail);
-            $class = $jailParts[0];
-            $jailMethod = $jailParts[1] ?? 'protect';
-            if (!str_starts_with($class, '\\')) {
-                $class = '\\App\\Jail\\' . $class;
-            }
-            if (!$class::$jailMethod()) {
-                return false;
-            }
-        }
-
         return true;
     }
 
@@ -209,20 +192,12 @@ final class Route
 
     public function group(array $args, callable $fn): void
     {
-        if (isset($args['jail'])) {
-            $this->jailStack[] = $args['jail'];
-        }
-
         $oldPrefix = $this->prefix;
         $this->prefix .= '/' . ($args['prefix'] ?? '');
 
         $fn();
 
         $this->prefix = $oldPrefix;
-
-        if (isset($args['jail'])) {
-            array_pop($this->jailStack);
-        }
     }
 
     public function find(string $requestUrl, string $requestMethod): ?self
@@ -249,7 +224,6 @@ final class Route
             $r->method = strtolower($m);
             $r->route = $route;
             $r->action = $action;
-            $r->jails = $this->jailStack;
             $r->name = $name;
             $r->middleware = $middleware;
             $r->type = $type;
@@ -316,7 +290,6 @@ final class Route
         $this->routes = [];
         $this->routeIndex = [];
         $this->prefix = '';
-        $this->jailStack = [];
     }
 
     /**
