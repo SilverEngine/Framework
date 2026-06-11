@@ -49,6 +49,15 @@ class App implements InstanceInterface
         $this->instances->singleton(\Silver\Http\Validator::class);
         $this->instances->singleton(\Silver\Http\Csrf\TokenStore::class);
         $this->instances->singleton(\Silver\Auth\AuthManager::class);
+
+        // Session + cookie backends. The Session/Cookie static classes
+        // are facades over these; tests swap the session store for
+        // ArraySessionStore via `Container::instance(...)`.
+        $this->instances->singleton(
+            \Silver\Http\Contracts\SessionStore::class,
+            \Silver\Http\NativeSessionStore::class,
+        );
+        $this->instances->singleton(\Silver\Http\CookieJar::class);
     }
 
     public function instances(): Container

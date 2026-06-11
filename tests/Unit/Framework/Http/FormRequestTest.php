@@ -113,6 +113,17 @@ final class FormRequestTest extends TestCase
         $this->assertArrayNotHasKey('sneaky_field', $captured);
     }
 
+    public function testMergeDoesNotMutateSuperglobals(): void
+    {
+        $_REQUEST = ['name' => '  Lex  '];
+        $_POST    = $_REQUEST;
+
+        $this->di->call(function (FormRequestFixtures\TrimmingRequest $req): void {});
+
+        $this->assertSame('  Lex  ', $_REQUEST['name'], 'merge() must be instance-scoped');
+        $this->assertSame('  Lex  ', $_POST['name'], 'merge() must be instance-scoped');
+    }
+
     public function testCustomMessageOverridesDefault(): void
     {
         $_REQUEST = ['email' => ''];

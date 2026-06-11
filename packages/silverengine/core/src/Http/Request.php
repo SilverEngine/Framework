@@ -13,6 +13,9 @@ class Request implements RequestInterface
 
     private ?string $uri;
 
+    /** @var array<string, mixed> instance-scoped input overlay ({@see mergeInput()}) */
+    private array $merged = [];
+
     public function __construct()
     {
         $this->uri = $this->resolveUri();
@@ -71,7 +74,19 @@ class Request implements RequestInterface
 
     public function all(): array
     {
-        return $_REQUEST;
+        return array_replace($_REQUEST, $this->merged);
+    }
+
+    /**
+     * Merge values into this request instance's input overlay (visible
+     * to {@see all()}, {@see input()}, {@see param()}) without mutating
+     * the $_REQUEST/$_POST superglobals.
+     *
+     * @param array<string, mixed> $input
+     */
+    public function mergeInput(array $input): void
+    {
+        $this->merged = array_replace($this->merged, $input);
     }
 
     public function param(string $name, mixed $default = null): mixed

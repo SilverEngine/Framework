@@ -69,14 +69,14 @@ abstract class FormRequest extends Request implements ValidatesData
 
     /**
      * Merge values into the request payload (visible to {@see input()},
-     * {@see all()} and the rules).
+     * {@see all()} and the rules). Instance-scoped overlay — the
+     * $_REQUEST/$_POST superglobals are left untouched.
      *
      * @param array<string, mixed> $input
      */
     public function merge(array $input): void
     {
-        $_REQUEST = array_replace($_REQUEST, $input);
-        $_POST    = array_replace($_POST, $input);
+        $this->mergeInput($input);
     }
 
     public function validateResolved(): void

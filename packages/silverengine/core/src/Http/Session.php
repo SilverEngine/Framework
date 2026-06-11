@@ -3,65 +3,64 @@ declare(strict_types=1);
 
 namespace Silver\Http;
 
+use Silver\Http\Contracts\SessionStore;
+
+/**
+ * Static facade over the container-resolved {@see SessionStore}
+ * singleton. Call sites keep the `Session::get()` API; the backend is
+ * swappable (native $_SESSION by default, {@see ArraySessionStore} in
+ * tests) via `app()->instance(SessionStore::class, …)`.
+ */
 final class Session
 {
+    /** Rotate flash → old-flash at request boot (one-request lifetime). */
     public static function construct(): void
     {
-        $_SESSION['data'] ??= [];
-        $_SESSION['old-flash'] ??= [];
-        $_SESSION['flash'] ??= [];
-
-        $_SESSION['old-flash'] = $_SESSION['flash'];
-        $_SESSION['flash'] = [];
+        self::store()->rotateFlash();
     }
 
     public static function all(): array
     {
-        return array_merge(
-            $_SESSION['data'] ?? [],
-            $_SESSION['old-flash'] ?? [],
-            $_SESSION['flash'] ?? [],
-        );
+        return self::store()->all();
     }
 
     public static function set(string $key, mixed $value): mixed
     {
-        self::delete($key);
-        return $_SESSION['data'][$key] = $value;
+        return self::store()->set($key, $value);
     }
 
     public static function flash(string $key, mixed $value): mixed
     {
-        self::delete($key);
-        return $_SESSION['flash'][$key] = $value;
+        return self::store()->flash($key, $value);
     }
 
     public static function exists(string $name): bool
     {
-        return isset(self::all()[$name]);
+        return self::store()->exists($name);
     }
 
     public static function get(string $name, mixed $default = null): mixed
     {
-        return self::exists($name) ? self::all()[$name] : $default;
+        return self::store()->get($name, $default);
     }
 
     public static function delete(string $key): void
     {
-        unset(
-            $_SESSION['data'][$key],
-            $_SESSION['old-flash'][$key],
-            $_SESSION['flash'][$key],
-        );
+        self::store()->delete($key);
     }
 
     public static function flush(): void
     {
-        $_SESSION = [];
+        self::store()->flush();
     }
 
     public static function kill(): bool
     {
-        return session_destroy();
+        return self::store()->kill();
+    }
+
+    private static function store(): SessionStore
+    {
+        return app(SessionStore::class);
     }
 }
