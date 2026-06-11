@@ -96,6 +96,8 @@ abstract class Model implements JsonSerializable
 
     /** Original DB-shaped row, captured on hydrate. Used for ->isDirty()/dirty diff. */
     private array $original = [];
+    /** Columns written by the most recent save() update — {@see getChanges()}. */
+    private array $changes = [];
     /** Extra columns from JOINs that don't map to declared properties. */
     private array $extras   = [];
     /** @var array<string, mixed> Eager-loaded relation results, keyed by relation name. */
@@ -477,8 +479,30 @@ abstract class Model implements JsonSerializable
             if (!in_array($key, $fillable, true)) {
                 continue; // deny-by-default
             }
-            $this->{$key} = $value;
+            $this->setAttribute($key, $value);
         }
+        return $this;
+    }
+
+    /**
+     * Assign one attribute, routing through a `set{Studly}Attribute()`
+     * mutator when the class defines one. The mutator receives the raw
+     * value and RETURNS the transformed value to store:
+     *
+     *     public function setNameAttribute(string $v): string
+     *     {
+     *         return ucwords(trim($v));
+     *     }
+     *
+     * Note: models use typed public properties, so a DIRECT property
+     * write (`$user->name = …`) cannot be intercepted and bypasses
+     * mutators — route writes through fill()/setAttribute() when the
+     * transformation matters.
+     */
+    public function setAttribute(string $name, mixed $value): static
+    {
+        $mutator = $this->resolveMutator($name);
+        $this->{$name} = $mutator !== null ? $this->{$mutator}($value) : $value;
         return $this;
     }
 
@@ -566,7 +590,8 @@ abstract class Model implements JsonSerializable
         $builder = $this->writer()->where(self::primaryKey(), $this->primaryKeyValue());
         $builder->update($dirty);
 
-        // Refresh dirty baseline.
+        // Refresh dirty baseline + record what this save changed.
+        $this->changes = $dirty;
         foreach ($dirty as $col => $val) {
             $this->original[$col] = $val;
         }
@@ -783,6 +808,25 @@ abstract class Model implements JsonSerializable
     {
         $dirty = $this->dirty();
         return $column === null ? $dirty !== [] : array_key_exists($column, $dirty);
+    }
+
+    /**
+     * Columns the most recent save() actually wrote (DB-shaped).
+     * Empty after insert or before any update — the counterpart of
+     * dirty(), which reports PENDING changes.
+     *
+     * @return array<string, mixed>
+     */
+    public function getChanges(): array
+    {
+        return $this->changes;
+    }
+
+    public function wasChanged(?string $column = null): bool
+    {
+        return $column === null
+            ? $this->changes !== []
+            : array_key_exists($column, $this->changes);
     }
 
     /** @return array<string, mixed> Column → casted-back-to-DB value, only fields that changed. */
@@ -1097,9 +1141,20 @@ abstract class Model implements JsonSerializable
      */
     protected function resolveAccessor(string $name): mixed
     {
-        $studly = str_replace(' ', '', ucwords(str_replace(['_', '-'], ' ', $name)));
-        $method = 'get' . $studly . 'Attribute';
+        $method = 'get' . self::studly($name) . 'Attribute';
         return method_exists($this, $method) ? $this->{$method}() : null;
+    }
+
+    /** Resolve a setNameAttribute() mutator method name, if defined. */
+    protected function resolveMutator(string $name): ?string
+    {
+        $method = 'set' . self::studly($name) . 'Attribute';
+        return method_exists($this, $method) ? $method : null;
+    }
+
+    private static function studly(string $name): string
+    {
+        return str_replace(' ', '', ucwords(str_replace(['_', '-'], ' ', $name)));
     }
 
     public function jsonSerialize(): array
