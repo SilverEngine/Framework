@@ -92,16 +92,12 @@ dt()->end('error handlers', 'boot');
 |--------------------------------------------------------------------------
 */
 dt()->begin('database connect', 'boot');
-$database = Env::get('databases');
-
-if ($database && $database->on) {
-    $local = $database->local;
-
-    $dsn = \Silver\Database\DbDriver::dsn($local->driver, ROOT, $local);
-
-    \Silver\Database\Query::connect($local->driver, $dsn, $local->username, $local->password);
-    \Silver\Database\Query::setConnection($local->driver);
-}
+// Populate the container-singleton ConnectionManager from config and bind
+// the ORM (Model + Schema) facades. Honours the `databases.on` toggle —
+// when DB is off this is a no-op and the ORM stays unbound.
+$connections = Silver\Core\App::instance()->instances()
+    ->make(\Silver\Orm\Connection\ConnectionManager::class);
+\Silver\Orm\Schema\DatabaseBootstrap::boot($connections, ROOT);
 dt()->end('database connect', 'boot');
 
 /*

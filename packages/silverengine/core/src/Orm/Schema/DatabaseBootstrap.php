@@ -8,9 +8,20 @@ use Silver\Orm\Connection\ConnectionConfig;
 use Silver\Orm\Connection\ConnectionManager;
 use Silver\Orm\Connection\Driver;
 use Silver\Orm\Connection\TransactionManager;
+use Silver\Orm\Model\Model;
 
 /**
- * Bootstraps the connection registry for the migration CLI commands.
+ * Bootstraps the connection registry from `config/databases.php`.
+ *
+ * Two entry points share one normalisation core:
+ *
+ *   - {@see build()}  — CLI/migration path. Builds a fresh
+ *     ConnectionManager + TransactionManager from scratch (the CLI
+ *     entrypoint does not boot the Kernel), binds the Schema facade.
+ *   - {@see boot()}   — web/runtime path. Populates an EXISTING
+ *     ConnectionManager (the container singleton wired in Core\App) and
+ *     additionally binds the Model + Schema facades so model operations
+ *     work during a request. Honours the `databases.on` toggle.
  *
  * Supports two config shapes for portability across the rollout:
  *
@@ -28,8 +39,13 @@ use Silver\Orm\Connection\TransactionManager;
  * Both yield a fully populated ConnectionManager with per-connection
  * migration metadata.
  */
-final class CliBootstrap
+final class DatabaseBootstrap
 {
+    /**
+     * CLI/migration path: build a standalone connection registry.
+     *
+     * @return array{0: ConnectionManager, 1: TransactionManager, 2: string}
+     */
     public static function build(string $root): array
     {
         if (!defined('ROOT')) {
@@ -50,6 +66,55 @@ final class CliBootstrap
             );
         }
 
+        $defaultName = self::registerAll($cm, $cfg, $connections);
+
+        $tx = new TransactionManager($cm);
+        Schema::bind($cm);
+
+        return [$cm, $tx, $defaultName];
+    }
+
+    /**
+     * Web/runtime path: populate an existing ConnectionManager (the
+     * container singleton) and bind the ORM facades.
+     *
+     * Env::construct() is assumed already done by the web entrypoint.
+     * Honours the `databases.on` toggle: returns false (ORM left
+     * unbound) when the database is switched off, the config is absent,
+     * or no connections are defined.
+     */
+    public static function boot(ConnectionManager $cm, string $root): bool
+    {
+        $cfg = self::toArray(Env::get('databases'));
+        if (!is_array($cfg) || $cfg === []) {
+            return false;
+        }
+        if (array_key_exists('on', $cfg) && !$cfg['on']) {
+            return false;
+        }
+
+        $connections = self::normalize($cfg, $root);
+        if ($connections === []) {
+            return false;
+        }
+
+        self::registerAll($cm, $cfg, $connections);
+
+        Schema::bind($cm);
+        Model::bind($cm);
+
+        return true;
+    }
+
+    /**
+     * Register a normalised connection set into $cm and select the
+     * default. Returns the resolved default connection name.
+     *
+     * @param array<string, mixed>            $cfg
+     * @param array<string, ConnectionConfig> $connections
+     */
+    private static function registerAll(ConnectionManager $cm, array $cfg, array $connections): string
+    {
         $defaultName = (string) ($cfg['default'] ?? array_key_first($connections));
         foreach ($connections as $name => $conn) {
             $cm->registerConfig($name, $conn);
@@ -59,10 +124,7 @@ final class CliBootstrap
         }
         $cm->setDefault($defaultName);
 
-        $tx = new TransactionManager($cm);
-        Schema::bind($cm);
-
-        return [$cm, $tx, $defaultName];
+        return $defaultName;
     }
 
     /**

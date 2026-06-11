@@ -6,7 +6,7 @@ namespace Silver\Engine;
 use RuntimeException;
 use Silver\Core\Env;
 use Silver\Core\Route;
-use Silver\Orm\Schema\CliBootstrap;
+use Silver\Orm\Schema\DatabaseBootstrap;
 use Silver\Orm\Schema\Migrator;
 use Silver\Support\Scaffolder;
 
@@ -120,7 +120,7 @@ class CLI
     private function migrateRun(string $action): void
     {
         $flags = $this->parseFlags();
-        [$cm, $tx, $defaultName] = CliBootstrap::build(ROOT);
+        [$cm, $tx, $defaultName] = DatabaseBootstrap::build(ROOT);
 
         $targets = $this->resolveConnectionTargets($flags, $cm->names(), $defaultName);
         $pretend = (bool) ($flags['pretend'] ?? false);
@@ -164,7 +164,7 @@ class CLI
         $flags      = $this->parseFlags();
         $table      = isset($flags['table']) ? (string) $flags['table'] : null;
 
-        [$cm, , $defaultName] = CliBootstrap::build(ROOT);
+        [$cm, , $defaultName] = DatabaseBootstrap::build(ROOT);
         $connection = isset($flags['connection']) ? (string) $flags['connection'] : $defaultName;
         $cfg  = $cm->config($connection);
         if ($cfg === null || $cfg->migrationsPath === null) {
