@@ -18,6 +18,7 @@ final class Registry
         'route:list' => Commands\RouteListCommand::class,
         'db:show'    => Commands\DbShowCommand::class,
         'db:table'   => Commands\DbTableCommand::class,
+        'db:seed'    => Commands\DbSeedCommand::class,
     ];
 
     /** @return array<string, class-string<Command>> */

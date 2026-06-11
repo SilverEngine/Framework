@@ -172,6 +172,18 @@ class CLI
         if ($hadFailure) {
             exit(1);
         }
+
+        // `migrate:fresh --seed` reseeds after the rebuild.
+        if ($action === 'fresh' && !empty($flags['seed'])) {
+            \Silver\Orm\Model\Model::bind($cm);
+            $ran = new \Silver\Orm\Seed\SeedRunner()->run(ROOT . 'database/seeds');
+            foreach ($ran as $file) {
+                $this->success("  Seeded  {$file}");
+            }
+            if ($ran === []) {
+                $this->info('  Nothing to seed (database/seeds is empty or missing).');
+            }
+        }
     }
 
     private function makeMigration(): void
@@ -411,6 +423,8 @@ PHP,
          Routes:            php silver route:list
          Database:          php silver db:show
                             php silver db:table <name> [--connection=<conn>]
+                            php silver db:seed             # database/seeds/*
+                            php silver migrate:fresh --seed
          -----
          Optimize:          php silver optimize          # cache config + routes, -o autoload
          Clear caches:      php silver optimize:clear
