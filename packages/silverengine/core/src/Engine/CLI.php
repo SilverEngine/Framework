@@ -4,6 +4,9 @@ declare(strict_types=1);
 namespace Silver\Engine;
 
 use RuntimeException;
+use Silver\Console\Input;
+use Silver\Console\Output;
+use Silver\Console\Registry;
 use Silver\Core\Env;
 use Silver\Core\Route;
 use Silver\Orm\Schema\DatabaseBootstrap;
@@ -43,8 +46,26 @@ class CLI
             Command::OptimizeClear    => $this->optimizeClear(),
             Command::KeyGenerate      => $this->keyGenerate(),
             Command::Help             => $this->help(),
-            null                      => $this->error('Command not found: ' . $this->cmd),
+            null                      => $this->dispatchRegistry(),
         };
+    }
+
+    /**
+     * Tokens that aren't builtin enum commands fall through to the
+     * console registry: framework extras (route:list, db:show,
+     * db:table) plus app commands from config/commands.php.
+     */
+    private function dispatchRegistry(): never
+    {
+        Env::construct(ROOT);
+
+        $registry = new Registry();
+        if ($registry->find($this->cmd) === null) {
+            $this->error('Command not found: ' . $this->cmd);
+            exit(1);
+        }
+
+        exit($registry->run($this->cmd, new Input($this->args), new Output()));
     }
 
     private function optimize(): void
@@ -387,6 +408,9 @@ PHP,
          -----
          Dev server:        php silver serve [host:port]
          Migrations:        php silver migrate
+         Routes:            php silver route:list
+         Database:          php silver db:show
+                            php silver db:table <name> [--connection=<conn>]
          -----
          Optimize:          php silver optimize          # cache config + routes, -o autoload
          Clear caches:      php silver optimize:clear
@@ -410,6 +434,9 @@ PHP,
            view         app/Resources/views/<name>.ghost.tpl
            helper       app/Helpers/<Name>.php
            facade       app/Facades/<Name>.php
+
+         App commands: implement Silver\Console\Contracts\Command and
+         register the token in config/commands.php.
 
          The web scaffolder at /new is the GUI for the same operations.
 
