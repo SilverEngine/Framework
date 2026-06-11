@@ -88,6 +88,26 @@ class AuthManager
         );
     }
 
+    /**
+     * The password-reset broker (config `auth.passwords`), built on the
+     * default provider's user lookup and the Mailer singleton.
+     */
+    public function passwordBroker(): PasswordBroker
+    {
+        $cfg = (array) (Env::get('auth.passwords') ?? []);
+
+        return new PasswordBroker(
+            $this->provider(),
+            new PasswordResetRepository(
+                App::instance()->instances()->make(\Silver\Orm\Connection\ConnectionManager::class),
+                (string) ($cfg['table'] ?? 'password_resets'),
+            ),
+            App::instance()->instances()->make(\Silver\Mail\Mailer::class),
+            (string) ($cfg['path'] ?? '/password/reset'),
+            (int) ($cfg['ttl'] ?? 3600),
+        );
+    }
+
     private function resolveProvider(string $name): UserProvider
     {
         $cfg = (array) (Env::get('auth.providers.' . $name) ?? []);

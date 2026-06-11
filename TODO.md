@@ -181,8 +181,13 @@ Request::isSecure), F7 (signed URLs), F8 (validation v2).
       sha256 stored, expiry purge) + `RememberMe` (rotate-on-use cookie),
       `SessionGuard` fallback + `attempt/login(remember:)`,
       config `auth.remember` — DONE
-- [ ] Password reset flow (token via `Random`, mail, expiry) — needs G3
-      mail (the only G1 item left; signed-URL + token infra now exists)
+- [x] Password reset flow: `PasswordResetRepository` (split-token
+      scheme keyed by email, one active token per email, single use,
+      TTL) + `PasswordBroker` (sendResetLink mails the token URL via
+      Mailer — `buildMailUsing()` for branded mails; reset() verifies
+      token↔email, re-hashes, burns the token),
+      `AuthManager::passwordBroker()`, config `auth.passwords` — DONE
+      **→ G1 complete**
 - [x] Email verification: `MustVerifyEmail` contract,
       `EmailVerification` service (signed URL + sha1(email) binding,
       idempotent verify), `'verified'` middleware — DONE

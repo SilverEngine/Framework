@@ -39,4 +39,13 @@ return [
     ],
 
     'throttle' => ['max' => 5, 'decay' => 60],
+
+    // Password reset (PasswordBroker via AuthManager::passwordBroker()).
+    // Requires the password_resets table — see PasswordResetRepository
+    // docblock for columns.
+    'passwords' => [
+        'table' => 'password_resets',
+        'ttl'   => 3600,                // link lifetime, seconds
+        'path'  => '/password/reset',   // link target (token+email in query)
+    ],
 ];
