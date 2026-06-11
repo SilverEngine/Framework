@@ -30,4 +30,25 @@ final class SqliteGrammar extends Grammar
     {
         return '';
     }
+
+    /**
+     * Sqlite has no JSON_CONTAINS — emulate per element via json_each:
+     * EXISTS (SELECT 1 FROM json_each(col) WHERE json_each.value = ?).
+     * An array candidate means "contains all", ANDing one EXISTS per
+     * element (matching the containment semantics of mysql/pgsql).
+     */
+    #[\Override]
+    protected function compileJsonContains(\Silver\Orm\Query\Node\Expression $e, array &$bindings): string
+    {
+        [$column, $value] = $e->operands;
+        $col      = $this->compileNode($column, $bindings);
+        $elements = is_array($value->value) ? array_values($value->value) : [$value->value];
+
+        $parts = [];
+        foreach ($elements as $el) {
+            $parts[]    = 'EXISTS (SELECT 1 FROM json_each(' . $col . ') WHERE json_each.value = ?)';
+            $bindings[] = $el;
+        }
+        return count($parts) === 1 ? $parts[0] : '(' . implode(' AND ', $parts) . ')';
+    }
 }

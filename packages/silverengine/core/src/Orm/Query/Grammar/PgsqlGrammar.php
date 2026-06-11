@@ -20,4 +20,14 @@ final class PgsqlGrammar extends Grammar
     public function explainPrefix(): string { return 'EXPLAIN (FORMAT JSON) '; }
     #[\Override]
     public function analyzePrefix(): string { return 'EXPLAIN (ANALYZE, BUFFERS, FORMAT JSON) '; }
+
+    /** jsonb containment: col::jsonb @> ? with a JSON-encoded candidate. */
+    #[\Override]
+    protected function compileJsonContains(\Silver\Orm\Query\Node\Expression $e, array &$bindings): string
+    {
+        [$column, $value] = $e->operands;
+        $sql = $this->compileNode($column, $bindings) . '::jsonb @> ?';
+        $bindings[] = json_encode($value->value, JSON_THROW_ON_ERROR);
+        return $sql;
+    }
 }

@@ -118,8 +118,14 @@ only as thin facades. Characterization tests pinned before each change.
       `database/Seeds/`; `php silver db:seed`, `migrate:fresh --seed` — DONE (E5)
 - [x] **Factories**: minimal model factory (`definition()` + `count()` +
       `create()/make()`) — DONE (E5)
-- [ ] Nice-to-have: JSON where clauses (`whereJsonContains`), Castable
-      interface for domain objects, AsCollection cast
+- [x] Nice-to-have: `whereJsonContains` (per-driver JSON_CONTAINS /
+      jsonb @> / json_each EXISTS), `Castable` interface for domain
+      objects, `AsCollection` cast — DONE (E9)
+
+**Phase E complete** — E1 (upsert/unions/locks/paginate), E2 (soft-delete
+scopes), E3 (whereHas/withCount), E4 (mutators/changes), E5
+(seeders/factories), E6 (associate/touch), E7 (MorphToMany), E8
+(Schema change()), E9 (JSON wheres + casts).
 
 ---
 

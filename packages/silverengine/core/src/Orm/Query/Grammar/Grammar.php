@@ -413,8 +413,23 @@ abstract class Grammar implements GrammarInterface
             'EXISTS', 'NOT EXISTS' =>
                 $op . ' ' . $this->compileNode($e->operands[0], $bindings),
 
+            'JSON CONTAINS' => $this->compileJsonContains($e, $bindings),
+
             default => $this->compileBinaryOp($op, $e, $bindings),
         };
+    }
+
+    /**
+     * whereJsonContains() — operands are [Identifier $column, Binding
+     * $value] where the Binding holds the raw PHP value (scalar = one
+     * element, array = "contains all"). Each driver speaks its own
+     * JSON dialect.
+     *
+     * @param list<mixed> $bindings
+     */
+    protected function compileJsonContains(Expression $e, array &$bindings): string
+    {
+        throw new \LogicException(static::class . ' does not support whereJsonContains().');
     }
 
     /**

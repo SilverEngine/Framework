@@ -55,6 +55,16 @@ final class MysqlGrammar extends Grammar
         return [$sql . ' ON DUPLICATE KEY UPDATE ' . implode(', ', $sets), $bindings];
     }
 
+    /** JSON_CONTAINS(col, ?) — the candidate must be JSON-encoded. */
+    #[\Override]
+    protected function compileJsonContains(\Silver\Orm\Query\Node\Expression $e, array &$bindings): string
+    {
+        [$column, $value] = $e->operands;
+        $sql = 'JSON_CONTAINS(' . $this->compileNode($column, $bindings) . ', ?)';
+        $bindings[] = json_encode($value->value, JSON_THROW_ON_ERROR);
+        return $sql;
+    }
+
     /** Pre-8.0 / MariaDB-portable shared lock spelling. */
     #[\Override]
     protected function compileLock(QueryState $state): string

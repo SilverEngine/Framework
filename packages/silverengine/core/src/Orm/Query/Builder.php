@@ -208,6 +208,21 @@ class Builder
         return $this;
     }
 
+    /**
+     * JSON containment on a json/jsonb/text column. A scalar value
+     * matches rows whose JSON array contains it; an array value means
+     * "contains all of these". Compiled per driver (JSON_CONTAINS /
+     * jsonb @> / json_each EXISTS).
+     */
+    public function whereJsonContains(string $column, mixed $value): static
+    {
+        $this->state->wheres[] = new Expression('JSON CONTAINS', [
+            new Identifier($column),
+            new Binding($value),
+        ]);
+        return $this;
+    }
+
     // ---------- JOIN ----------
 
     public function join(string $table, string $first, string $op, string $second, string $kind = Join::KIND_INNER): static

@@ -84,6 +84,9 @@ final class CastResolver
         if (self::isBackedEnum($type)) {
             return new EnumCast($type);
         }
+        if (is_subclass_of($type, Castable::class)) {
+            return $type::castUsing($args);
+        }
         $instance = new $type(...$args);
         if (!$instance instanceof CastsAttribute) {
             throw new \LogicException(
